@@ -278,10 +278,10 @@ Run specific test suites:
 pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py
 
 # Integration tests
-pytest test_integration.py test_integration_cross_module.py
+pytest test_integration.py test_integration_cross_module.py test_observability_integration.py
 
-# Edge case tests
-pytest test_edge_cases_advanced.py test_cdn_edge_cases.py
+# Edge case and advanced tests
+pytest test_edge_cases_advanced.py test_cdn_edge_cases.py test_observability_advanced.py
 
 # Security and performance tests
 pytest test_security_analytics.py test_cdn_concurrency.py test_error_recovery.py
