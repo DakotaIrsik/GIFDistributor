@@ -441,5 +441,244 @@ class TestIntegration:
         assert link1_metrics["clicks"] == 1
 
 
+class TestEnumEdgeCases:
+    """Test edge cases for EventType and Platform enums"""
+
+    def test_event_type_enum_values(self):
+        """Test all EventType enum values are accessible"""
+        assert EventType.VIEW.value == "view"
+        assert EventType.PLAY.value == "play"
+        assert EventType.CLICK.value == "click"
+
+    def test_platform_enum_values(self):
+        """Test all Platform enum values"""
+        assert Platform.WEB.value == "web"
+        assert Platform.SLACK.value == "slack"
+        assert Platform.DISCORD.value == "discord"
+        assert Platform.TEAMS.value == "teams"
+        assert Platform.TWITTER.value == "twitter"
+        assert Platform.FACEBOOK.value == "facebook"
+        assert Platform.OTHER.value == "other"
+
+    def test_event_with_all_platforms(self):
+        """Test tracking events across all platform types"""
+        tracker = AnalyticsTracker()
+        platforms = [Platform.WEB, Platform.SLACK, Platform.DISCORD,
+                     Platform.TEAMS, Platform.TWITTER, Platform.FACEBOOK, Platform.OTHER]
+
+        for platform in platforms:
+            tracker.track_event("asset1", EventType.VIEW, platform)
+
+        platform_metrics = tracker.get_platform_metrics("asset1")
+        assert len(platform_metrics) == 7
+
+
+class TestMetricsEdgeCases:
+    """Test edge cases in metrics calculation"""
+
+    def test_total_events_field(self):
+        """Test that total_events field is correctly calculated"""
+        tracker = AnalyticsTracker()
+
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset1", EventType.PLAY)
+        tracker.track_event("asset1", EventType.CLICK)
+        tracker.track_event("asset1", EventType.CLICK)
+
+        metrics = tracker.get_asset_metrics("asset1")
+        assert metrics["total_events"] == 5
+
+    def test_rounding_precision(self):
+        """Test CTR and play rate rounding to 2 decimal places"""
+        tracker = AnalyticsTracker()
+
+        # Create scenario with non-round percentages
+        for _ in range(3):
+            tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset1", EventType.CLICK)
+
+        metrics = tracker.get_asset_metrics("asset1")
+        # 1/3 * 100 = 33.333...
+        assert metrics["ctr"] == 33.33
+        assert isinstance(metrics["ctr"], float)
+
+    def test_cache_hit_performance(self):
+        """Test that cached metrics are returned correctly"""
+        tracker = AnalyticsTracker()
+
+        tracker.track_event("asset1", EventType.VIEW)
+
+        # First call - cache miss
+        metrics1 = tracker.get_asset_metrics("asset1")
+        # Second call - cache hit
+        metrics2 = tracker.get_asset_metrics("asset1")
+
+        assert metrics1 == metrics2
+        assert "asset1" in tracker._metrics_cache
+
+    def test_multiple_assets_independent_cache(self):
+        """Test that cache is maintained independently per asset"""
+        tracker = AnalyticsTracker()
+
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset2", EventType.VIEW)
+        tracker.track_event("asset2", EventType.VIEW)
+
+        metrics1 = tracker.get_asset_metrics("asset1")
+        metrics2 = tracker.get_asset_metrics("asset2")
+
+        assert metrics1["views"] == 1
+        assert metrics2["views"] == 2
+        assert len(tracker._metrics_cache) == 2
+
+
+class TestTimeframeBoundaries:
+    """Test timeframe boundary conditions"""
+
+    def test_exact_start_time_boundary(self):
+        """Test events exactly at start time are included"""
+        tracker = AnalyticsTracker()
+
+        # Track event and capture its exact timestamp
+        event = tracker.track_event("asset1", EventType.VIEW)
+        event_time = datetime.fromisoformat(event["timestamp"])
+
+        # Query with exact event time as start
+        events = tracker.get_events_by_timeframe("asset1", start_time=event_time)
+        assert len(events) == 1
+
+    def test_exact_end_time_boundary(self):
+        """Test events exactly at end time are included"""
+        tracker = AnalyticsTracker()
+
+        event = tracker.track_event("asset1", EventType.VIEW)
+        event_time = datetime.fromisoformat(event["timestamp"])
+
+        # Query with exact event time as end
+        events = tracker.get_events_by_timeframe("asset1", end_time=event_time)
+        assert len(events) == 1
+
+    def test_timeframe_with_both_boundaries(self):
+        """Test filtering with both start and end time"""
+        tracker = AnalyticsTracker()
+
+        # Track multiple events
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset1", EventType.PLAY)
+        tracker.track_event("asset1", EventType.CLICK)
+
+        now = datetime.utcnow()
+        past = now - timedelta(hours=1)
+        future = now + timedelta(hours=1)
+
+        events = tracker.get_events_by_timeframe("asset1", start_time=past, end_time=future)
+        assert len(events) == 3
+
+    def test_zero_results_timeframe(self):
+        """Test timeframe that excludes all events"""
+        tracker = AnalyticsTracker()
+
+        tracker.track_event("asset1", EventType.VIEW)
+
+        # Query for events in the future
+        future_start = datetime.utcnow() + timedelta(days=1)
+        future_end = datetime.utcnow() + timedelta(days=2)
+
+        events = tracker.get_events_by_timeframe("asset1", start_time=future_start, end_time=future_end)
+        assert len(events) == 0
+
+
+class TestTopAssetsEdgeCases:
+    """Test edge cases for top assets functionality"""
+
+    def test_get_top_assets_empty_tracker(self):
+        """Test getting top assets when no events exist"""
+        tracker = AnalyticsTracker()
+        top_assets = tracker.get_top_assets(metric="views", limit=10)
+        assert top_assets == []
+
+    def test_get_top_assets_invalid_metric(self):
+        """Test sorting by non-existent metric defaults to 0"""
+        tracker = AnalyticsTracker()
+
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset2", EventType.VIEW)
+
+        # Non-existent metric should not crash
+        top_assets = tracker.get_top_assets(metric="nonexistent", limit=10)
+        assert len(top_assets) == 2
+
+    def test_get_top_assets_by_plays(self):
+        """Test getting top assets by play count"""
+        tracker = AnalyticsTracker()
+
+        # Asset 1: 5 plays
+        for _ in range(5):
+            tracker.track_event("asset1", EventType.PLAY)
+
+        # Asset 2: 10 plays
+        for _ in range(10):
+            tracker.track_event("asset2", EventType.PLAY)
+
+        top_assets = tracker.get_top_assets(metric="plays", limit=10)
+        assert top_assets[0]["asset_id"] == "asset2"
+        assert top_assets[0]["plays"] == 10
+
+    def test_get_top_assets_tie_breaking(self):
+        """Test behavior when multiple assets have same metric value"""
+        tracker = AnalyticsTracker()
+
+        # Both assets have same views
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset2", EventType.VIEW)
+
+        top_assets = tracker.get_top_assets(metric="views", limit=10)
+        assert len(top_assets) == 2
+        # Both should have 1 view
+        assert all(asset["views"] == 1 for asset in top_assets)
+
+
+class TestCacheBehavior:
+    """Test cache invalidation and behavior"""
+
+    def test_cache_cleared_on_all_events_clear(self):
+        """Test that entire cache is cleared when all events are cleared"""
+        tracker = AnalyticsTracker()
+
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset2", EventType.VIEW)
+
+        # Populate cache
+        tracker.get_asset_metrics("asset1")
+        tracker.get_asset_metrics("asset2")
+
+        assert len(tracker._metrics_cache) == 2
+
+        # Clear all events
+        tracker.clear_events()
+
+        assert len(tracker._metrics_cache) == 0
+
+    def test_cache_partial_invalidation(self):
+        """Test cache only invalidated for specific asset when clearing"""
+        tracker = AnalyticsTracker()
+
+        tracker.track_event("asset1", EventType.VIEW)
+        tracker.track_event("asset2", EventType.VIEW)
+
+        # Populate cache
+        tracker.get_asset_metrics("asset1")
+        tracker.get_asset_metrics("asset2")
+
+        # Clear only asset1
+        tracker.clear_events(asset_id="asset1")
+
+        # asset1 should be removed from cache
+        assert "asset1" not in tracker._metrics_cache
+        # asset2 should still be cached
+        assert "asset2" in tracker._metrics_cache
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
