@@ -6,6 +6,7 @@ A system for distributing and sharing GIF assets with short links and canonical 
 
 - **Share Links**: Generate short, shareable links for GIF assets (`/s/{short_code}`)
 - **Canonical URLs**: Persistent asset URLs (`/a/{asset_id}`)
+- **CDN Support**: Cache headers, HTTP Range requests, and signed URLs for secure delivery
 - **Analytics Tracking**: Track views, plays, clicks, and CTR across platforms
 - **Platform Metrics**: Break down engagement by platform (Slack, Discord, Teams, Twitter, etc.)
 - **Deduplication**: Hash-based asset ID generation to avoid duplicate uploads
@@ -56,6 +57,66 @@ if asset_info:
     print(f"Clicks: {asset_info['clicks']}")
 ```
 
+### Integration: Share Links + Analytics
+
+```python
+from sharelinks import ShareLinkGenerator
+from analytics import AnalyticsTracker, EventType, Platform
+
+# Initialize both modules
+generator = ShareLinkGenerator(base_url="https://gifdist.io")
+tracker = AnalyticsTracker()
+
+# Create a share link
+link_info = generator.create_share_link(
+    asset_id="abc123def456",
+    title="Funny Cat GIF"
+)
+
+# Track analytics for the share link
+tracker.track_event(
+    asset_id="abc123def456",
+    event_type=EventType.VIEW,
+    platform=Platform.SLACK,
+    short_code=link_info['short_code']
+)
+
+# Get metrics for the short link
+short_link_metrics = tracker.get_short_link_metrics(link_info['short_code'])
+print(f"Views: {short_link_metrics['views']}")
+```
+
+### CDN Configuration
+
+```python
+from cdn import CDNHelper, CachePolicy
+
+# Initialize CDN helper with secret key for signed URLs
+cdn = CDNHelper(secret_key="your-secret-key")
+
+# Get headers for asset delivery with caching
+headers, range_spec, status_code = cdn.get_asset_headers(
+    content_type="image/gif",
+    content_length=1024000,
+    is_immutable=True,
+    cache_duration=CachePolicy.IMMUTABLE_CACHE,
+    range_header="bytes=0-1023"  # Optional: for partial content
+)
+
+# Create signed URL with expiration
+signed_url = cdn.create_signed_asset_url(
+    asset_url="https://gifdist.io/a/abc123def456",
+    expiration_seconds=3600
+)
+
+# Validate signed URL
+is_valid, error = cdn.validate_asset_url(signed_url)
+if is_valid:
+    print("URL is valid")
+else:
+    print(f"Invalid URL: {error}")
+```
+
 ### Analytics Tracking
 
 ```python
@@ -84,6 +145,7 @@ metrics = tracker.get_asset_metrics("abc123def456")
 print(f"Views: {metrics['views']}")
 print(f"Plays: {metrics['plays']}")
 print(f"CTR: {metrics['ctr']}%")
+print(f"Play Rate: {metrics['play_rate']}%")
 
 # Get platform-specific metrics
 platform_metrics = tracker.get_platform_metrics("abc123def456")
@@ -91,6 +153,13 @@ print(f"Slack metrics: {platform_metrics['slack']}")
 
 # Get top performing assets
 top_assets = tracker.get_top_assets(metric="ctr", limit=5)
+for asset in top_assets:
+    print(f"Asset {asset['asset_id']}: {asset['ctr']}% CTR")
+
+# Get metrics for a specific short link
+short_link_metrics = tracker.get_short_link_metrics("Ab12Cd34")
+print(f"Short link views: {short_link_metrics['views']}")
+print(f"Short link CTR: {short_link_metrics['ctr']}%")
 ```
 
 ## Testing
@@ -98,7 +167,13 @@ top_assets = tracker.get_top_assets(metric="ctr", limit=5)
 Run the test suite:
 
 ```bash
-pytest test_sharelinks.py test_analytics.py
+pytest test_sharelinks.py test_analytics.py test_integration.py
+```
+
+Or run all tests at once:
+
+```bash
+pytest
 ```
 
 ## API Reference
@@ -106,21 +181,27 @@ pytest test_sharelinks.py test_analytics.py
 ### ShareLinkGenerator
 
 - `create_canonical_url(asset_id, asset_type="gif")`: Create canonical asset URL
-- `create_share_link(asset_id, title="", tags=None)`: Generate short share link
-- `resolve_short_link(short_code)`: Resolve short code to asset info
-- `generate_hash_based_id(content_hash)`: Create deterministic asset ID
-- `get_share_metadata(short_code)`: Get Open Graph metadata
+- `create_share_link(asset_id, title="", tags=None)`: Generate short share link with metadata
+- `resolve_short_link(short_code)`: Resolve short code to asset info (increments click counter)
+- `generate_short_code()`: Generate unique 8-character short code
+- `generate_hash_based_id(content_hash)`: Create deterministic asset ID from content hash
+- `get_share_metadata(short_code)`: Get Open Graph metadata for share link
 
 ### AnalyticsTracker
 
-- `track_event(asset_id, event_type, platform, short_code, metadata)`: Track analytics event
-- `get_asset_metrics(asset_id)`: Get aggregated metrics (views, plays, clicks, CTR)
-- `get_platform_metrics(asset_id)`: Get metrics broken down by platform
+- `track_event(asset_id, event_type, platform=Platform.WEB, short_code=None, metadata=None)`: Track analytics event
+- `get_asset_metrics(asset_id)`: Get aggregated metrics (views, plays, clicks, ctr, play_rate, total_events)
+- `get_platform_metrics(asset_id)`: Get metrics broken down by platform (views, plays, clicks, ctr, play_rate per platform)
 - `get_short_link_metrics(short_code)`: Get metrics for a specific short link
-- `get_top_assets(metric, limit)`: Get top performing assets by metric
-- `get_events_by_timeframe(asset_id, start_time, end_time)`: Get events within timeframe
-- `clear_events(asset_id)`: Clear events for an asset or all events
+- `get_top_assets(metric="views", limit=10)`: Get top performing assets by metric (supports: views, plays, clicks, ctr, play_rate)
+- `get_events_by_timeframe(asset_id, start_time=None, end_time=None)`: Get events within timeframe
+- `clear_events(asset_id=None)`: Clear events for an asset or all events if asset_id is None
+
+### Enums
+
+**EventType**: `VIEW`, `PLAY`, `CLICK`
+**Platform**: `WEB`, `SLACK`, `DISCORD`, `TEAMS`, `TWITTER`, `FACEBOOK`, `OTHER`
 
 ### Utility Functions
 
-- `create_asset_hash(file_path)`: Generate SHA-256 hash of asset file
+- `create_asset_hash(file_path)`: Generate SHA-256 hash of asset file for deduplication
