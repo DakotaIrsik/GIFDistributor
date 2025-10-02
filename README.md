@@ -167,7 +167,7 @@ print(f"Short link CTR: {short_link_metrics['ctr']}%")
 Run the test suite:
 
 ```bash
-pytest test_sharelinks.py test_analytics.py test_integration.py
+pytest test_sharelinks.py test_analytics.py test_cdn.py test_integration.py
 ```
 
 Or run all tests at once:
@@ -201,6 +201,28 @@ pytest
 
 **EventType**: `VIEW`, `PLAY`, `CLICK`
 **Platform**: `WEB`, `SLACK`, `DISCORD`, `TEAMS`, `TWITTER`, `FACEBOOK`, `OTHER`
+
+### CDNHelper
+
+- `get_asset_headers(content_type, content_length, is_immutable=False, cache_duration=CachePolicy.LONG_CACHE, range_header=None)`: Get complete headers for asset delivery (returns headers, range_spec, status_code)
+- `create_signed_asset_url(asset_url, expiration_seconds=3600)`: Create a signed URL for secure asset access
+- `validate_asset_url(url)`: Validate a signed asset URL (returns is_valid, error_message)
+
+### CachePolicy
+
+- `get_headers(cache_duration=LONG_CACHE, is_immutable=False, is_private=False)`: Generate cache control headers
+- Cache duration constants: `IMMUTABLE_CACHE` (1 year), `LONG_CACHE` (24 hours), `SHORT_CACHE` (1 hour), `NO_CACHE` (0)
+
+### RangeRequest
+
+- `parse_range_header(range_header, content_length)`: Parse HTTP Range header and return (start, end) bytes
+- `get_range_response_headers(start, end, total_length, content_type)`: Generate headers for partial content response
+- `get_full_response_headers(total_length, content_type)`: Generate headers for full content response
+
+### SignedURL
+
+- `generate_signed_url(base_url, expiration_seconds=3600, additional_params=None)`: Generate signed URL with expiration
+- `validate_signed_url(url)`: Validate signature and expiration (returns is_valid, error_message)
 
 ### Utility Functions
 
