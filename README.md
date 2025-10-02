@@ -11,6 +11,7 @@ A system for distributing and sharing GIF assets with short links and canonical 
 - **Platform Metrics**: Break down engagement by platform (Slack, Discord, Teams, Twitter, etc.)
 - **Deduplication**: Hash-based asset ID generation to avoid duplicate uploads
 - **Metadata Support**: Open Graph tags for social media sharing
+- **Observability**: Structured logging, metrics collection, and distributed tracing for monitoring
 
 ## Installation
 
@@ -84,6 +85,63 @@ tracker.track_event(
 # Get metrics for the short link
 short_link_metrics = tracker.get_short_link_metrics(link_info['short_code'])
 print(f"Views: {short_link_metrics['views']}")
+```
+
+### Integration: Full Stack with Observability
+
+```python
+from sharelinks import ShareLinkGenerator
+from analytics import AnalyticsTracker, EventType, Platform
+from cdn import CDNHelper, CachePolicy
+from observability import ObservabilityStack, LogLevel
+
+# Initialize all modules with observability
+obs = ObservabilityStack(service_name="gif-distributor", min_log_level=LogLevel.INFO)
+generator = ShareLinkGenerator(base_url="https://gifdist.io")
+tracker = AnalyticsTracker()
+cdn = CDNHelper(secret_key="your-secret-key")
+
+# Start trace for the complete operation
+span = obs.start_trace("create_and_share_asset", asset_type="gif")
+
+try:
+    # Create share link with logging
+    obs.logger.info("Creating share link", asset_id="abc123")
+    link_info = generator.create_share_link(
+        asset_id="abc123def456",
+        title="Funny Cat GIF",
+        tags=["cat", "funny"]
+    )
+    obs.metrics.increment_counter("sharelinks.created", tags={"status": "success"})
+
+    # Track initial view with timing
+    with obs.metrics.time_operation("analytics.track_event"):
+        tracker.track_event(
+            asset_id="abc123def456",
+            event_type=EventType.VIEW,
+            platform=Platform.SLACK,
+            short_code=link_info['short_code']
+        )
+
+    # Create signed CDN URL
+    signed_url = cdn.create_signed_asset_url(
+        asset_url=link_info['canonical_url'],
+        expiration_seconds=3600
+    )
+    obs.logger.info("Generated signed CDN URL", expires_in=3600)
+
+    # Finish successfully
+    obs.finish_span(span, status="success")
+
+    # Get comprehensive metrics
+    dashboard = obs.get_dashboard_data()
+    print(f"Operation completed - Logs: {dashboard['logs']['total']}, "
+          f"Active traces: {dashboard['traces']['active']}")
+
+except Exception as e:
+    obs.logger.error("Operation failed", error=str(e))
+    obs.finish_span(span, status="error")
+    raise
 ```
 
 ### CDN Configuration
@@ -162,18 +220,71 @@ print(f"Short link views: {short_link_metrics['views']}")
 print(f"Short link CTR: {short_link_metrics['ctr']}%")
 ```
 
-## Testing
+### Observability
 
-Run the test suite:
+```python
+from observability import ObservabilityStack, LogLevel
 
-```bash
-pytest test_sharelinks.py test_analytics.py test_cdn.py test_integration.py
+# Initialize observability stack for your service
+obs = ObservabilityStack(service_name="gif-api", min_log_level=LogLevel.INFO)
+
+# Structured logging with trace context
+obs.logger.info("Processing asset request", asset_id="abc123", user_id="user_789")
+obs.logger.error("Upload failed", error="timeout", duration_ms=5000)
+
+# Metrics collection
+obs.metrics.increment_counter("asset.uploads", tags={"status": "success"})
+obs.metrics.set_gauge("active_connections", 42)
+obs.metrics.record_histogram("request.duration", 123.45, tags={"endpoint": "/upload"})
+
+# Time operations automatically
+with obs.metrics.time_operation("db_query", tags={"table": "assets"}):
+    # Your database operation here
+    pass
+
+# Distributed tracing
+span = obs.start_trace("handle_upload", asset_type="gif", user_tier="premium")
+try:
+    # Your operation here
+    span.add_log("Validating asset")
+    # ... more work ...
+    obs.finish_span(span, status="success")
+except Exception as e:
+    span.add_log(f"Error: {e}", level="ERROR")
+    obs.finish_span(span, status="error")
+
+# Get dashboard data
+dashboard = obs.get_dashboard_data()
+print(f"Total logs: {dashboard['logs']['total']}")
+print(f"Active traces: {dashboard['traces']['active']}")
+
+# Query histogram statistics
+stats = obs.metrics.get_histogram_stats("request.duration", tags={"endpoint": "/upload"})
+print(f"p95: {stats['p95']}ms, p99: {stats['p99']}ms")
 ```
 
-Or run all tests at once:
+## Testing
+
+Run all tests:
 
 ```bash
 pytest
+```
+
+Run specific test suites:
+
+```bash
+# Core module tests
+pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py
+
+# Integration tests
+pytest test_integration.py test_integration_cross_module.py
+
+# Edge case tests
+pytest test_edge_cases_advanced.py test_cdn_edge_cases.py
+
+# Security and performance tests
+pytest test_security_analytics.py test_cdn_concurrency.py test_error_recovery.py
 ```
 
 ## API Reference
@@ -227,3 +338,46 @@ pytest
 ### Utility Functions
 
 - `create_asset_hash(file_path)`: Generate SHA-256 hash of asset file for deduplication
+
+### ObservabilityStack
+
+- `start_trace(operation, **tags)`: Start a new distributed trace and return root span
+- `finish_span(span, status="success")`: Finish a span with status (success/error)
+- `get_dashboard_data()`: Get aggregated logs, metrics, and trace summaries
+
+### StructuredLogger
+
+- `debug(message, **metadata)`: Log debug message with metadata
+- `info(message, **metadata)`: Log info message with metadata
+- `warning(message, **metadata)`: Log warning message with metadata
+- `error(message, **metadata)`: Log error message with metadata
+- `critical(message, **metadata)`: Log critical message with metadata
+- `get_logs(trace_id=None)`: Get log entries, optionally filtered by trace ID
+- `clear_logs()`: Clear all stored logs
+
+### MetricsCollector
+
+- `increment_counter(name, value=1.0, tags=None)`: Increment a counter metric
+- `set_gauge(name, value, tags=None)`: Set a gauge to a specific value
+- `record_histogram(name, value, tags=None)`: Record a value in a histogram
+- `time_operation(name, tags=None)`: Context manager for timing operations
+- `get_counter(name, tags=None)`: Get current counter value
+- `get_gauge(name, tags=None)`: Get current gauge value
+- `get_histogram_stats(name, tags=None)`: Get histogram statistics (min, max, mean, median, p95, p99)
+- `get_all_metrics()`: Get all recorded metrics
+- `clear_metrics()`: Clear all metrics
+
+### Tracer
+
+- `start_trace(operation, tags=None)`: Start a new trace (root span)
+- `start_span(operation, parent_span, tags=None)`: Start a child span
+- `finish_span(span, status="success")`: Finish a span
+- `get_trace(trace_id)`: Get all spans for a trace
+- `get_all_traces()`: Get all traces
+- `clear_traces()`: Clear all traces
+
+### Span (Tracing)
+
+- `finish(status="success")`: Complete the span
+- `add_log(message, level="INFO", **kwargs)`: Add a log entry to the span
+- `to_dict()`: Convert span to dictionary
