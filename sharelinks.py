@@ -52,7 +52,7 @@ class ShareLinkGenerator:
             "asset_id": asset_id,
             "canonical_url": canonical_url,
             "title": title,
-            "tags": tags or [],
+            "tags": list(tags) if tags else [],
             "created_at": datetime.utcnow().isoformat(),
             "clicks": 0
         }
