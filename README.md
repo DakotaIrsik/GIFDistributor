@@ -11,7 +11,9 @@ A system for distributing and sharing GIF assets with short links and canonical 
 - **Platform Metrics**: Break down engagement by platform (Slack, Discord, Teams, Twitter, etc.)
 - **Deduplication**: Hash-based asset ID generation to avoid duplicate uploads
 - **Metadata Support**: Open Graph tags for social media sharing
+- **Rate Limiting**: Token bucket, fixed window, and sliding window strategies with per-IP/user limits
 - **Observability**: Structured logging, metrics collection, and distributed tracing for monitoring
+- **Content Moderation**: SFW-only enforcement with automated scanning, audit trail, and manual review workflow
 
 ## Installation
 
@@ -220,6 +222,43 @@ print(f"Short link views: {short_link_metrics['views']}")
 print(f"Short link CTR: {short_link_metrics['ctr']}%")
 ```
 
+### Rate Limiting
+
+```python
+from ratelimit import RateLimiter, RateLimitConfig, RateLimitStrategy, RateLimitError
+
+# Configure rate limiter with token bucket strategy
+config = RateLimitConfig(
+    requests_per_window=100,  # 100 requests
+    window_seconds=60,        # per 60 seconds
+    strategy=RateLimitStrategy.TOKEN_BUCKET
+)
+
+limiter = RateLimiter(config, enable_per_ip=True, enable_per_user=True)
+
+# Check if request is allowed
+allowed, retry_after = limiter.check_rate_limit(
+    ip_address="192.168.1.100",
+    user_id="user_12345"
+)
+
+if allowed:
+    print("Request allowed")
+else:
+    print(f"Rate limited. Retry after {retry_after:.1f} seconds")
+
+# Enforce rate limit (raises exception if exceeded)
+try:
+    limiter.enforce_rate_limit(ip_address="192.168.1.100", user_id="user_12345")
+    # Process request
+except RateLimitError as e:
+    print(f"Blocked: {e}")
+
+# Get remaining quota
+quota = limiter.get_remaining_quota(ip_address="192.168.1.100", user_id="user_12345")
+print(f"IP quota: {quota.get('ip', 0)}, User quota: {quota.get('user', 0)}")
+```
+
 ### Observability
 
 ```python
@@ -263,6 +302,69 @@ stats = obs.metrics.get_histogram_stats("request.duration", tags={"endpoint": "/
 print(f"p95: {stats['p95']}ms, p99: {stats['p99']}ms")
 ```
 
+### Content Moderation
+
+```python
+from moderation import ModerationPipeline, ModerationDecision, ContentCategory
+
+# Initialize moderation pipeline
+pipeline = ModerationPipeline(
+    strict_mode=True,              # Enable strict filtering
+    auto_approve_threshold=0.95,   # Auto-approve above 95% confidence
+    auto_reject_threshold=0.80,    # Auto-reject above 80% confidence
+    enable_audit=True              # Enable audit trail
+)
+
+# Moderate content during upload
+result = pipeline.moderate_content(
+    asset_id="abc123def456",
+    file_path="uploads/funny_cat.gif",
+    file_hash="a1b2c3d4...",
+    title="Funny Cat GIF",
+    tags=["cat", "funny", "pets"],
+    description="A hilarious cat doing backflips"
+)
+
+# Check moderation decision
+if result.decision == ModerationDecision.APPROVED:
+    print(f"Content approved with {result.confidence:.0%} confidence")
+    # Proceed with upload
+elif result.decision == ModerationDecision.REJECTED:
+    print(f"Content rejected: {', '.join(result.reasons)}")
+    # Block upload
+elif result.decision == ModerationDecision.FLAGGED:
+    print(f"Content flagged for manual review: {', '.join(result.reasons)}")
+    # Queue for human review
+
+# Manual review workflow
+if result.decision == ModerationDecision.FLAGGED:
+    # Human moderator reviews and makes decision
+    audit_entry = pipeline.manual_review(
+        asset_id="abc123def456",
+        scan_id=result.scan_id,
+        decision=ModerationDecision.APPROVED,
+        reviewer_id="moderator_jane",
+        notes="False positive - content is safe"
+    )
+
+# Get audit trail for compliance
+audit_trail = pipeline.get_audit_trail(asset_id="abc123def456")
+for entry in audit_trail:
+    print(f"{entry.timestamp}: {entry.decision.value} by {entry.moderator}")
+
+# Export audit trail for reporting
+compliance_report = pipeline.export_audit_trail(
+    start_time="2025-01-01T00:00:00",
+    end_time="2025-12-31T23:59:59"
+)
+
+# Get moderation statistics
+stats = pipeline.get_statistics()
+print(f"Approval rate: {stats['approval_rate']:.1f}%")
+print(f"Rejection rate: {stats['rejection_rate']:.1f}%")
+print(f"Flag rate: {stats['flag_rate']:.1f}%")
+```
+
 ## Testing
 
 Run all tests:
@@ -275,7 +377,7 @@ Run specific test suites:
 
 ```bash
 # Core module tests
-pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py
+pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py test_ratelimit.py test_moderation.py
 
 # Integration tests
 pytest test_integration.py test_integration_cross_module.py
@@ -335,6 +437,26 @@ pytest test_security_analytics.py test_cdn_concurrency.py test_error_recovery.py
 - `generate_signed_url(base_url, expiration_seconds=3600, additional_params=None)`: Generate signed URL with expiration
 - `validate_signed_url(url)`: Validate signature and expiration (returns is_valid, error_message)
 
+### RateLimiter
+
+- `check_rate_limit(ip_address=None, user_id=None, count=1)`: Check if request is allowed (returns allowed, retry_after)
+- `enforce_rate_limit(ip_address=None, user_id=None, count=1)`: Enforce limit, raises RateLimitError if exceeded
+- `get_remaining_quota(ip_address=None, user_id=None)`: Get remaining quota for IP and/or user
+- `reset_limits(ip_address=None, user_id=None)`: Reset limits for specific IP and/or user
+- `clear_all()`: Clear all rate limit data
+
+### RateLimitConfig
+
+- `requests_per_window`: Number of requests allowed per window
+- `window_seconds`: Window duration in seconds
+- `strategy`: Rate limiting strategy (TOKEN_BUCKET, FIXED_WINDOW, SLIDING_WINDOW)
+
+### RateLimitStrategy
+
+- `TOKEN_BUCKET`: Smooth rate limiting with token refill
+- `FIXED_WINDOW`: Fixed time windows with reset
+- `SLIDING_WINDOW`: Rolling window for precise limiting
+
 ### Utility Functions
 
 - `create_asset_hash(file_path)`: Generate SHA-256 hash of asset file for deduplication
@@ -381,3 +503,34 @@ pytest test_security_analytics.py test_cdn_concurrency.py test_error_recovery.py
 - `finish(status="success")`: Complete the span
 - `add_log(message, level="INFO", **kwargs)`: Add a log entry to the span
 - `to_dict()`: Convert span to dictionary
+
+### ModerationPipeline
+
+- `moderate_content(asset_id, file_path, file_hash, title="", tags=None, description="", metadata=None)`: Moderate content through complete pipeline (returns ModerationResult)
+- `manual_review(asset_id, scan_id, decision, reviewer_id, notes="")`: Record manual review decision (returns AuditEntry)
+- `get_audit_trail(asset_id=None, decision=None, limit=100)`: Get audit trail entries with optional filters
+- `get_statistics()`: Get moderation statistics (total_scans, approved, rejected, flagged, approval_rate, rejection_rate, flag_rate)
+- `clear_audit_trail(asset_id=None)`: Clear audit trail for specific asset or all
+- `export_audit_trail(start_time=None, end_time=None)`: Export audit trail for compliance reporting
+
+### ModerationDecision (Enum)
+
+- `APPROVED`: Content approved and safe to publish
+- `REJECTED`: Content rejected due to policy violations
+- `FLAGGED`: Content flagged for manual review
+- `PENDING`: Content pending moderation
+
+### ContentCategory (Enum)
+
+- `SAFE`: Safe for work content
+- `NSFW`: Not safe for work content
+- `GRAPHIC_VIOLENCE`: Graphic violence detected
+- `HATE_SPEECH`: Hate speech detected
+- `ILLEGAL`: Illegal content detected
+- `SPAM`: Spam content detected
+- `UNKNOWN`: Content requires manual classification
+
+### ContentScanner
+
+- `scan_metadata(title="", tags=None, description="")`: Scan text metadata for inappropriate content (returns category, confidence, reasons)
+- `scan_visual_content(file_path, file_hash)`: Scan visual content using AI/ML service (returns category, confidence, reasons)
