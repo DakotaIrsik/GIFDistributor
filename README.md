@@ -34,6 +34,8 @@ See [Secrets Management Guide](docs/secrets-management.md) for best practices.
 - **AI Safety Scanning**: OpenAI-powered content moderation with text and vision analysis for NSFW/unsafe content detection
 - **Content Moderation**: SFW-only enforcement with automated scanning, audit trail, and manual review workflow
 - **Media Jobs Runtime**: Asynchronous job queue with ffmpeg support and autoscaling worker pool for media processing tasks
+- **GIPHY Publisher**: Channel management and programmatic upload to GIPHY with tagging and content rating support
+- **Tenor Publisher**: Partner API integration for uploading GIFs to Tenor with metadata and tag optimization
 - **Cloudflare Infrastructure**: R2 storage, Workers for API, Pages for web app, KV for metadata, and Durable Objects for real-time features
 
 ## Installation
@@ -557,6 +559,139 @@ stats = pipeline.get_statistics()
 print(f"Approval rate: {stats['approval_rate']:.1f}%")
 print(f"Rejection rate: {stats['rejection_rate']:.1f}%")
 print(f"Flag rate: {stats['flag_rate']:.1f}%")
+```
+
+### GIPHY Publisher
+
+```python
+from giphy_publisher import (
+    GiphyPublisher,
+    GiphyUploadMetadata,
+    GiphyContentRating,
+    GiphyChannel,
+    GiphyChannelType
+)
+
+# Initialize GIPHY publisher
+publisher = GiphyPublisher(
+    api_key="your-giphy-api-key",
+    username="your-giphy-username",
+    sfw_only=True  # Enforce G/PG ratings only
+)
+
+# Create and configure a channel
+channel = GiphyChannel(
+    channel_id="my_brand_channel",
+    display_name="My Brand",
+    channel_type=GiphyChannelType.BRAND,
+    slug="my-brand",
+    description="Official GIFs from My Brand",
+    is_verified=False
+)
+publisher.create_channel(channel)
+
+# Prepare upload metadata
+metadata = GiphyUploadMetadata(
+    media_url="https://cdn.example.com/my-gif.gif",
+    title="Funny Cat Reaction",
+    tags=["cat", "funny", "reaction", "animals"],
+    content_rating=GiphyContentRating.G,
+    source_url="https://example.com/source",
+    channel_id="my_brand_channel"
+)
+
+# Upload to GIPHY
+result = publisher.upload(metadata)
+
+if result.success:
+    print(f"Upload successful!")
+    print(f"GIPHY ID: {result.giphy_id}")
+    print(f"GIPHY URL: {result.giphy_url}")
+    print(f"Embed URL: {result.embed_url}")
+else:
+    print(f"Upload failed: {result.error_message}")
+
+# Check upload status
+status = publisher.check_upload_status(result.giphy_id)
+print(f"Status: {status['status']}")
+print(f"Views: {status['views']}")
+
+# Get user statistics
+stats = publisher.get_user_stats()
+print(f"Total uploads: {stats['total_uploads']}")
+print(f"Upload limit remaining: {stats['upload_limit_remaining']}")
+
+# Batch upload multiple GIFs
+batch_metadata = [
+    GiphyUploadMetadata(
+        media_url=f"https://cdn.example.com/gif-{i}.gif",
+        title=f"GIF {i}",
+        tags=["batch", "upload", f"gif{i}"]
+    )
+    for i in range(5)
+]
+
+batch_results = publisher.batch_upload(batch_metadata)
+successful = sum(1 for r in batch_results if r.success)
+print(f"Uploaded {successful}/{len(batch_results)} GIFs")
+```
+
+### Tenor Publisher
+
+```python
+from tenor_publisher import (
+    TenorPublisher,
+    TenorUploadMetadata,
+    TenorContentRating
+)
+
+# Initialize Tenor publisher
+publisher = TenorPublisher(
+    api_key="your-tenor-api-key",
+    partner_id="your-partner-id",
+    sfw_only=True  # Enforce HIGH (G-rated) content only
+)
+
+# Prepare upload metadata
+metadata = TenorUploadMetadata(
+    media_url="https://cdn.example.com/my-gif.gif",
+    title="Excited Dance",
+    tags=["dance", "excited", "celebration"],
+    content_rating=TenorContentRating.HIGH,
+    source_id="asset_12345",
+    source_url="https://example.com/source"
+)
+
+# Upload to Tenor
+result = publisher.upload(metadata)
+
+if result.success:
+    print(f"Upload successful!")
+    print(f"Tenor ID: {result.tenor_id}")
+    print(f"Tenor URL: {result.tenor_url}")
+else:
+    print(f"Upload failed: {result.error_message}")
+
+# Get partner statistics
+stats = publisher.get_partner_stats()
+print(f"Total uploads: {stats['total_uploads']}")
+print(f"Upload limit remaining: {stats['upload_limit_remaining']}")
+
+# Format tags for optimal reach
+tags = ["Funny Cat", "REACTION", "Cute Animals"]
+formatted_tags = publisher.format_tags_for_tenor(tags)
+reach_estimate = publisher.estimate_tag_reach(formatted_tags)
+print(f"Estimated monthly searches: {reach_estimate['estimated_monthly_searches']}")
+
+# Batch upload
+batch_results = publisher.batch_upload([
+    TenorUploadMetadata(
+        media_url=f"https://cdn.example.com/tenor-{i}.gif",
+        title=f"Tenor GIF {i}",
+        tags=["tenor", "batch", f"gif{i}"]
+    )
+    for i in range(3)
+])
 ```
 
 ## Testing
