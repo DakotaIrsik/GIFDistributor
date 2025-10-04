@@ -1,3 +1,6 @@
 pytest>=7.4.0
-Pillow>=10.0.0
-openai>=1.0.0
+
+# Note: The transcode module requires ffmpeg and ffprobe to be installed on the system
+# Install on Ubuntu/Debian: apt-get install ffmpeg
+# Install on macOS: brew install ffmpeg
+# Install on Windows: Download from https://ffmpeg.org/download.html
