@@ -37,6 +37,8 @@ See [Secrets Management Guide](docs/secrets-management.md) for best practices.
 - **GIPHY Publisher**: Channel management and programmatic upload to GIPHY with tagging and content rating support
 - **Tenor Publisher**: Partner API integration for uploading GIFs to Tenor with metadata and tag optimization
 - **Cloudflare Infrastructure**: R2 storage, Workers for API, Pages for web app, KV for metadata, and Durable Objects for real-time features
+- **Advertising & Monetization**: Website display ads for Free tier (Google AdSense, custom networks) with ad-free Pro/Team tiers
+- **Clean Media Guarantee**: NO watermarks or embedded ads in media files - all GIF/MP4/WebP remain 100% clean and shareable
 
 ## Installation
 
