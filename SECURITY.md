@@ -62,11 +62,13 @@ Include:
 ### For Deployment
 
 #### GitHub Actions
+- Use OIDC for Cloudflare authentication (no long-lived tokens)
 - Use GitHub Environments for secret management
 - Enable branch protection rules
 - Require code review before merging
 - Use self-hosted runners for sensitive workflows
 - Implement secret rotation reminders
+- Minimize stored secrets (prefer OIDC over static tokens)
 
 #### API Security
 - Use HTTPS for all communications
