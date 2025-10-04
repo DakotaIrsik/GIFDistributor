@@ -31,6 +31,12 @@ jobs:
         run: |
           pytest . -v --tb=short --cov=. --cov-report=term-missing || true
 
+      - name: Lint Python code
+        run: |
+          pip install flake8 black
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+          black --check . || true
+
       - name: Set up Node.js (for Next.js when added)
         uses: actions/setup-node@v4
         with:
@@ -41,6 +47,10 @@ jobs:
       - name: Install Node dependencies (disabled until Next.js added)
         if: false  # Enable when package.json exists
         run: npm ci
+
+      - name: Lint Node.js code
+        if: hashFiles('package.json') != ''
+        run: npm run lint || echo "Lint script not configured"
 
       - name: Build Next.js app (disabled until added)
         if: false  # Enable when Next.js is scaffolded
