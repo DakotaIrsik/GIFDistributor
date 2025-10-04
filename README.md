@@ -13,12 +13,16 @@ A system for distributing and sharing GIF assets with short links and canonical 
 - **Metadata Support**: Open Graph tags for social media sharing
 - **Rate Limiting**: Token bucket, fixed window, and sliding window strategies with per-IP/user limits
 - **Observability**: Structured logging, metrics collection, and distributed tracing for monitoring
+- **AI Safety Scanning**: OpenAI-powered content moderation with text and vision analysis for NSFW/unsafe content detection
 - **Content Moderation**: SFW-only enforcement with automated scanning, audit trail, and manual review workflow
 
 ## Installation
 
 ```bash
 pip install -r requirements.txt
+
+# For AI safety scanning (optional):
+pip install openai pillow
 ```
 
 ## Usage
@@ -302,6 +306,50 @@ stats = obs.metrics.get_histogram_stats("request.duration", tags={"endpoint": "/
 print(f"p95: {stats['p95']}ms, p99: {stats['p99']}ms")
 ```
 
+### AI Safety Scanning
+
+```python
+from ai_safety_scanner import AISafetyPipeline
+
+# Initialize AI safety pipeline with OpenAI API
+pipeline = AISafetyPipeline(
+    api_key="your-openai-api-key",  # Or set OPENAI_API_KEY env var
+    enable_vision=True  # Enable vision scanning for visual content
+)
+
+# Scan upload with both text and visual analysis
+scan_results = pipeline.scan_upload(
+    file_path="uploads/cat.gif",
+    title="Funny Cat GIF",
+    tags=["cat", "funny", "pets"],
+    description="A hilarious cat doing backflips"
+)
+
+# Check if content is safe
+is_safe, violations, confidence = pipeline.is_safe(scan_results)
+
+if is_safe:
+    print(f"Content approved with {confidence:.0%} confidence")
+    # Proceed with upload
+else:
+    print(f"Content rejected: {', '.join(violations)}")
+    # Block upload
+
+# Inspect individual scan results
+if "text" in scan_results:
+    text_result = scan_results["text"]
+    print(f"Text scan: {'Safe' if text_result.is_safe else 'Unsafe'}")
+    print(f"Confidence: {text_result.confidence:.0%}")
+    if text_result.violations:
+        print(f"Violations: {', '.join(text_result.violations)}")
+
+if "visual" in scan_results:
+    visual_result = scan_results["visual"]
+    print(f"Visual scan: {'Safe' if visual_result.is_safe else 'Unsafe'}")
+    print(f"Confidence: {visual_result.confidence:.0%}")
+    print(f"Description: {visual_result.metadata.get('description', '')}")
+```
+
 ### Content Moderation
 
 ```python
@@ -377,7 +425,7 @@ Run specific test suites:
 
 ```bash
 # Core module tests
-pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py test_ratelimit.py test_moderation.py
+pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py test_ratelimit.py test_moderation.py test_ai_safety_scanner.py
 
 # Integration tests
 pytest test_integration.py test_integration_cross_module.py
@@ -503,6 +551,27 @@ pytest test_security_analytics.py test_cdn_concurrency.py test_error_recovery.py
 - `finish(status="success")`: Complete the span
 - `add_log(message, level="INFO", **kwargs)`: Add a log entry to the span
 - `to_dict()`: Convert span to dictionary
+
+### AISafetyPipeline
+
+- `scan_upload(file_path=None, title="", tags=None, description="")`: Perform complete safety scan on upload (returns dict with 'text' and optionally 'visual' SafetyScanResult)
+- `is_safe(scan_results)`: Determine if content is safe based on all scan results (returns tuple of is_safe, violations, confidence)
+
+### OpenAIModerationScanner
+
+- `scan_text(text)`: Scan text content using OpenAI Moderation API (returns SafetyScanResult)
+
+### OpenAIVisionScanner
+
+- `scan_image(file_path, check_nsfw=True)`: Scan image/GIF using OpenAI Vision API (returns SafetyScanResult)
+
+### SafetyScanResult
+
+- `is_safe` (bool): Whether content is safe
+- `confidence` (float): Confidence score 0.0 to 1.0
+- `violations` (list): List of violation descriptions
+- `categories_flagged` (dict): Category name to score mapping
+- `metadata` (dict): Additional scan metadata
 
 ### ModerationPipeline
 
