@@ -2,6 +2,24 @@
 
 A system for distributing and sharing GIF assets with short links and canonical URLs.
 
+## Security Features
+
+### OIDC Authentication
+- **Zero Long-Lived Tokens**: Uses OpenID Connect (OIDC) for Cloudflare deployments
+- **Automatic Token Rotation**: Tokens expire after each workflow run
+- **Enhanced Audit Trail**: Full identity verification for all deployments
+- **Reduced Attack Surface**: No secrets to leak or steal
+
+See [OIDC Setup Guide](docs/oidc-cloudflare-setup.md) for configuration details.
+
+### Secrets Hygiene
+- Automated rotation reminders for API keys (90-day schedule)
+- Weekly secrets hygiene audits
+- Environment-based secret protection
+- Comprehensive monitoring and incident response
+
+See [Secrets Management Guide](docs/secrets-management.md) for best practices.
+
 ## Features
 
 - **Share Links**: Generate short, shareable links for GIF assets (`/s/{short_code}`)

@@ -149,14 +149,22 @@ If a secret is compromised:
 - Rotation history maintained in `docs/changelog.md`
 - Incident reports stored in `docs/security/incidents/`
 
+### OIDC Authentication (Preferred)
+
+For Cloudflare deployments, use OIDC instead of long-lived API tokens:
+
+- **Cloudflare**: OIDC trust configuration (no API tokens needed)
+- **Benefits**: Automatic rotation, short-lived tokens, audit trail
+- **Setup**: See [docs/oidc-cloudflare-setup.md](./oidc-cloudflare-setup.md)
+
 ### Alternative Secret Management
 
 For production deployments beyond GitHub Actions:
 
 #### Cloud Providers
-- **AWS**: AWS Secrets Manager + IAM roles
-- **Azure**: Azure Key Vault + Managed Identity
-- **GCP**: Secret Manager + Workload Identity
+- **AWS**: AWS Secrets Manager + IAM roles (OIDC supported)
+- **Azure**: Azure Key Vault + Managed Identity (OIDC supported)
+- **GCP**: Secret Manager + Workload Identity (OIDC supported)
 
 #### Secret Managers
 - HashiCorp Vault
