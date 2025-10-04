@@ -34,8 +34,11 @@ See [Secrets Management Guide](docs/secrets-management.md) for best practices.
 - **AI Safety Scanning**: OpenAI-powered content moderation with text and vision analysis for NSFW/unsafe content detection
 - **Content Moderation**: SFW-only enforcement with automated scanning, audit trail, and manual review workflow
 - **Media Jobs Runtime**: Asynchronous job queue with ffmpeg support and autoscaling worker pool for media processing tasks
+- **Cloudflare Infrastructure**: R2 storage, Workers for API, Pages for web app, KV for metadata, and Durable Objects for real-time features
 
 ## Installation
+
+### Python Modules
 
 ```bash
 pip install -r requirements.txt
@@ -43,6 +46,30 @@ pip install -r requirements.txt
 # For AI safety scanning (optional):
 pip install openai pillow
 ```
+
+### Cloudflare Infrastructure
+
+```bash
+# Install Wrangler CLI
+npm install -g wrangler
+
+# Authenticate with Cloudflare
+wrangler login
+
+# Create R2 buckets (staging + production)
+npm run cf:buckets:create
+
+# Create KV namespaces
+npm run cf:kv:create
+
+# Deploy to staging
+npm run deploy:staging
+
+# Deploy to production
+npm run deploy:production
+```
+
+See [Cloudflare Infrastructure Guide](docs/cloudflare-infrastructure.md) for detailed setup instructions.
 
 ## Configuration
 
