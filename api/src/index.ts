@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { queueRouter } from './routes/queue';
 import { healthRouter } from './routes/health';
+import discordRouter from './routes/discord';
+import { discordBot } from './services/discordBot';
 
 dotenv.config();
 
@@ -17,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/health', healthRouter);
 app.use('/api/queue', queueRouter);
+app.use('/api/discord', discordRouter);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {
@@ -36,8 +39,20 @@ app.use((err: Error, req: Request, res: Response, next: any) => {
   });
 });
 
+// Initialize Discord bot if enabled
+discordBot.initialize().catch(err => {
+  console.error('Failed to initialize Discord bot:', err);
+});
+
 app.listen(PORT, () => {
   console.log(`API server running on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  await discordBot.shutdown();
+  process.exit(0);
 });
 
 export default app;
