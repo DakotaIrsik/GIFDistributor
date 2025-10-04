@@ -1,0 +1,11 @@
+2025-10-04 Issue #9: Dependency - Discord bot blocked by auth, shortlinks, and transcode features. Resolution would require: (1) Implement auth system for OAuth2 integration, (2) Complete shortlinks functionality for shareable URLs, (3) Finish transcode service for media processing. Once dependencies are complete, implement Discord OAuth2 flow and embed/attachment sending logic.
+
+2025-10-04 Issue #14: Dependency - Direct browser upload blocked by storage-cdn and auth systems. Resolution would require: (1) Set up CDN storage infrastructure, (2) Implement auth system for secure uploads, (3) Develop resumable upload protocol with chunking support. Once dependencies ready, build frontend upload component with progress tracking and backend resumable upload handler.
+
+2025-10-04 Issue #26: Dependency - Slack app blocked by auth and shortlinks features. Resolution would require: (1) Complete auth system for OAuth integration, (2) Finish shortlinks for hosted GIF URLs. Once dependencies are ready, implement Slack OAuth flow, workspace permissions, and message posting with hosted GIF embeds.
+
+2025-10-04 Issue #38: Dependency - Publisher UI blocked by ingest-direct-upload and shortlinks. Resolution would require: (1) Complete direct upload functionality (Issue #14), (2) Finish shortlinks system. Once dependencies complete, build UI flow: upload interface → platform selection screen → distribution configuration → publish action.
+
+2025-10-04 Issue #42: Dependency - Teams bot blocked by auth and shortlinks. Resolution would require: (1) Implement auth system for Teams OAuth, (2) Complete shortlinks for sharing. Once dependencies ready, develop Teams app manifest, OAuth flow, and message extension for posting GIFs to channels/chats.
+
+2025-10-04 Issue #45: Dependency - Monetization feature blocked by publisher-ui and analytics. Resolution would require: (1) Complete publisher UI (Issue #38), (2) Implement analytics tracking system. Once dependencies ready, integrate ad placement options and watermark policy controls into publisher workflow, with analytics for revenue tracking.

@@ -1,0 +1,370 @@
+[
+  {
+    "number": 999002,
+    "title": "Issue #2: Moderation audit logger (DB schema + retention)",
+    "headRefName": "feature/issue-2",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999004,
+    "title": "Issue #4: Auth (OAuth + email) and RBAC",
+    "headRefName": "feature/issue-4",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999003,
+    "title": "Issue #3: AuthN/Z (OAuth + email)",
+    "headRefName": "feature/issue-3",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999017,
+    "title": "Issue #17: Legal: ToS, Privacy, DMCA, AUP (SFW only)",
+    "headRefName": "feature/issue-17",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999016,
+    "title": "Issue #16: Legal: ToS, Privacy, DMCA, AUP (SFW only)",
+    "headRefName": "feature/issue-16",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999013,
+    "title": "Issue #13: Infra (Cloudflare-first): R2 buckets + CDN + Pages + Workers Routes",
+    "headRefName": "feature/issue-13",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999019,
+    "title": "Issue #19: Non-IaC bootstrap & CI/CD creds (Cloudflare + DNS + Billing)",
+    "headRefName": "feature/issue-19",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999024,
+    "title": "Issue #24: Secrets & rotation: OPENAI_API_KEY in GitHub Actions",
+    "headRefName": "feature/issue-24",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "headRefName": "feature/issue-23",
+    "isDraft": false,
+    "number": 999023,
+    "state": "OPEN",
+    "statusCheckRollup": null,
+    "title": "Issue #23: Market validation: do any 'upload-once, distribute-to-GIPHY+Tenor' tools exist?"
+  },
+  {
+    "headRefName": "feature/issue-1",
+    "isDraft": false,
+    "number": 999001,
+    "state": "OPEN",
+    "statusCheckRollup": null,
+    "title": "Issue #1: AI safety scan for uploads (OpenAI moderation + vision)"
+  },
+  {
+    "headRefName": "feature/issue-28",
+    "isDraft": false,
+    "number": 999028,
+    "state": "OPEN",
+    "statusCheckRollup": null,
+    "title": "Issue #28: Tenor publisher: partner flow + upload + tags"
+  },
+  {
+    "headRefName": "feature/issue-10",
+    "isDraft": false,
+    "number": 999010,
+    "state": "OPEN",
+    "statusCheckRollup": null,
+    "title": "Issue #10: Pick & register a short domain + social handles"
+  },
+  {
+    "headRefName": "feature/issue-32",
+    "isDraft": false,
+    "number": 999032,
+    "state": "OPEN",
+    "statusCheckRollup": null,
+    "title": "Issue #32: Web app scaffold (Next.js) + API (Node/Express) + queue"
+  },
+  {
+    "headRefName": "feature/issue-41",
+    "isDraft": false,
+    "number": 999041,
+    "state": "OPEN",
+    "statusCheckRollup": null,
+    "title": "Issue #41: Slack share: link-first unfurls; external upload path if needed"
+  },
+  {
+    "headRefName": "feature/issue-59",
+    "isDraft": false,
+    "number": 999059,
+    "state": "OPEN",
+    "statusCheckRollup": null,
+    "title": "Issue #59: URGENT: Migrate to self-hosted runner"
+  },
+  {
+    "headRefName": "feature/issue-15-resumable-uploads",
+    "isDraft": false,
+    "number": 62,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add resumable upload module with chunking and deduplication (Issue #15)"
+  },
+  {
+    "headRefName": "feature/storage-cdn-issue-27",
+    "isDraft": false,
+    "number": 61,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add object storage + CDN module with signed URLs (Issue #27)"
+  },
+  {
+    "headRefName": "feature/transcode-issue-30",
+    "isDraft": false,
+    "number": 60,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add platform-specific rendition specifications (Issue #30)"
+  },
+  {
+    "headRefName": "feature/frame-sampler-issue-11",
+    "isDraft": false,
+    "number": 58,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add frame sampler for GIF/MP4 files (Issue #11)"
+  },
+  {
+    "headRefName": "feature/upload-dedupe-issue-15",
+    "isDraft": false,
+    "number": 57,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add direct uploads with SHA-256 deduplication (#15)"
+  },
+  {
+    "headRefName": "feature/transcode-renditions-issue-30",
+    "isDraft": false,
+    "number": 56,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "feat: Add media transcoding with platform-specific renditions (Issue #30)"
+  },
+  {
+    "headRefName": "feature/user-notice-issue-31",
+    "isDraft": false,
+    "number": 55,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add user-facing SFW policy documentation and upload notice UI (Issue #31)"
+  },
+  {
+    "headRefName": "feature/moderation-issue-25",
+    "isDraft": false,
+    "number": 54,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add SFW-only moderation pipeline with automated scanning (Issue #25)"
+  },
+  {
+    "headRefName": "feature/ratelimit-issue-22",
+    "isDraft": false,
+    "number": 53,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add rate limiting module with abuse protection (Issue #22)"
+  },
+  {
+    "headRefName": "feature/transcode-issue-29",
+    "isDraft": false,
+    "number": 52,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add transcode module with MP4/WebP/GIF support (Issue #29)"
+  },
+  {
+    "headRefName": "feature/observability-issue-37",
+    "isDraft": false,
+    "number": 51,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add observability module for logs, metrics, and traces"
+  },
+  {
+    "headRefName": "feature/cdn-cache-range-issue-34",
+    "isDraft": false,
+    "number": 50,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add CDN module with cache headers, Range support, and signed URLs"
+  },
+  {
+    "headRefName": "feature/analytics-issue-33",
+    "isDraft": false,
+    "number": 49,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "title": "Add analytics module with views, plays, and CTR tracking"
+  },
+  {
+    "number": 999027,
+    "title": "Issue #27: Object storage + CDN + signed URLs",
+    "headRefName": "feature/issue-27",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999030,
+    "title": "Issue #30: Transcode to MP4/WebP + optimized GIF; per-platform renditions",
+    "headRefName": "feature/issue-30",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999011,
+    "title": "Issue #11: Frame sampler for GIF/MP4 (N frames evenly spaced)",
+    "headRefName": "feature/issue-11",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999020,
+    "title": "Issue #20: OIDC to Cloudflare + GitHub Actions secrets hygiene",
+    "headRefName": "feature/issue-20",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999018,
+    "title": "Issue #18: Media jobs runtime (ffmpeg) + autoscaling",
+    "headRefName": "feature/issue-18",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999046,
+    "title": "Issue #46: Discord bot (optional): curated channel posting",
+    "headRefName": "feature/issue-46",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999012,
+    "title": "Issue #12: GIPHY publisher: channel, tagging, programmatic upload",
+    "headRefName": "feature/issue-12",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999043,
+    "title": "Issue #43: Teams message extension (card with playable MP4/link)",
+    "headRefName": "feature/issue-43",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999039,
+    "title": "Issue #39: Publisher UI: upload \u2192 title/tags \u2192 choose sources \u2192 distribute",
+    "headRefName": "feature/issue-39",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999035,
+    "title": "Issue #35: User education: propagation guides per platform",
+    "headRefName": "feature/issue-35",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999036,
+    "title": "Issue #36: Alternative infra (AWS-first): S3+CloudFront+Fargate plan",
+    "headRefName": "feature/issue-36",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999044,
+    "title": "Issue #44: Ads on site + optional watermark policy (no ads in media)",
+    "headRefName": "feature/issue-44",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999026,
+    "title": "Issue #26: Slack app: OAuth + post message with hosted GIF",
+    "headRefName": "feature/issue-26",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999006,
+    "title": "Issue #6: CI/CD pipeline (build, test, lint)",
+    "headRefName": "feature/issue-6",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999007,
+    "title": "Issue #7: CI/CD: API/Edge Workers deploy via wrangler (staging/prod)",
+    "headRefName": "feature/issue-7",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999008,
+    "title": "Issue #8: CI/CD: Web (Next.js) \u2192 Cloudflare Pages (previews + prod)",
+    "headRefName": "feature/issue-8",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999047,
+    "title": "Issue #47: Plans & quotas (Free / Pro / Team)",
+    "headRefName": "feature/issue-47",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  },
+  {
+    "number": 999014,
+    "title": "Issue #14: Direct browser upload + resumable",
+    "headRefName": "feature/issue-14",
+    "state": "OPEN",
+    "isDraft": false,
+    "statusCheckRollup": null
+  }
+]
