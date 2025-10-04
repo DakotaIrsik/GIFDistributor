@@ -1,0 +1,84 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-and-deploy:
+    name: Test & Deploy
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run Python tests
+        run: |
+          pytest . -v --tb=short --cov=. --cov-report=term-missing || true
+
+      - name: Set up Node.js (for Next.js when added)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+        if: hashFiles('package.json') != ''
+
+      - name: Install Node dependencies (disabled until Next.js added)
+        if: false  # Enable when package.json exists
+        run: npm ci
+
+      - name: Build Next.js app (disabled until added)
+        if: false  # Enable when Next.js is scaffolded
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages (disabled)
+        if: false  # Enable when ready - requires CLOUDFLARE_API_TOKEN
+        run: |
+          npx wrangler pages deploy .next --project-name=gifdistributor
+
+      - name: Deploy Workers (disabled)
+        if: false  # Enable when Workers are implemented
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx wrangler deploy
+
+  discord-notify:
+    name: Discord Notification
+    runs-on: ubuntu-latest
+    needs: test-and-deploy
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Send Discord notification
+        uses: rjstone/discord-webhook-notify@v1
+        with:
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          severity: ${{ needs.test-and-deploy.result == 'success' && 'info' || 'error' }}
+          username: GIFDistributor CI
+          avatarUrl: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
+          description: |
+            **Build ${{ needs.test-and-deploy.result == 'success' && 'Succeeded' || 'Failed' }}**
+
+            ${{ github.event.head_commit.message }}
+
+            **Branch:** ${{ github.ref_name }}
+            **Author:** ${{ github.event.head_commit.author.name }}
+            **Commit:** [`${{ github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          footer: GIFDistributor CI/CD
+        continue-on-error: true
