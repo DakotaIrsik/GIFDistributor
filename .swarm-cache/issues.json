@@ -1,0 +1,1085 @@
+[
+  {
+    "assignees": [],
+    "body": "GitHub Actions minutes limit reached. Need to migrate workflows to use self-hosted runner ASAP to avoid blocking CI/CD.",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL_B-vg",
+        "name": "critical",
+        "description": "Critical priority issue",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 59,
+    "state": "OPEN",
+    "title": "URGENT: Migrate to self-hosted runner"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `pricing-plans`\n**Priority:** P2\n**Depends on:** rate-limits,analytics",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qb9w",
+        "name": "business",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoZg",
+        "name": "P2",
+        "description": "Priority 2 - Medium",
+        "color": "FBCA04"
+      }
+    ],
+    "number": 47,
+    "state": "OPEN",
+    "title": "Plans & quotas (Free / Pro / Team)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `discord-bot-optional`\n**Priority:** P2",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qc5A",
+        "name": "discord",
+        "description": "",
+        "color": "FBCA04"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 46,
+    "state": "OPEN",
+    "title": "Discord bot (optional): curated channel posting"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `ads-revenue`\n**Priority:** P2\n**Depends on:** publisher-ui,analytics",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qb9w",
+        "name": "business",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdKw",
+        "name": "frontend",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL-oVvQ",
+        "name": "blocked",
+        "description": "Issue is blocked by dependencies or other work",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoZg",
+        "name": "P2",
+        "description": "Priority 2 - Medium",
+        "color": "FBCA04"
+      }
+    ],
+    "number": 45,
+    "state": "OPEN",
+    "title": "Monetization: site ads + watermark policy"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `ads-and-watermark`\n**Priority:** P2",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qb9w",
+        "name": "business",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdKw",
+        "name": "frontend",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoZg",
+        "name": "P2",
+        "description": "Priority 2 - Medium",
+        "color": "FBCA04"
+      }
+    ],
+    "number": 44,
+    "state": "OPEN",
+    "title": "Ads on site + optional watermark policy (no ads in media)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `teams-extension`\n**Priority:** P1",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QgYA",
+        "name": "teams",
+        "description": "",
+        "color": "5319E7"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 43,
+    "state": "OPEN",
+    "title": "Teams message extension (card with playable MP4/link)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `teams-bot`\n**Priority:** P1\n**Depends on:** auth,shortlinks",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QgYA",
+        "name": "teams",
+        "description": "",
+        "color": "5319E7"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL-oVvQ",
+        "name": "blocked",
+        "description": "Issue is blocked by dependencies or other work",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 42,
+    "state": "OPEN",
+    "title": "Microsoft Teams bot / message extension"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `slack-share`\n**Priority:** P1",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QgNg",
+        "name": "slack",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 41,
+    "state": "OPEN",
+    "title": "Slack share: link-first unfurls; external upload path if needed"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `publisher-wizard`\n**Priority:** P1",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdKw",
+        "name": "frontend",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qgsw",
+        "name": "ux",
+        "description": "",
+        "color": "F9D0C4"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 39,
+    "state": "OPEN",
+    "title": "Publisher UI: upload \u2192 title/tags \u2192 choose sources \u2192 distribute"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `publisher-ui`\n**Priority:** P1\n**Depends on:** ingest-direct-upload,shortlinks",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdKw",
+        "name": "frontend",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qgsw",
+        "name": "ux",
+        "description": "",
+        "color": "F9D0C4"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL-oVvQ",
+        "name": "blocked",
+        "description": "Issue is blocked by dependencies or other work",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 38,
+    "state": "OPEN",
+    "title": "Publisher UI: upload \u2192 choose platforms"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `infra-alt-aws`\n**Priority:** P1",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QcHA",
+        "name": "cdn",
+        "description": "",
+        "color": "C2E0C6"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdAw",
+        "name": "docs",
+        "description": "",
+        "color": "B60205"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 36,
+    "state": "OPEN",
+    "title": "Alternative infra (AWS-first): S3+CloudFront+Fargate plan"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `education-pages`\n**Priority:** P1",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdAw",
+        "name": "docs",
+        "description": "",
+        "color": "B60205"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QfeQ",
+        "name": "product",
+        "description": "",
+        "color": "0E8A16"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 35,
+    "state": "OPEN",
+    "title": "User education: propagation guides per platform"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `web-app-scaffold`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdKw",
+        "name": "frontend",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 32,
+    "state": "OPEN",
+    "title": "Web app scaffold (Next.js) + API (Node/Express) + queue"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `transcode-renditions`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QeRg",
+        "name": "media",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 30,
+    "state": "OPEN",
+    "title": "Transcode to MP4/WebP + optimized GIF; per-platform renditions"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `tenor-publisher`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QgfQ",
+        "name": "tenor",
+        "description": "",
+        "color": "1D76DB"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 28,
+    "state": "OPEN",
+    "title": "Tenor publisher: partner flow + upload + tags"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `storage-cdn`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 27,
+    "state": "OPEN",
+    "title": "Object storage + CDN + signed URLs"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `slack-app`\n**Priority:** P0\n**Depends on:** auth,shortlinks",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QgNg",
+        "name": "slack",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL-oVvQ",
+        "name": "blocked",
+        "description": "Issue is blocked by dependencies or other work",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 26,
+    "state": "OPEN",
+    "title": "Slack app: OAuth + post message with hosted GIF"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `secrets-openai`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qf_g",
+        "name": "security",
+        "description": "",
+        "color": "FEF2C0"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 24,
+    "state": "OPEN",
+    "title": "Secrets & rotation: OPENAI_API_KEY in GitHub Actions"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `research-landscape`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QenA",
+        "name": "meta",
+        "description": "",
+        "color": "F9D0C4"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QfyA",
+        "name": "research",
+        "description": "",
+        "color": "C2E0C6"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 23,
+    "state": "OPEN",
+    "title": "Market validation: do any 'upload-once, distribute-to-GIPHY+Tenor' tools exist?"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `oidc-secrets`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QcXA",
+        "name": "ci",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qf_g",
+        "name": "security",
+        "description": "",
+        "color": "FEF2C0"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 20,
+    "state": "OPEN",
+    "title": "OIDC to Cloudflare + GitHub Actions secrets hygiene"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `non-iac-bootstrap-and-creds`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdAw",
+        "name": "docs",
+        "description": "",
+        "color": "B60205"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qf_g",
+        "name": "security",
+        "description": "",
+        "color": "FEF2C0"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 19,
+    "state": "OPEN",
+    "title": "Non\u2011IaC bootstrap & CI/CD creds (Cloudflare + DNS + Billing)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `media-jobs-runtime`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QeRg",
+        "name": "media",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 18,
+    "state": "OPEN",
+    "title": "Media jobs runtime (ffmpeg) + autoscaling"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `legal-tos-dmca`\n**Priority:** P0\n**Depends on:** proj-scaffold",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QeFA",
+        "name": "legal",
+        "description": "",
+        "color": "0E8A16"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QfRQ",
+        "name": "policy",
+        "description": "",
+        "color": "B60205"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 17,
+    "state": "OPEN",
+    "title": "Legal: ToS, Privacy, DMCA, AUP (SFW only)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `legal-policies`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QeFA",
+        "name": "legal",
+        "description": "",
+        "color": "0E8A16"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QfRQ",
+        "name": "policy",
+        "description": "",
+        "color": "B60205"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 16,
+    "state": "OPEN",
+    "title": "Legal: ToS, Privacy, DMCA, AUP (SFW only)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `ingest-direct-upload`\n**Priority:** P0\n**Depends on:** storage-cdn,auth",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdKw",
+        "name": "frontend",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL-oVvQ",
+        "name": "blocked",
+        "description": "Issue is blocked by dependencies or other work",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 14,
+    "state": "OPEN",
+    "title": "Direct browser upload + resumable"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `infra-cloudflare`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QcHA",
+        "name": "cdn",
+        "description": "",
+        "color": "C2E0C6"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 13,
+    "state": "OPEN",
+    "title": "Infra (Cloudflare-first): R2 buckets + CDN + Pages + Workers Routes"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `giphy-publisher`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdUw",
+        "name": "giphy",
+        "description": "",
+        "color": "1D76DB"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 12,
+    "state": "OPEN",
+    "title": "GIPHY publisher: channel, tagging, programmatic upload"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `frame-sampler`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QeRg",
+        "name": "media",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 11,
+    "state": "OPEN",
+    "title": "Frame sampler for GIF/MP4 (N frames evenly spaced)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `domain-branding`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qb1w",
+        "name": "brand",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 10,
+    "state": "OPEN",
+    "title": "Pick & register a short domain + social handles"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `discord-bot`\n**Priority:** P0\n**Depends on:** auth,shortlinks,transcode",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qc5A",
+        "name": "discord",
+        "description": "",
+        "color": "FBCA04"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qd5g",
+        "name": "integration",
+        "description": "",
+        "color": "BFD4F2"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL-oVvQ",
+        "name": "blocked",
+        "description": "Issue is blocked by dependencies or other work",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 9,
+    "state": "OPEN",
+    "title": "Discord bot: OAuth2 + send embed/attachment"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `ci-deploy-web`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QcXA",
+        "name": "ci",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdKw",
+        "name": "frontend",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 8,
+    "state": "OPEN",
+    "title": "CI/CD: Web (Next.js) \u2192 Cloudflare Pages (previews + prod)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `ci-deploy-api-workers`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QcXA",
+        "name": "ci",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 7,
+    "state": "OPEN",
+    "title": "CI/CD: API/Edge Workers deploy via wrangler (staging/prod)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `ci-cd`\n**Priority:** P0\n**Depends on:** proj-scaffold",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QcXA",
+        "name": "ci",
+        "description": "",
+        "color": "E99695"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QdrQ",
+        "name": "infra",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 6,
+    "state": "OPEN",
+    "title": "CI/CD pipeline (build, test, lint)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `auth-rbac`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qf_g",
+        "name": "security",
+        "description": "",
+        "color": "FEF2C0"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 4,
+    "state": "OPEN",
+    "title": "Auth (OAuth + email) and RBAC"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `auth`\n**Priority:** P0\n**Depends on:** proj-scaffold",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qf_g",
+        "name": "security",
+        "description": "",
+        "color": "FEF2C0"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 3,
+    "state": "OPEN",
+    "title": "AuthN/Z (OAuth + email)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `audit-logger`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qclg",
+        "name": "compliance",
+        "description": "",
+        "color": "D93F0B"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qf_g",
+        "name": "security",
+        "description": "",
+        "color": "FEF2C0"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoRw",
+        "name": "P1",
+        "description": "Priority 1 - High",
+        "color": "D93F0B"
+      }
+    ],
+    "number": 2,
+    "state": "OPEN",
+    "title": "Moderation audit logger (DB schema + retention)"
+  },
+  {
+    "assignees": [],
+    "body": "**Slug:** `ai-safety-scan`\n**Priority:** P0",
+    "labels": [
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9QbmA",
+        "name": "backend",
+        "description": "",
+        "color": "0052CC"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qeyw",
+        "name": "moderation",
+        "description": "",
+        "color": "C5DEF5"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACL9Qf_g",
+        "name": "security",
+        "description": "",
+        "color": "FEF2C0"
+      },
+      {
+        "id": "LA_kwDOP7M98M8AAAACMELoNg",
+        "name": "P0",
+        "description": "Priority 0 - Critical",
+        "color": "B60205"
+      }
+    ],
+    "number": 1,
+    "state": "OPEN",
+    "title": "AI safety scan for uploads (OpenAI moderation + vision)"
+  }
+]
