@@ -33,6 +33,7 @@ See [Secrets Management Guide](docs/secrets-management.md) for best practices.
 - **Observability**: Structured logging, metrics collection, and distributed tracing for monitoring
 - **AI Safety Scanning**: OpenAI-powered content moderation with text and vision analysis for NSFW/unsafe content detection
 - **Content Moderation**: SFW-only enforcement with automated scanning, audit trail, and manual review workflow
+- **Media Jobs Runtime**: Asynchronous job queue with ffmpeg support and autoscaling worker pool for media processing tasks
 
 ## Installation
 
@@ -404,6 +405,70 @@ if "visual" in scan_results:
     print(f"Description: {visual_result.metadata.get('description', '')}")
 ```
 
+### Media Jobs Runtime
+
+```python
+from media_jobs import MediaJobQueue, JobPriority, JobStatus, create_transcode_job, create_thumbnail_job
+
+# Initialize job queue with autoscaling
+queue = MediaJobQueue(
+    min_workers=2,           # Minimum worker threads
+    max_workers=10,          # Maximum worker threads
+    scale_up_threshold=5,    # Scale up when queue has 5+ jobs
+    scale_down_threshold=2   # Scale down when queue has <2 jobs
+)
+
+# Submit a custom media processing job
+job_id = queue.submit_job(
+    job_type="transcode",
+    input_path="input.mp4",
+    output_path="output.mp4",
+    ffmpeg_args=["-i", "input.mp4", "-c:v", "libx264", "-c:a", "aac", "output.mp4"],
+    priority=JobPriority.HIGH,
+    timeout_seconds=300
+)
+
+# Or use convenience functions
+transcode_job_id = create_transcode_job(
+    queue=queue,
+    input_path="video.mp4",
+    output_path="video_h264.mp4",
+    video_codec="libx264",
+    audio_codec="aac",
+    bitrate="2M",
+    priority=JobPriority.CRITICAL
+)
+
+thumbnail_job_id = create_thumbnail_job(
+    queue=queue,
+    input_path="video.mp4",
+    output_path="thumbnail.jpg",
+    timestamp="00:00:05",
+    width=640,
+    priority=JobPriority.NORMAL
+)
+
+# Check job status
+job = queue.get_job_status(job_id)
+print(f"Status: {job.status.value}")
+print(f"Started: {job.started_at}")
+print(f"Completed: {job.completed_at}")
+
+# Get worker pool metrics
+metrics = queue.get_metrics()
+print(f"Active workers: {metrics.active_workers}")
+print(f"Queue size: {metrics.queue_size}")
+print(f"Jobs processed: {metrics.total_jobs_processed}")
+print(f"Avg duration: {metrics.average_job_duration:.2f}s")
+
+# Cancel a pending job
+if queue.cancel_job(job_id):
+    print("Job cancelled")
+
+# Graceful shutdown
+queue.shutdown(wait=True)
+```
+
 ### Content Moderation
 
 ```python
@@ -479,7 +544,7 @@ Run specific test suites:
 
 ```bash
 # Core module tests
-pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py test_ratelimit.py test_moderation.py test_ai_safety_scanner.py
+pytest test_sharelinks.py test_analytics.py test_cdn.py test_observability.py test_ratelimit.py test_moderation.py test_ai_safety_scanner.py test_media_jobs.py
 
 # Integration tests
 pytest test_integration.py test_integration_cross_module.py
@@ -657,3 +722,31 @@ pytest test_security_analytics.py test_cdn_concurrency.py test_error_recovery.py
 
 - `scan_metadata(title="", tags=None, description="")`: Scan text metadata for inappropriate content (returns category, confidence, reasons)
 - `scan_visual_content(file_path, file_hash)`: Scan visual content using AI/ML service (returns category, confidence, reasons)
+
+### MediaJobQueue
+
+- `submit_job(job_type, input_path, output_path, ffmpeg_args, priority=JobPriority.NORMAL, timeout_seconds=300, metadata=None)`: Submit a media processing job (returns job_id)
+- `get_job_status(job_id)`: Get job status and details by ID
+- `cancel_job(job_id)`: Cancel a pending job (returns True if cancelled)
+- `get_metrics()`: Get worker pool metrics (active workers, queue size, jobs processed, average duration)
+- `shutdown(wait=True)`: Shutdown the job queue and workers
+
+### FFmpegRuntime
+
+- `execute_ffmpeg(args, timeout_seconds=300)`: Execute ffmpeg command with timeout (returns returncode, stdout, stderr)
+- `probe_media(file_path)`: Get media file information using ffprobe (returns metadata dict)
+
+### MediaJob
+
+- `job_id`: Unique job identifier
+- `job_type`: Type of job (e.g., 'transcode', 'thumbnail')
+- `status`: Current job status (PENDING, RUNNING, COMPLETED, FAILED, CANCELLED)
+- `priority`: Job priority (CRITICAL, HIGH, NORMAL, LOW)
+- `created_at`, `started_at`, `completed_at`: Timestamps
+- `error`: Error message if job failed
+- `metadata`: Additional job metadata
+
+### Job Helper Functions
+
+- `create_transcode_job(queue, input_path, output_path, video_codec="libx264", audio_codec="aac", bitrate="1M", priority=JobPriority.NORMAL)`: Create a video transcoding job
+- `create_thumbnail_job(queue, input_path, output_path, timestamp="00:00:01", width=320, priority=JobPriority.NORMAL)`: Create a thumbnail extraction job
