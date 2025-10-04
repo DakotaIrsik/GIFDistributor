@@ -1,564 +1,806 @@
 """
-Tests for the upload module with resumable uploads and deduplication.
+Comprehensive Tests for Upload Module (Issue #15)
+Tests file deduplication, hashing, upload management, and storage
 """
-
+import pytest
 import os
+import json
 import tempfile
 import shutil
 from pathlib import Path
-
-import pytest
-
+from io import BytesIO
 from upload import (
+    FileHasher,
+    DeduplicationStore,
     UploadManager,
+    FileMetadata,
     UploadSession,
     UploadStatus,
-    UploadChunk,
-    calculate_file_hash,
-    calculate_chunk_hash
+    hash_file,
+    check_duplicate
 )
 
 
-@pytest.fixture
-def temp_storage():
-    """Create temporary storage directory."""
-    temp_dir = tempfile.mkdtemp()
-    yield temp_dir
-    shutil.rmtree(temp_dir, ignore_errors=True)
+class TestFileHasher:
+    """Test cases for FileHasher class"""
+
+    def test_hash_file_basic(self, tmp_path):
+        """Test basic file hashing"""
+        test_file = tmp_path / "test.txt"
+        test_file.write_bytes(b"Hello, World!")
+
+        file_hash = FileHasher.hash_file(str(test_file))
+
+        assert len(file_hash) == 64  # SHA-256 produces 64 hex chars
+        assert file_hash.isalnum()
+        # Known SHA-256 of "Hello, World!"
+        assert file_hash == "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+
+    def test_hash_file_consistency(self, tmp_path):
+        """Test that same content produces same hash"""
+        test_file = tmp_path / "test.txt"
+        test_file.write_bytes(b"consistent content")
+
+        hash1 = FileHasher.hash_file(str(test_file))
+        hash2 = FileHasher.hash_file(str(test_file))
+
+        assert hash1 == hash2
+
+    def test_hash_file_different_content(self, tmp_path):
+        """Test that different content produces different hashes"""
+        file1 = tmp_path / "file1.txt"
+        file2 = tmp_path / "file2.txt"
+
+        file1.write_bytes(b"content A")
+        file2.write_bytes(b"content B")
+
+        hash1 = FileHasher.hash_file(str(file1))
+        hash2 = FileHasher.hash_file(str(file2))
+
+        assert hash1 != hash2
+
+    def test_hash_file_large_file(self, tmp_path):
+        """Test hashing large file with chunking"""
+        test_file = tmp_path / "large.bin"
+        # Create 10MB file
+        large_content = b"X" * (10 * 1024 * 1024)
+        test_file.write_bytes(large_content)
+
+        file_hash = FileHasher.hash_file(str(test_file))
+
+        assert len(file_hash) == 64
+        assert file_hash.isalnum()
+
+    def test_hash_file_custom_chunk_size(self, tmp_path):
+        """Test hashing with custom chunk size"""
+        test_file = tmp_path / "test.txt"
+        test_file.write_bytes(b"chunk test content")
+
+        hash1 = FileHasher.hash_file(str(test_file), chunk_size=4)
+        hash2 = FileHasher.hash_file(str(test_file), chunk_size=8192)
+
+        # Should produce same hash regardless of chunk size
+        assert hash1 == hash2
+
+    def test_hash_bytes(self):
+        """Test hashing byte data"""
+        data = b"test data"
+        file_hash = FileHasher.hash_bytes(data)
+
+        assert len(file_hash) == 64
+        assert file_hash.isalnum()
+
+    def test_hash_bytes_consistency(self):
+        """Test byte hashing consistency"""
+        data = b"consistent bytes"
+        hash1 = FileHasher.hash_bytes(data)
+        hash2 = FileHasher.hash_bytes(data)
+
+        assert hash1 == hash2
+
+    def test_hash_stream(self):
+        """Test hashing from stream"""
+        data = b"stream data content"
+        stream = BytesIO(data)
+
+        file_hash = FileHasher.hash_stream(stream)
+
+        assert len(file_hash) == 64
+        assert file_hash.isalnum()
+
+    def test_hash_stream_consistency(self):
+        """Test stream hashing produces consistent results"""
+        data = b"consistent stream"
+
+        stream1 = BytesIO(data)
+        stream2 = BytesIO(data)
+
+        hash1 = FileHasher.hash_stream(stream1)
+        hash2 = FileHasher.hash_stream(stream2)
+
+        assert hash1 == hash2
+
+    def test_quick_hash_small_file(self, tmp_path):
+        """Test quick hash for small file"""
+        test_file = tmp_path / "small.txt"
+        test_file.write_bytes(b"small file content")
+
+        quick_hash = FileHasher.quick_hash(str(test_file))
+
+        assert len(quick_hash) == 64
+        assert quick_hash.isalnum()
+
+    def test_quick_hash_large_file(self, tmp_path):
+        """Test quick hash for large file (header + footer)"""
+        test_file = tmp_path / "large.bin"
+        # Create 5MB file
+        large_content = b"A" * (5 * 1024 * 1024)
+        test_file.write_bytes(large_content)
+
+        quick_hash = FileHasher.quick_hash(str(test_file))
+
+        assert len(quick_hash) == 64
+        assert quick_hash.isalnum()
+
+    def test_quick_hash_custom_sample_size(self, tmp_path):
+        """Test quick hash with custom sample size"""
+        test_file = tmp_path / "test.bin"
+        test_file.write_bytes(b"X" * (3 * 1024 * 1024))
+
+        hash1 = FileHasher.quick_hash(str(test_file), sample_size=512)
+        hash2 = FileHasher.quick_hash(str(test_file), sample_size=1024)
+
+        # Different sample sizes should produce different hashes
+        assert hash1 != hash2
+
+    def test_empty_file_hash(self, tmp_path):
+        """Test hashing empty file"""
+        test_file = tmp_path / "empty.txt"
+        test_file.write_bytes(b"")
+
+        file_hash = FileHasher.hash_file(str(test_file))
+
+        # SHA-256 of empty string
+        assert file_hash == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 
-@pytest.fixture
-def upload_manager(temp_storage):
-    """Create upload manager with temporary storage."""
-    return UploadManager(storage_path=temp_storage)
+class TestDeduplicationStore:
+    """Test cases for DeduplicationStore"""
 
+    def test_init_new_database(self, tmp_path):
+        """Test initializing new database"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
 
-@pytest.fixture
-def sample_file(temp_storage):
-    """Create a sample file for testing."""
-    file_path = Path(temp_storage) / "test_file.txt"
-    content = b"Hello, World! " * 1000  # ~14KB
-    with open(file_path, 'wb') as f:
-        f.write(content)
-    return file_path
+        assert os.path.exists(db_path)
+        assert store.db == {'files': {}, 'uploads': {}}
+
+    def test_init_existing_database(self, tmp_path):
+        """Test loading existing database"""
+        db_path = str(tmp_path / "existing.json")
+
+        # Create initial database
+        initial_data = {
+            'files': {'hash123': {'file_hash': 'hash123', 'filename': 'test.gif'}},
+            'uploads': {}
+        }
+        with open(db_path, 'w') as f:
+            json.dump(initial_data, f)
+
+        # Load database
+        store = DeduplicationStore(db_path)
+
+        assert 'hash123' in store.db['files']
+        assert store.db['files']['hash123']['filename'] == 'test.gif'
+
+    def test_is_duplicate_false(self, tmp_path):
+        """Test checking for non-existent duplicate"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        assert not store.is_duplicate('nonexistent_hash')
+
+    def test_is_duplicate_true(self, tmp_path):
+        """Test detecting existing duplicate"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        metadata = FileMetadata(
+            file_hash='test_hash_123',
+            filename='test.gif',
+            size_bytes=1024,
+            mime_type='image/gif',
+            upload_time='2025-01-01T00:00:00'
+        )
+        store.add_file(metadata)
+
+        assert store.is_duplicate('test_hash_123')
+
+    def test_get_file_metadata_exists(self, tmp_path):
+        """Test retrieving existing file metadata"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        metadata = FileMetadata(
+            file_hash='hash456',
+            filename='example.gif',
+            size_bytes=2048,
+            mime_type='image/gif',
+            upload_time='2025-01-01T00:00:00',
+            user_id='user123'
+        )
+        store.add_file(metadata)
+
+        retrieved = store.get_file_metadata('hash456')
+
+        assert retrieved is not None
+        assert retrieved.file_hash == 'hash456'
+        assert retrieved.filename == 'example.gif'
+        assert retrieved.size_bytes == 2048
+        assert retrieved.user_id == 'user123'
+
+    def test_get_file_metadata_not_exists(self, tmp_path):
+        """Test retrieving non-existent metadata"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        retrieved = store.get_file_metadata('nonexistent')
+
+        assert retrieved is None
+
+    def test_add_file(self, tmp_path):
+        """Test adding file metadata"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        metadata = FileMetadata(
+            file_hash='newhash',
+            filename='new.gif',
+            size_bytes=512,
+            mime_type='image/gif',
+            upload_time='2025-01-01T00:00:00',
+            title='New GIF',
+            tags=['tag1', 'tag2']
+        )
+        store.add_file(metadata)
+
+        # Verify it's in database
+        assert store.is_duplicate('newhash')
+
+        # Verify database file was written
+        with open(db_path, 'r') as f:
+            db_data = json.load(f)
+        assert 'newhash' in db_data['files']
+
+    def test_remove_file_exists(self, tmp_path):
+        """Test removing existing file"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        metadata = FileMetadata(
+            file_hash='removeme',
+            filename='remove.gif',
+            size_bytes=100,
+            mime_type='image/gif',
+            upload_time='2025-01-01T00:00:00'
+        )
+        store.add_file(metadata)
+
+        result = store.remove_file('removeme')
+
+        assert result is True
+        assert not store.is_duplicate('removeme')
+
+    def test_remove_file_not_exists(self, tmp_path):
+        """Test removing non-existent file"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        result = store.remove_file('doesntexist')
+
+        assert result is False
+
+    def test_get_all_files(self, tmp_path):
+        """Test retrieving all files"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        for i in range(3):
+            metadata = FileMetadata(
+                file_hash=f'hash{i}',
+                filename=f'file{i}.gif',
+                size_bytes=i * 100,
+                mime_type='image/gif',
+                upload_time='2025-01-01T00:00:00'
+            )
+            store.add_file(metadata)
+
+        all_files = store.get_all_files()
+
+        assert len(all_files) == 3
+        assert all(isinstance(f, FileMetadata) for f in all_files)
+
+    def test_get_user_files(self, tmp_path):
+        """Test retrieving files for specific user"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        # Add files for different users
+        for i, user in enumerate(['user1', 'user2', 'user1']):
+            metadata = FileMetadata(
+                file_hash=f'hash_{user}_{i}',
+                filename=f'{user}_file.gif',
+                size_bytes=1000,
+                mime_type='image/gif',
+                upload_time='2025-01-01T00:00:00',
+                user_id=user
+            )
+            store.add_file(metadata)
+
+        user1_files = store.get_user_files('user1')
+
+        assert len(user1_files) == 2
+        assert all(f.user_id == 'user1' for f in user1_files)
+
+    def test_get_stats_empty(self, tmp_path):
+        """Test statistics for empty store"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        stats = store.get_stats()
+
+        assert stats['total_files'] == 0
+        assert stats['total_size_bytes'] == 0
+        assert stats['total_size_mb'] == 0
+        assert stats['unique_users'] == 0
+        assert stats['avg_file_size_mb'] == 0
+
+    def test_get_stats_with_files(self, tmp_path):
+        """Test statistics with files"""
+        db_path = str(tmp_path / "test.json")
+        store = DeduplicationStore(db_path)
+
+        # Add 3 files totaling 3MB
+        for i in range(3):
+            metadata = FileMetadata(
+                file_hash=f'hash{i}',
+                filename=f'file{i}.gif',
+                size_bytes=1024 * 1024,  # 1MB each
+                mime_type='image/gif',
+                upload_time='2025-01-01T00:00:00',
+                user_id=f'user{i % 2}'  # 2 unique users
+            )
+            store.add_file(metadata)
+
+        stats = store.get_stats()
+
+        assert stats['total_files'] == 3
+        assert stats['total_size_bytes'] == 3 * 1024 * 1024
+        assert stats['total_size_mb'] == 3.0
+        assert stats['unique_users'] == 2
+        assert stats['avg_file_size_mb'] == 1.0
 
 
 class TestUploadManager:
-    """Test UploadManager functionality."""
+    """Test cases for UploadManager"""
 
-    def test_initialization(self, temp_storage):
-        """Test manager initialization."""
-        manager = UploadManager(storage_path=temp_storage)
-        assert manager.storage_path.exists()
-        assert manager.chunk_size == UploadManager.DEFAULT_CHUNK_SIZE
-        assert len(manager.sessions) == 0
-        assert len(manager.dedupe_index) == 0
+    def test_init_default(self, tmp_path):
+        """Test default initialization"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
 
-    def test_initialization_custom_chunk_size(self, temp_storage):
-        """Test manager with custom chunk size."""
-        chunk_size = 1024 * 1024  # 1 MB
-        manager = UploadManager(storage_path=temp_storage, chunk_size=chunk_size)
-        assert manager.chunk_size == chunk_size
+        assert os.path.exists(storage_dir)
+        assert manager.storage_dir == storage_dir
+        assert manager.dedupe_store is not None
 
-    def test_initialization_invalid_chunk_size(self, temp_storage):
-        """Test manager rejects invalid chunk sizes."""
-        with pytest.raises(ValueError):
-            UploadManager(storage_path=temp_storage, chunk_size=100)  # Too small
+    def test_init_custom_dedupe_store(self, tmp_path):
+        """Test initialization with custom dedupe store"""
+        storage_dir = str(tmp_path / "uploads")
+        db_path = str(tmp_path / "custom_dedupe.json")
+        dedupe_store = DeduplicationStore(db_path)
 
-        with pytest.raises(ValueError):
-            UploadManager(storage_path=temp_storage, chunk_size=200 * 1024 * 1024)  # Too large
+        manager = UploadManager(storage_dir=storage_dir, dedupe_store=dedupe_store)
 
-    def test_create_session(self, upload_manager):
-        """Test creating an upload session."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=10 * 1024 * 1024,  # 10 MB
-            content_type="image/gif",
-            metadata={"title": "Test GIF"}
+        assert manager.dedupe_store == dedupe_store
+
+    def test_check_duplicate_no_duplicate(self, tmp_path):
+        """Test checking non-duplicate file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "test.gif"
+        test_file.write_bytes(b"unique content")
+
+        is_dup, metadata = manager.check_duplicate(str(test_file))
+
+        assert not is_dup
+        assert metadata is None
+
+    def test_check_duplicate_is_duplicate(self, tmp_path):
+        """Test detecting duplicate file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        # Upload file first time
+        test_file = tmp_path / "test.gif"
+        test_file.write_bytes(b"content to duplicate")
+
+        success, msg, metadata = manager.upload_file(str(test_file))
+        assert success
+
+        # Check for duplicate
+        is_dup, dup_metadata = manager.check_duplicate(str(test_file))
+
+        assert is_dup
+        assert dup_metadata is not None
+        assert dup_metadata.file_hash == metadata.file_hash
+
+    def test_upload_file_success(self, tmp_path):
+        """Test successful file upload"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "upload.gif"
+        content = b"GIF content here"
+        test_file.write_bytes(content)
+
+        success, msg, metadata = manager.upload_file(
+            str(test_file),
+            filename="custom.gif",
+            mime_type="image/gif",
+            user_id="user123",
+            title="Test Upload",
+            tags=["test", "upload"],
+            description="Test description"
         )
 
-        assert session.file_name == "test.gif"
-        assert session.file_size == 10 * 1024 * 1024
-        assert session.content_type == "image/gif"
-        assert session.metadata["title"] == "Test GIF"
+        assert success
+        assert "successfully" in msg.lower()
+        assert metadata is not None
+        assert metadata.filename == "custom.gif"
+        assert metadata.user_id == "user123"
+        assert metadata.title == "Test Upload"
+        assert metadata.tags == ["test", "upload"]
+        assert metadata.description == "Test description"
+        assert metadata.size_bytes == len(content)
+
+    def test_upload_file_not_found(self, tmp_path):
+        """Test uploading non-existent file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        success, msg, metadata = manager.upload_file("/nonexistent/file.gif")
+
+        assert not success
+        assert "not found" in msg.lower()
+        assert metadata is None
+
+    def test_upload_file_duplicate_rejected(self, tmp_path):
+        """Test that duplicate upload is rejected"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "dup.gif"
+        test_file.write_bytes(b"duplicate content")
+
+        # First upload
+        success1, msg1, metadata1 = manager.upload_file(str(test_file))
+        assert success1
+
+        # Second upload (duplicate)
+        success2, msg2, metadata2 = manager.upload_file(str(test_file))
+
+        assert not success2
+        assert "duplicate" in msg2.lower()
+        assert metadata2 is not None  # Returns existing metadata
+        assert metadata2.file_hash == metadata1.file_hash
+
+    def test_upload_file_skip_duplicate_check(self, tmp_path):
+        """Test uploading with skip_duplicate_check flag"""
+        storage_dir = str(tmp_path / "uploads")
+        db_path = str(tmp_path / "dedupe.json")
+        manager = UploadManager(storage_dir=storage_dir, dedupe_store=DeduplicationStore(db_path))
+
+        test_file = tmp_path / "test.gif"
+        test_file.write_bytes(b"content")
+
+        # Upload with skip_duplicate_check
+        success1, msg1, metadata1 = manager.upload_file(
+            str(test_file),
+            skip_duplicate_check=True
+        )
+
+        # Both should succeed when skip_duplicate_check is True
+        assert success1
+
+    def test_upload_file_default_filename(self, tmp_path):
+        """Test that filename defaults to basename"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "myfile.gif"
+        test_file.write_bytes(b"content")
+
+        success, msg, metadata = manager.upload_file(str(test_file))
+
+        assert success
+        assert metadata.filename == "myfile.gif"
+
+    def test_upload_file_storage_path_structure(self, tmp_path):
+        """Test that files are stored in hash-based directory structure"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "test.gif"
+        test_file.write_bytes(b"test content")
+
+        success, msg, metadata = manager.upload_file(str(test_file))
+
+        assert success
+        assert metadata.storage_path is not None
+
+        # Verify path structure: storage_dir/XX/YY/hash
+        file_hash = metadata.file_hash
+        expected_path = os.path.join(
+            storage_dir,
+            file_hash[:2],
+            file_hash[2:4],
+            file_hash
+        )
+        assert metadata.storage_path == expected_path
+        assert os.path.exists(metadata.storage_path)
+
+    def test_get_file_path_exists(self, tmp_path):
+        """Test getting file path for existing file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "test.gif"
+        test_file.write_bytes(b"content")
+
+        success, msg, metadata = manager.upload_file(str(test_file))
+        assert success
+
+        path = manager.get_file_path(metadata.file_hash)
+
+        assert path is not None
+        assert os.path.exists(path)
+        assert path == metadata.storage_path
+
+    def test_get_file_path_not_exists(self, tmp_path):
+        """Test getting file path for non-existent file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        path = manager.get_file_path("nonexistent_hash")
+
+        assert path is None
+
+    def test_delete_file_success(self, tmp_path):
+        """Test deleting existing file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "delete.gif"
+        test_file.write_bytes(b"to be deleted")
+
+        success, msg, metadata = manager.upload_file(str(test_file))
+        assert success
+
+        file_hash = metadata.file_hash
+        storage_path = metadata.storage_path
+
+        # Delete file
+        deleted = manager.delete_file(file_hash)
+
+        assert deleted is True
+        assert not os.path.exists(storage_path)
+        assert not manager.dedupe_store.is_duplicate(file_hash)
+
+    def test_delete_file_not_exists(self, tmp_path):
+        """Test deleting non-existent file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        deleted = manager.delete_file("nonexistent")
+
+        assert deleted is False
+
+    def test_delete_file_without_disk_removal(self, tmp_path):
+        """Test deleting file metadata without removing from disk"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "keep.gif"
+        test_file.write_bytes(b"keep on disk")
+
+        success, msg, metadata = manager.upload_file(str(test_file))
+        assert success
+
+        file_hash = metadata.file_hash
+        storage_path = metadata.storage_path
+
+        # Delete metadata but keep file
+        deleted = manager.delete_file(file_hash, remove_from_disk=False)
+
+        assert deleted is True
+        assert os.path.exists(storage_path)  # File still exists
+        assert not manager.dedupe_store.is_duplicate(file_hash)  # Metadata gone
+
+    def test_get_stats(self, tmp_path):
+        """Test getting upload statistics"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        # Upload multiple files
+        for i in range(3):
+            test_file = tmp_path / f"file{i}.gif"
+            test_file.write_bytes(b"X" * (1024 * 1024))  # 1MB each
+            manager.upload_file(str(test_file), user_id=f"user{i % 2}")
+
+        stats = manager.get_stats()
+
+        assert stats['total_files'] == 3
+        assert stats['total_size_mb'] == 3.0
+        assert stats['unique_users'] == 2
+
+
+class TestConvenienceFunctions:
+    """Test standalone convenience functions"""
+
+    def test_hash_file_function(self, tmp_path):
+        """Test hash_file convenience function"""
+        test_file = tmp_path / "test.txt"
+        test_file.write_bytes(b"test content")
+
+        result = hash_file(str(test_file))
+
+        assert len(result) == 64
+        assert result.isalnum()
+
+    def test_check_duplicate_function_no_dup(self, tmp_path):
+        """Test check_duplicate function with no duplicate"""
+        db_path = str(tmp_path / "dedupe.json")
+        store = DeduplicationStore(db_path)
+
+        test_file = tmp_path / "unique.txt"
+        test_file.write_bytes(b"unique content")
+
+        is_dup, hash_result = check_duplicate(str(test_file), store)
+
+        assert not is_dup
+        assert hash_result is None
+
+    def test_check_duplicate_function_is_dup(self, tmp_path):
+        """Test check_duplicate function with duplicate"""
+        db_path = str(tmp_path / "dedupe.json")
+        store = DeduplicationStore(db_path)
+
+        test_file = tmp_path / "dup.txt"
+        content = b"duplicate content"
+        test_file.write_bytes(content)
+
+        # Add to store
+        file_hash = FileHasher.hash_file(str(test_file))
+        metadata = FileMetadata(
+            file_hash=file_hash,
+            filename="dup.txt",
+            size_bytes=len(content),
+            mime_type="text/plain",
+            upload_time="2025-01-01T00:00:00"
+        )
+        store.add_file(metadata)
+
+        is_dup, hash_result = check_duplicate(str(test_file), store)
+
+        assert is_dup
+        assert hash_result == file_hash
+
+
+class TestDataClasses:
+    """Test dataclass structures"""
+
+    def test_file_metadata_creation(self):
+        """Test FileMetadata dataclass"""
+        metadata = FileMetadata(
+            file_hash="abc123",
+            filename="test.gif",
+            size_bytes=1024,
+            mime_type="image/gif",
+            upload_time="2025-01-01T00:00:00",
+            user_id="user1",
+            title="Test GIF",
+            tags=["tag1", "tag2"],
+            description="A test GIF",
+            storage_path="/path/to/file"
+        )
+
+        assert metadata.file_hash == "abc123"
+        assert metadata.filename == "test.gif"
+        assert metadata.size_bytes == 1024
+        assert metadata.user_id == "user1"
+        assert len(metadata.tags) == 2
+
+    def test_upload_session_creation(self):
+        """Test UploadSession dataclass"""
+        session = UploadSession(
+            session_id="session123",
+            file_hash="hash123",
+            filename="upload.gif",
+            total_size=2048
+        )
+
+        assert session.session_id == "session123"
+        assert session.uploaded_bytes == 0
         assert session.status == UploadStatus.PENDING
-        assert session.total_chunks == 2  # 10MB / 5MB = 2 chunks
-        assert len(session.chunks) == 2
-        assert session.session_id in upload_manager.sessions
-
-    def test_create_session_small_file(self, upload_manager):
-        """Test session for small file (single chunk)."""
-        session = upload_manager.create_session(
-            file_name="small.gif",
-            file_size=1024,  # 1 KB
-            content_type="image/gif"
-        )
-
-        assert session.total_chunks == 1
-        assert len(session.chunks) == 1
-        assert session.chunks[0].chunk_size == 1024
-
-    def test_upload_chunk(self, upload_manager):
-        """Test uploading a chunk."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
-        )
-
-        chunk_data = b"x" * 1024
-        success, error = upload_manager.upload_chunk(
-            session_id=session.session_id,
-            chunk_index=0,
-            chunk_data=chunk_data
-        )
-
-        assert success is True
-        assert error is None
-        assert session.chunks[0].uploaded is True
-        assert session.chunks[0].chunk_hash == calculate_chunk_hash(chunk_data)
-        assert session.status == UploadStatus.IN_PROGRESS
-
-    def test_upload_chunk_invalid_session(self, upload_manager):
-        """Test uploading chunk with invalid session."""
-        success, error = upload_manager.upload_chunk(
-            session_id="invalid",
-            chunk_index=0,
-            chunk_data=b"data"
-        )
-
-        assert success is False
-        assert error == "Session not found"
-
-    def test_upload_chunk_invalid_index(self, upload_manager):
-        """Test uploading chunk with invalid index."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
-        )
-
-        success, error = upload_manager.upload_chunk(
-            session_id=session.session_id,
-            chunk_index=999,
-            chunk_data=b"data"
-        )
-
-        assert success is False
-        assert "Invalid chunk index" in error
-
-    def test_upload_chunk_size_mismatch(self, upload_manager):
-        """Test uploading chunk with wrong size."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
-        )
-
-        success, error = upload_manager.upload_chunk(
-            session_id=session.session_id,
-            chunk_index=0,
-            chunk_data=b"wrong size"
-        )
-
-        assert success is False
-        assert "Chunk size mismatch" in error
-
-    def test_complete_upload_flow(self, upload_manager):
-        """Test complete upload flow with multiple chunks."""
-        # Create session for 2-chunk file
-        file_size = 10 * 1024 * 1024  # 10 MB
-        chunk_size = 5 * 1024 * 1024   # 5 MB
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=file_size,
-            content_type="image/gif"
-        )
-
-        # Upload both chunks
-        chunk1_data = b"a" * chunk_size
-        chunk2_data = b"b" * chunk_size
-
-        success, error = upload_manager.upload_chunk(session.session_id, 0, chunk1_data)
-        assert success is True
-
-        success, error = upload_manager.upload_chunk(session.session_id, 1, chunk2_data)
-        assert success is True
-
-        # Finalize upload
-        success, error, asset_id = upload_manager.finalize_upload(session.session_id)
-
-        assert success is True
-        assert error is None
-        assert asset_id is not None
-        assert session.status == UploadStatus.COMPLETED
-        assert session.file_hash is not None
-        assert session.asset_id == asset_id
-
-        # Verify asset file exists
-        asset_path = upload_manager.get_asset_path(asset_id)
-        assert asset_path is not None
-        assert asset_path.exists()
-
-    def test_finalize_upload_incomplete(self, upload_manager):
-        """Test finalizing incomplete upload."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=10 * 1024 * 1024,
-            content_type="image/gif"
-        )
-
-        # Upload only first chunk
-        chunk_data = b"x" * (5 * 1024 * 1024)
-        upload_manager.upload_chunk(session.session_id, 0, chunk_data)
-
-        # Try to finalize
-        success, error, asset_id = upload_manager.finalize_upload(session.session_id)
-
-        assert success is False
-        assert "Upload incomplete" in error
-        assert asset_id is None
-
-    def test_deduplication(self, upload_manager):
-        """Test file deduplication."""
-        # Create identical content that matches expected chunk size
-        chunk_data = b"identical content" * 60
-        file_size = len(chunk_data)
-
-        # Upload first file
-        session1 = upload_manager.create_session(
-            file_name="file1.gif",
-            file_size=file_size,
-            content_type="image/gif"
-        )
-        upload_manager.upload_chunk(session1.session_id, 0, chunk_data)
-        success, error, asset_id1 = upload_manager.finalize_upload(session1.session_id)
-
-        assert success is True
-
-        # Upload identical file
-        session2 = upload_manager.create_session(
-            file_name="file2.gif",
-            file_size=file_size,
-            content_type="image/gif"
-        )
-        upload_manager.upload_chunk(session2.session_id, 0, chunk_data)
-        success, error, asset_id2 = upload_manager.finalize_upload(session2.session_id)
-
-        assert success is True
-        assert asset_id1 == asset_id2  # Same asset ID for duplicate content
-
-    def test_cancel_session(self, upload_manager):
-        """Test cancelling an upload session."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
-        )
-
-        # Upload a chunk
-        chunk_data = b"x" * 1024
-        upload_manager.upload_chunk(session.session_id, 0, chunk_data)
-
-        # Cancel session
-        success = upload_manager.cancel_session(session.session_id)
-
-        assert success is True
-        assert session.status == UploadStatus.CANCELLED
-
-        # Try to upload after cancellation
-        success, error = upload_manager.upload_chunk(session.session_id, 0, chunk_data)
-        assert success is False
-        assert "Upload cancelled" in error
-
-    def test_get_session(self, upload_manager):
-        """Test retrieving a session."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
-        )
-
-        retrieved = upload_manager.get_session(session.session_id)
-        assert retrieved is not None
-        assert retrieved.session_id == session.session_id
-
-        invalid = upload_manager.get_session("invalid_id")
-        assert invalid is None
-
-    def test_check_duplicate(self, upload_manager):
-        """Test checking for duplicate files."""
-        # Initially no duplicate
-        file_hash = "abc123"
-        assert upload_manager.check_duplicate(file_hash) is None
-
-        # Add to dedupe index
-        upload_manager.dedupe_index[file_hash] = "asset_123"
-
-        # Now should find duplicate
-        assert upload_manager.check_duplicate(file_hash) == "asset_123"
-
-
-class TestUploadSession:
-    """Test UploadSession functionality."""
-
-    def test_get_progress_empty(self):
-        """Test progress calculation for new session."""
-        session = UploadSession(
-            session_id="test",
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif",
-            chunk_size=512,
-            total_chunks=2
-        )
-        session.chunks = [
-            UploadChunk(0, 512, "", 0),
-            UploadChunk(1, 512, "", 512)
-        ]
-
-        assert session.get_progress() == 0.0
-
-    def test_get_progress_partial(self):
-        """Test progress calculation with partial upload."""
-        session = UploadSession(
-            session_id="test",
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif",
-            chunk_size=512,
-            total_chunks=2
-        )
-        session.chunks = [
-            UploadChunk(0, 512, "hash1", 0, uploaded=True),
-            UploadChunk(1, 512, "", 512)
-        ]
-
-        assert session.get_progress() == 50.0
-
-    def test_get_progress_complete(self):
-        """Test progress calculation for complete upload."""
-        session = UploadSession(
-            session_id="test",
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif",
-            chunk_size=512,
-            total_chunks=2
-        )
-        session.chunks = [
-            UploadChunk(0, 512, "hash1", 0, uploaded=True),
-            UploadChunk(1, 512, "hash2", 512, uploaded=True)
-        ]
-
-        assert session.get_progress() == 100.0
-
-    def test_get_uploaded_bytes(self):
-        """Test calculating uploaded bytes."""
-        session = UploadSession(
-            session_id="test",
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif",
-            chunk_size=512,
-            total_chunks=2
-        )
-        session.chunks = [
-            UploadChunk(0, 512, "hash1", 0, uploaded=True),
-            UploadChunk(1, 512, "", 512)
-        ]
-
-        assert session.get_uploaded_bytes() == 512
-
-    def test_get_missing_chunks(self):
-        """Test getting missing chunk indices."""
-        session = UploadSession(
-            session_id="test",
-            file_name="test.gif",
-            file_size=1536,
-            content_type="image/gif",
-            chunk_size=512,
-            total_chunks=3
-        )
-        session.chunks = [
-            UploadChunk(0, 512, "hash1", 0, uploaded=True),
-            UploadChunk(1, 512, "", 512),
-            UploadChunk(2, 512, "", 1024)
-        ]
-
-        missing = session.get_missing_chunks()
-        assert missing == [1, 2]
-
-    def test_is_complete(self):
-        """Test checking if upload is complete."""
-        session = UploadSession(
-            session_id="test",
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif",
-            chunk_size=512,
-            total_chunks=2
-        )
-        session.chunks = [
-            UploadChunk(0, 512, "hash1", 0, uploaded=True),
-            UploadChunk(1, 512, "", 512)
-        ]
-
-        assert session.is_complete() is False
-
-        session.chunks[1].uploaded = True
-        assert session.is_complete() is True
-
-
-class TestUtilityFunctions:
-    """Test utility functions."""
-
-    def test_calculate_file_hash(self, sample_file):
-        """Test file hash calculation."""
-        hash1 = calculate_file_hash(str(sample_file))
-        assert len(hash1) == 64  # SHA-256 produces 64 hex characters
-        assert hash1 == calculate_file_hash(str(sample_file))  # Consistent
-
-    def test_calculate_chunk_hash(self):
-        """Test chunk hash calculation."""
-        data = b"test data"
-        hash1 = calculate_chunk_hash(data)
-        assert len(hash1) == 64  # SHA-256
-        assert hash1 == calculate_chunk_hash(data)  # Consistent
-
-        # Different data produces different hash
-        hash2 = calculate_chunk_hash(b"different data")
-        assert hash1 != hash2
-
-
-class TestResumableUpload:
-    """Test resumable upload scenarios."""
-
-    def test_resume_after_interruption(self, upload_manager):
-        """Test resuming upload after interruption."""
-        # Create session with large enough file for 2 chunks
-        file_size = 10 * 1024 * 1024  # 10 MB
-        chunk_size = upload_manager.chunk_size  # 5 MB
-
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=file_size,
-            content_type="image/gif"
-        )
-
-        chunk1 = b"a" * chunk_size
-        upload_manager.upload_chunk(session.session_id, 0, chunk1)
-
-        # Simulate interruption - get session again
-        resumed_session = upload_manager.get_session(session.session_id)
-        assert resumed_session is not None
-        assert resumed_session.get_progress() == 50.0
-        assert resumed_session.get_missing_chunks() == [1]
-
-        # Resume with second chunk
-        chunk2 = b"b" * chunk_size
-        upload_manager.upload_chunk(session.session_id, 1, chunk2)
-
-        # Finalize
-        success, error, asset_id = upload_manager.finalize_upload(session.session_id)
-        assert success is True
-        assert asset_id is not None
-
-    def test_upload_chunks_out_of_order(self, upload_manager):
-        """Test uploading chunks out of order."""
-        # Create session with 3 chunks (15 MB = 3 chunks of 5 MB each)
-        file_size = 15 * 1024 * 1024
-        chunk_size = upload_manager.chunk_size
-
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=file_size,
-            content_type="image/gif"
-        )
-
-        chunk1 = b"a" * chunk_size
-        chunk2 = b"b" * chunk_size
-        chunk3 = b"c" * chunk_size
-
-        # Upload in reverse order
-        upload_manager.upload_chunk(session.session_id, 2, chunk3)
-        upload_manager.upload_chunk(session.session_id, 0, chunk1)
-        upload_manager.upload_chunk(session.session_id, 1, chunk2)
-
-        # Should still finalize correctly
-        success, error, asset_id = upload_manager.finalize_upload(session.session_id)
-        assert success is True
-
-    def test_duplicate_chunk_upload(self, upload_manager):
-        """Test uploading the same chunk twice."""
-        session = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
-        )
-
-        chunk_data = b"x" * 1024
-
-        # Upload chunk
-        success1, error1 = upload_manager.upload_chunk(session.session_id, 0, chunk_data)
-        assert success1 is True
-
-        # Upload same chunk again
-        success2, error2 = upload_manager.upload_chunk(session.session_id, 0, chunk_data)
-        assert success2 is True  # Should succeed (idempotent)
+        assert session.chunks_received == []
+
+    def test_upload_status_enum(self):
+        """Test UploadStatus enum values"""
+        assert UploadStatus.PENDING == "pending"
+        assert UploadStatus.IN_PROGRESS == "in_progress"
+        assert UploadStatus.COMPLETED == "completed"
+        assert UploadStatus.FAILED == "failed"
+        assert UploadStatus.DUPLICATE == "duplicate"
 
 
 class TestEdgeCases:
-    """Test edge cases and error handling."""
+    """Test edge cases and error conditions"""
 
-    def test_empty_file(self, upload_manager):
-        """Test handling empty file."""
-        with pytest.raises(ValueError, match="File size must be greater than 0"):
-            # Empty file should raise ValueError
-            session = upload_manager.create_session(
-                file_name="empty.gif",
-                file_size=0,
-                content_type="image/gif"
-            )
+    def test_binary_file_upload(self, tmp_path):
+        """Test uploading binary file"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
 
-    def test_very_large_file(self, upload_manager):
-        """Test session creation for very large file."""
-        # 5 GB file
-        large_file_size = 5 * 1024 * 1024 * 1024
-        session = upload_manager.create_session(
-            file_name="large.gif",
-            file_size=large_file_size,
-            content_type="image/gif"
+        test_file = tmp_path / "binary.bin"
+        binary_content = bytes(range(256))
+        test_file.write_bytes(binary_content)
+
+        success, msg, metadata = manager.upload_file(
+            str(test_file),
+            mime_type="application/octet-stream"
         )
 
-        expected_chunks = (large_file_size + upload_manager.chunk_size - 1) // upload_manager.chunk_size
-        assert session.total_chunks == expected_chunks
-        assert len(session.chunks) == expected_chunks
+        assert success
+        assert metadata.size_bytes == 256
 
-    def test_session_id_uniqueness(self, upload_manager):
-        """Test that session IDs are unique."""
-        session1 = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
+    def test_very_long_filename(self, tmp_path):
+        """Test handling very long filenames"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "short.gif"
+        test_file.write_bytes(b"content")
+
+        long_filename = "a" * 255 + ".gif"
+
+        success, msg, metadata = manager.upload_file(
+            str(test_file),
+            filename=long_filename
         )
 
-        session2 = upload_manager.create_session(
-            file_name="test.gif",
-            file_size=1024,
-            content_type="image/gif"
+        assert success
+        assert metadata.filename == long_filename
+
+    def test_special_characters_in_metadata(self, tmp_path):
+        """Test special characters in metadata fields"""
+        storage_dir = str(tmp_path / "uploads")
+        manager = UploadManager(storage_dir=storage_dir)
+
+        test_file = tmp_path / "test.gif"
+        test_file.write_bytes(b"content")
+
+        success, msg, metadata = manager.upload_file(
+            str(test_file),
+            title="Test <>&\"'",
+            tags=["tag with spaces", "tag-with-dashes", "tag_with_underscores"],
+            description="Description with\nnewlines\nand\ttabs"
         )
 
-        assert session1.session_id != session2.session_id
+        assert success
+        assert metadata.title == "Test <>&\"'"
+        assert len(metadata.tags) == 3
 
-    def test_finalize_nonexistent_session(self, upload_manager):
-        """Test finalizing nonexistent session."""
-        success, error, asset_id = upload_manager.finalize_upload("nonexistent")
-        assert success is False
-        assert error == "Session not found"
-        assert asset_id is None
 
-    def test_cancel_nonexistent_session(self, upload_manager):
-        """Test cancelling nonexistent session."""
-        success = upload_manager.cancel_session("nonexistent")
-        assert success is False
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
