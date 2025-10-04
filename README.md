@@ -25,6 +25,42 @@ pip install -r requirements.txt
 pip install openai pillow
 ```
 
+## Configuration
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+cp .env.example .env
+```
+
+Required environment variables:
+
+- `OPENAI_API_KEY` - OpenAI API key for AI safety scanning ([Get your key](https://platform.openai.com/api-keys))
+- `NODE_ENV` - Application environment (development/staging/production)
+
+See `.env.example` for all available configuration options.
+
+### GitHub Actions Secrets
+
+For CI/CD and production deployments, configure secrets in GitHub:
+
+1. **Production Environment**: Settings → Environments → production
+   - Add secret: `OPENAI_API_KEY` (production key)
+   - Enable protection rules
+
+2. **Development Environment**: Settings → Environments → development
+   - Add secret: `OPENAI_API_KEY` (development key)
+
+See [.github/SECRETS_SETUP.md](.github/SECRETS_SETUP.md) for detailed setup instructions.
+
+### Secret Rotation
+
+Secrets should be rotated every 90 days. An automated workflow checks rotation status monthly and creates reminder issues.
+
+See [docs/secrets-management.md](docs/secrets-management.md) for the complete rotation process.
+
 ## Usage
 
 ### Basic Example
