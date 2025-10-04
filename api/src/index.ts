@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { queueRouter } from './routes/queue';
 import { healthRouter } from './routes/health';
 import discordRouter from './routes/discord';
+import slackRouter from './routes/slack';
 import { discordBot } from './services/discordBot';
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/health', healthRouter);
 app.use('/api/queue', queueRouter);
 app.use('/api/discord', discordRouter);
+app.use('/api/slack', slackRouter);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {
