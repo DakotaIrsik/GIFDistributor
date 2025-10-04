@@ -39,6 +39,7 @@ See [Secrets Management Guide](docs/secrets-management.md) for best practices.
 - **Cloudflare Infrastructure**: R2 storage, Workers for API, Pages for web app, KV for metadata, and Durable Objects for real-time features
 - **Advertising & Monetization**: Website display ads for Free tier (Google AdSense, custom networks) with ad-free Pro/Team tiers
 - **Clean Media Guarantee**: NO watermarks or embedded ads in media files - all GIF/MP4/WebP remain 100% clean and shareable
+- **Discord Integration**: OAuth2 authentication and bot functionality for sending GIF embeds and attachments to Discord channels
 
 ## Installation
 
@@ -89,6 +90,9 @@ Required environment variables:
 
 - `OPENAI_API_KEY` - OpenAI API key for AI safety scanning ([Get your key](https://platform.openai.com/api-keys))
 - `NODE_ENV` - Application environment (development/staging/production)
+- `DISCORD_CLIENT_ID` - Discord application client ID (for OAuth2)
+- `DISCORD_CLIENT_SECRET` - Discord application client secret (for OAuth2)
+- `DISCORD_BOT_TOKEN` - Discord bot token (optional, for bot-based messaging)
 
 See `.env.example` for all available configuration options.
 
