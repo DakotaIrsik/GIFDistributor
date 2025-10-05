@@ -3,6 +3,7 @@ AI Safety Scanner using OpenAI Moderation + Vision API
 Provides real AI-powered content moderation for uploads
 Issue: #1
 """
+
 import os
 import base64
 from typing import Dict, List, Optional, Tuple
@@ -12,12 +13,14 @@ import io
 
 class AISafetyError(Exception):
     """Exception raised when AI safety scanning fails"""
+
     pass
 
 
 @dataclass
 class SafetyScanResult:
     """Result from AI safety scanning"""
+
     is_safe: bool
     confidence: float  # 0.0 to 1.0
     violations: List[str]
@@ -42,6 +45,7 @@ class OpenAIModerationScanner:
         # Import openai here to make it optional
         try:
             import openai
+
             self.client = openai.OpenAI(api_key=self.api_key)
         except ImportError:
             raise AISafetyError("openai package not installed. Run: pip install openai")
@@ -62,7 +66,7 @@ class OpenAIModerationScanner:
                 confidence=1.0,
                 violations=[],
                 categories_flagged={},
-                metadata={"text_length": 0}
+                metadata={"text_length": 0},
             )
 
         try:
@@ -86,7 +90,7 @@ class OpenAIModerationScanner:
                     "self-harm/intent": "Self-harm intent",
                     "self-harm/instructions": "Self-harm instructions",
                     "violence": "Violence",
-                    "violence/graphic": "Graphic violence"
+                    "violence/graphic": "Graphic violence",
                 }
 
                 for category, score in result.category_scores.model_dump().items():
@@ -95,7 +99,11 @@ class OpenAIModerationScanner:
                         violations.append(category_map.get(category, category))
 
             # Calculate confidence (inverse of highest score)
-            max_score = max(result.category_scores.model_dump().values()) if result.category_scores else 0.0
+            max_score = (
+                max(result.category_scores.model_dump().values())
+                if result.category_scores
+                else 0.0
+            )
             confidence = 1.0 - max_score if result.flagged else 1.0 - (max_score * 0.5)
 
             return SafetyScanResult(
@@ -106,8 +114,8 @@ class OpenAIModerationScanner:
                 metadata={
                     "text_length": len(text),
                     "model": response.model,
-                    "flagged": result.flagged
-                }
+                    "flagged": result.flagged,
+                },
             )
 
         except Exception as e:
@@ -130,6 +138,7 @@ class OpenAIVisionScanner:
 
         try:
             import openai
+
             self.client = openai.OpenAI(api_key=self.api_key)
         except ImportError:
             raise AISafetyError("openai package not installed. Run: pip install openai")
@@ -147,10 +156,11 @@ class OpenAIVisionScanner:
         """
         try:
             from PIL import Image
+
             with Image.open(file_path) as img:
                 # Convert to RGB if needed
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
 
                 # Resize if too large
                 if max(img.size) > max_size:
@@ -160,8 +170,8 @@ class OpenAIVisionScanner:
 
                 # Encode to base64
                 buffer = io.BytesIO()
-                img.save(buffer, format='JPEG', quality=85)
-                return base64.b64encode(buffer.getvalue()).decode('utf-8')
+                img.save(buffer, format="JPEG", quality=85)
+                return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
         except Exception as e:
             raise AISafetyError(f"Failed to encode image: {str(e)}")
@@ -209,13 +219,13 @@ Be strict - flag anything questionable."""
                                 "type": "image_url",
                                 "image_url": {
                                     "url": f"data:image/jpeg;base64,{base64_image}"
-                                }
-                            }
-                        ]
+                                },
+                            },
+                        ],
                     }
                 ],
                 max_tokens=300,
-                temperature=0.0  # Consistent, deterministic results
+                temperature=0.0,  # Consistent, deterministic results
             )
 
             # Parse response
@@ -223,6 +233,7 @@ Be strict - flag anything questionable."""
 
             # Try to parse as JSON
             import json
+
             try:
                 result_json = json.loads(result_text)
                 is_safe = result_json.get("is_safe", False)
@@ -231,7 +242,10 @@ Be strict - flag anything questionable."""
                 description = result_json.get("description", "")
             except json.JSONDecodeError:
                 # Fallback: simple text analysis
-                is_safe = "is_safe: true" in result_text.lower() or "safe" in result_text.lower()
+                is_safe = (
+                    "is_safe: true" in result_text.lower()
+                    or "safe" in result_text.lower()
+                )
                 violations = []
                 confidence = 0.7
                 description = result_text
@@ -240,7 +254,10 @@ Be strict - flag anything questionable."""
                 if not is_safe:
                     if "nsfw" in result_text.lower() or "sexual" in result_text.lower():
                         violations.append("NSFW/Sexual content")
-                    if "violence" in result_text.lower() or "gore" in result_text.lower():
+                    if (
+                        "violence" in result_text.lower()
+                        or "gore" in result_text.lower()
+                    ):
                         violations.append("Violence/Gore")
                     if "hate" in result_text.lower():
                         violations.append("Hate imagery")
@@ -248,7 +265,9 @@ Be strict - flag anything questionable."""
             # Build categories flagged
             categories_flagged = {}
             for violation in violations:
-                categories_flagged[violation] = 0.8  # Default high score for flagged items
+                categories_flagged[violation] = (
+                    0.8  # Default high score for flagged items
+                )
 
             return SafetyScanResult(
                 is_safe=is_safe,
@@ -258,8 +277,8 @@ Be strict - flag anything questionable."""
                 metadata={
                     "description": description,
                     "model": response.model,
-                    "tokens_used": response.usage.total_tokens if response.usage else 0
-                }
+                    "tokens_used": response.usage.total_tokens if response.usage else 0,
+                },
             )
 
         except Exception as e:
@@ -278,7 +297,9 @@ class AISafetyPipeline:
             enable_vision: Whether to enable vision scanning (slower but more accurate)
         """
         self.moderation_scanner = OpenAIModerationScanner(api_key=api_key)
-        self.vision_scanner = OpenAIVisionScanner(api_key=api_key) if enable_vision else None
+        self.vision_scanner = (
+            OpenAIVisionScanner(api_key=api_key) if enable_vision else None
+        )
         self.enable_vision = enable_vision
 
     def scan_upload(
@@ -286,7 +307,7 @@ class AISafetyPipeline:
         file_path: Optional[str] = None,
         title: str = "",
         tags: Optional[List[str]] = None,
-        description: str = ""
+        description: str = "",
     ) -> Dict[str, SafetyScanResult]:
         """
         Perform complete safety scan on upload
@@ -303,11 +324,9 @@ class AISafetyPipeline:
         results = {}
 
         # Scan text metadata
-        text_content = " ".join(filter(None, [
-            title,
-            " ".join(tags or []),
-            description
-        ]))
+        text_content = " ".join(
+            filter(None, [title, " ".join(tags or []), description])
+        )
 
         if text_content.strip():
             results["text"] = self.moderation_scanner.scan_text(text_content)
@@ -318,7 +337,9 @@ class AISafetyPipeline:
 
         return results
 
-    def is_safe(self, scan_results: Dict[str, SafetyScanResult]) -> Tuple[bool, List[str], float]:
+    def is_safe(
+        self, scan_results: Dict[str, SafetyScanResult]
+    ) -> Tuple[bool, List[str], float]:
         """
         Determine if content is safe based on all scan results
 

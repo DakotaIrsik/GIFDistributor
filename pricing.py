@@ -4,6 +4,7 @@ Implements Free, Pro, and Team pricing tiers with quota management
 Issue: #47
 Depends on: rate-limits, analytics
 """
+
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from enum import Enum
@@ -13,6 +14,7 @@ import time
 
 class PlanTier(Enum):
     """Available subscription tiers"""
+
     FREE = "free"
     PRO = "pro"
     TEAM = "team"
@@ -20,6 +22,7 @@ class PlanTier(Enum):
 
 class QuotaType(Enum):
     """Types of quotas that can be enforced"""
+
     UPLOADS_PER_MONTH = "uploads_per_month"
     STORAGE_GB = "storage_gb"
     BANDWIDTH_GB = "bandwidth_gb"
@@ -30,6 +33,7 @@ class QuotaType(Enum):
 @dataclass
 class PlanFeatures:
     """Features included in a pricing plan"""
+
     name: str
     tier: PlanTier
     price_monthly_usd: float
@@ -86,7 +90,7 @@ PLAN_CONFIGS = {
         watermark_removal=False,
         cdn_enabled=True,
         custom_domain=False,
-        webhook_notifications=False
+        webhook_notifications=False,
     ),
     PlanTier.PRO: PlanFeatures(
         name="Pro",
@@ -107,7 +111,7 @@ PLAN_CONFIGS = {
         watermark_removal=True,
         cdn_enabled=True,
         custom_domain=True,
-        webhook_notifications=True
+        webhook_notifications=True,
     ),
     PlanTier.TEAM: PlanFeatures(
         name="Team",
@@ -128,14 +132,15 @@ PLAN_CONFIGS = {
         watermark_removal=True,
         cdn_enabled=True,
         custom_domain=True,
-        webhook_notifications=True
-    )
+        webhook_notifications=True,
+    ),
 }
 
 
 @dataclass
 class UsageStats:
     """Current usage statistics for a user/account"""
+
     uploads_this_month: int = 0
     storage_used_gb: float = 0.0
     bandwidth_used_gb_this_month: float = 0.0
@@ -143,19 +148,26 @@ class UsageStats:
     api_requests_today: int = 0
 
     # Timestamps for period tracking
-    month_start: datetime = field(default_factory=lambda: datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0))
-    day_start: datetime = field(default_factory=lambda: datetime.now().replace(hour=0, minute=0, second=0, microsecond=0))
+    month_start: datetime = field(
+        default_factory=lambda: datetime.now().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+    )
+    day_start: datetime = field(
+        default_factory=lambda: datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+    )
 
 
 class QuotaExceededError(Exception):
     """Exception raised when a quota is exceeded"""
+
     def __init__(self, quota_type: QuotaType, current: float, limit: float):
         self.quota_type = quota_type
         self.current = current
         self.limit = limit
-        super().__init__(
-            f"Quota exceeded for {quota_type.value}: {current} / {limit}"
-        )
+        super().__init__(f"Quota exceeded for {quota_type.value}: {current} / {limit}")
 
 
 class PricingManager:
@@ -206,7 +218,9 @@ class PricingManager:
         # Reset monthly counters if needed
         usage = self._user_usage[user_id]
         now = datetime.now()
-        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        current_month_start = now.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
 
         if usage.month_start < current_month_start:
             usage.uploads_this_month = 0
@@ -222,10 +236,7 @@ class PricingManager:
         return usage
 
     def check_quota(
-        self,
-        user_id: str,
-        quota_type: QuotaType,
-        amount: float = 1.0
+        self, user_id: str, quota_type: QuotaType, amount: float = 1.0
     ) -> bool:
         """
         Check if a user has quota available for an action
@@ -268,10 +279,7 @@ class PricingManager:
         return True
 
     def consume_quota(
-        self,
-        user_id: str,
-        quota_type: QuotaType,
-        amount: float = 1.0
+        self, user_id: str, quota_type: QuotaType, amount: float = 1.0
     ) -> None:
         """
         Consume quota for a user action
@@ -321,28 +329,52 @@ class PricingManager:
                 "uploads": {
                     "used": usage.uploads_this_month,
                     "limit": plan.max_uploads_per_month,
-                    "percentage": (usage.uploads_this_month / plan.max_uploads_per_month * 100) if plan.max_uploads_per_month > 0 else 0
+                    "percentage": (
+                        (usage.uploads_this_month / plan.max_uploads_per_month * 100)
+                        if plan.max_uploads_per_month > 0
+                        else 0
+                    ),
                 },
                 "storage_gb": {
                     "used": usage.storage_used_gb,
                     "limit": plan.max_storage_gb,
-                    "percentage": (usage.storage_used_gb / plan.max_storage_gb * 100) if plan.max_storage_gb > 0 else 0
+                    "percentage": (
+                        (usage.storage_used_gb / plan.max_storage_gb * 100)
+                        if plan.max_storage_gb > 0
+                        else 0
+                    ),
                 },
                 "bandwidth_gb": {
                     "used": usage.bandwidth_used_gb_this_month,
                     "limit": plan.max_bandwidth_gb_per_month,
-                    "percentage": (usage.bandwidth_used_gb_this_month / plan.max_bandwidth_gb_per_month * 100) if plan.max_bandwidth_gb_per_month > 0 else 0
+                    "percentage": (
+                        (
+                            usage.bandwidth_used_gb_this_month
+                            / plan.max_bandwidth_gb_per_month
+                            * 100
+                        )
+                        if plan.max_bandwidth_gb_per_month > 0
+                        else 0
+                    ),
                 },
                 "team_members": {
                     "used": usage.team_members_count,
                     "limit": plan.max_team_members,
-                    "percentage": (usage.team_members_count / plan.max_team_members * 100) if plan.max_team_members > 0 else 0
+                    "percentage": (
+                        (usage.team_members_count / plan.max_team_members * 100)
+                        if plan.max_team_members > 0
+                        else 0
+                    ),
                 },
                 "api_requests": {
                     "used": usage.api_requests_today,
                     "limit": plan.api_requests_per_day,
-                    "percentage": (usage.api_requests_today / plan.api_requests_per_day * 100) if plan.api_requests_per_day > 0 else 0
-                }
+                    "percentage": (
+                        (usage.api_requests_today / plan.api_requests_per_day * 100)
+                        if plan.api_requests_per_day > 0
+                        else 0
+                    ),
+                },
             },
             "features": {
                 "team_collaboration": plan.team_collaboration,
@@ -352,8 +384,8 @@ class PricingManager:
                 "custom_domain": plan.custom_domain,
                 "webhook_notifications": plan.webhook_notifications,
                 "platforms": plan.platform_distribution,
-                "analytics_retention_days": plan.analytics_retention_days
-            }
+                "analytics_retention_days": plan.analytics_retention_days,
+            },
         }
 
     def can_upgrade(self, user_id: str) -> Dict:
@@ -375,14 +407,16 @@ class PricingManager:
                     "tier": PlanTier.PRO.value,
                     "name": PLAN_CONFIGS[PlanTier.PRO].name,
                     "price": PLAN_CONFIGS[PlanTier.PRO].price_monthly_usd,
-                    "benefits": self._get_upgrade_benefits(PlanTier.FREE, PlanTier.PRO)
+                    "benefits": self._get_upgrade_benefits(PlanTier.FREE, PlanTier.PRO),
                 },
                 {
                     "tier": PlanTier.TEAM.value,
                     "name": PLAN_CONFIGS[PlanTier.TEAM].name,
                     "price": PLAN_CONFIGS[PlanTier.TEAM].price_monthly_usd,
-                    "benefits": self._get_upgrade_benefits(PlanTier.FREE, PlanTier.TEAM)
-                }
+                    "benefits": self._get_upgrade_benefits(
+                        PlanTier.FREE, PlanTier.TEAM
+                    ),
+                },
             ]
         elif current_plan == PlanTier.PRO:
             upgrade_options = [
@@ -390,16 +424,15 @@ class PricingManager:
                     "tier": PlanTier.TEAM.value,
                     "name": PLAN_CONFIGS[PlanTier.TEAM].name,
                     "price": PLAN_CONFIGS[PlanTier.TEAM].price_monthly_usd,
-                    "benefits": self._get_upgrade_benefits(PlanTier.PRO, PlanTier.TEAM)
+                    "benefits": self._get_upgrade_benefits(PlanTier.PRO, PlanTier.TEAM),
                 }
             ]
 
-        return {
-            "current_plan": current_plan.value,
-            "upgrade_options": upgrade_options
-        }
+        return {"current_plan": current_plan.value, "upgrade_options": upgrade_options}
 
-    def _get_upgrade_benefits(self, from_tier: PlanTier, to_tier: PlanTier) -> List[str]:
+    def _get_upgrade_benefits(
+        self, from_tier: PlanTier, to_tier: PlanTier
+    ) -> List[str]:
         """Get list of benefits when upgrading between tiers"""
         from_plan = PLAN_CONFIGS[from_tier]
         to_plan = PLAN_CONFIGS[to_tier]
@@ -407,13 +440,19 @@ class PricingManager:
         benefits = []
 
         if to_plan.max_uploads_per_month > from_plan.max_uploads_per_month:
-            benefits.append(f"{to_plan.max_uploads_per_month} uploads/month (from {from_plan.max_uploads_per_month})")
+            benefits.append(
+                f"{to_plan.max_uploads_per_month} uploads/month (from {from_plan.max_uploads_per_month})"
+            )
 
         if to_plan.max_storage_gb > from_plan.max_storage_gb:
-            benefits.append(f"{to_plan.max_storage_gb}GB storage (from {from_plan.max_storage_gb}GB)")
+            benefits.append(
+                f"{to_plan.max_storage_gb}GB storage (from {from_plan.max_storage_gb}GB)"
+            )
 
         if to_plan.max_bandwidth_gb_per_month > from_plan.max_bandwidth_gb_per_month:
-            benefits.append(f"{to_plan.max_bandwidth_gb_per_month}GB bandwidth/month (from {from_plan.max_bandwidth_gb_per_month}GB)")
+            benefits.append(
+                f"{to_plan.max_bandwidth_gb_per_month}GB bandwidth/month (from {from_plan.max_bandwidth_gb_per_month}GB)"
+            )
 
         if to_plan.max_team_members > from_plan.max_team_members:
             benefits.append(f"Up to {to_plan.max_team_members} team members")
@@ -437,7 +476,9 @@ class PricingManager:
             benefits.append("Webhook notifications")
 
         # Platform differences
-        new_platforms = set(to_plan.platform_distribution) - set(from_plan.platform_distribution)
+        new_platforms = set(to_plan.platform_distribution) - set(
+            from_plan.platform_distribution
+        )
         if new_platforms:
             benefits.append(f"Additional platforms: {', '.join(new_platforms)}")
 

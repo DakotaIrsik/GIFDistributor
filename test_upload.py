@@ -2,6 +2,7 @@
 Comprehensive Tests for Upload Module (Issue #15)
 Tests file deduplication, hashing, upload management, and storage
 """
+
 import pytest
 import os
 import json
@@ -17,7 +18,7 @@ from upload import (
     UploadSession,
     UploadStatus,
     hash_file,
-    check_duplicate
+    check_duplicate,
 )
 
 
@@ -34,7 +35,10 @@ class TestFileHasher:
         assert len(file_hash) == 64  # SHA-256 produces 64 hex chars
         assert file_hash.isalnum()
         # Known SHA-256 of "Hello, World!"
-        assert file_hash == "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+        assert (
+            file_hash
+            == "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+        )
 
     def test_hash_file_consistency(self, tmp_path):
         """Test that same content produces same hash"""
@@ -161,7 +165,10 @@ class TestFileHasher:
         file_hash = FileHasher.hash_file(str(test_file))
 
         # SHA-256 of empty string
-        assert file_hash == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        assert (
+            file_hash
+            == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        )
 
 
 class TestDeduplicationStore:
@@ -173,7 +180,7 @@ class TestDeduplicationStore:
         store = DeduplicationStore(db_path)
 
         assert os.path.exists(db_path)
-        assert store.db == {'files': {}, 'uploads': {}}
+        assert store.db == {"files": {}, "uploads": {}}
 
     def test_init_existing_database(self, tmp_path):
         """Test loading existing database"""
@@ -181,24 +188,24 @@ class TestDeduplicationStore:
 
         # Create initial database
         initial_data = {
-            'files': {'hash123': {'file_hash': 'hash123', 'filename': 'test.gif'}},
-            'uploads': {}
+            "files": {"hash123": {"file_hash": "hash123", "filename": "test.gif"}},
+            "uploads": {},
         }
-        with open(db_path, 'w') as f:
+        with open(db_path, "w") as f:
             json.dump(initial_data, f)
 
         # Load database
         store = DeduplicationStore(db_path)
 
-        assert 'hash123' in store.db['files']
-        assert store.db['files']['hash123']['filename'] == 'test.gif'
+        assert "hash123" in store.db["files"]
+        assert store.db["files"]["hash123"]["filename"] == "test.gif"
 
     def test_is_duplicate_false(self, tmp_path):
         """Test checking for non-existent duplicate"""
         db_path = str(tmp_path / "test.json")
         store = DeduplicationStore(db_path)
 
-        assert not store.is_duplicate('nonexistent_hash')
+        assert not store.is_duplicate("nonexistent_hash")
 
     def test_is_duplicate_true(self, tmp_path):
         """Test detecting existing duplicate"""
@@ -206,15 +213,15 @@ class TestDeduplicationStore:
         store = DeduplicationStore(db_path)
 
         metadata = FileMetadata(
-            file_hash='test_hash_123',
-            filename='test.gif',
+            file_hash="test_hash_123",
+            filename="test.gif",
             size_bytes=1024,
-            mime_type='image/gif',
-            upload_time='2025-01-01T00:00:00'
+            mime_type="image/gif",
+            upload_time="2025-01-01T00:00:00",
         )
         store.add_file(metadata)
 
-        assert store.is_duplicate('test_hash_123')
+        assert store.is_duplicate("test_hash_123")
 
     def test_get_file_metadata_exists(self, tmp_path):
         """Test retrieving existing file metadata"""
@@ -222,29 +229,29 @@ class TestDeduplicationStore:
         store = DeduplicationStore(db_path)
 
         metadata = FileMetadata(
-            file_hash='hash456',
-            filename='example.gif',
+            file_hash="hash456",
+            filename="example.gif",
             size_bytes=2048,
-            mime_type='image/gif',
-            upload_time='2025-01-01T00:00:00',
-            user_id='user123'
+            mime_type="image/gif",
+            upload_time="2025-01-01T00:00:00",
+            user_id="user123",
         )
         store.add_file(metadata)
 
-        retrieved = store.get_file_metadata('hash456')
+        retrieved = store.get_file_metadata("hash456")
 
         assert retrieved is not None
-        assert retrieved.file_hash == 'hash456'
-        assert retrieved.filename == 'example.gif'
+        assert retrieved.file_hash == "hash456"
+        assert retrieved.filename == "example.gif"
         assert retrieved.size_bytes == 2048
-        assert retrieved.user_id == 'user123'
+        assert retrieved.user_id == "user123"
 
     def test_get_file_metadata_not_exists(self, tmp_path):
         """Test retrieving non-existent metadata"""
         db_path = str(tmp_path / "test.json")
         store = DeduplicationStore(db_path)
 
-        retrieved = store.get_file_metadata('nonexistent')
+        retrieved = store.get_file_metadata("nonexistent")
 
         assert retrieved is None
 
@@ -254,23 +261,23 @@ class TestDeduplicationStore:
         store = DeduplicationStore(db_path)
 
         metadata = FileMetadata(
-            file_hash='newhash',
-            filename='new.gif',
+            file_hash="newhash",
+            filename="new.gif",
             size_bytes=512,
-            mime_type='image/gif',
-            upload_time='2025-01-01T00:00:00',
-            title='New GIF',
-            tags=['tag1', 'tag2']
+            mime_type="image/gif",
+            upload_time="2025-01-01T00:00:00",
+            title="New GIF",
+            tags=["tag1", "tag2"],
         )
         store.add_file(metadata)
 
         # Verify it's in database
-        assert store.is_duplicate('newhash')
+        assert store.is_duplicate("newhash")
 
         # Verify database file was written
-        with open(db_path, 'r') as f:
+        with open(db_path, "r") as f:
             db_data = json.load(f)
-        assert 'newhash' in db_data['files']
+        assert "newhash" in db_data["files"]
 
     def test_remove_file_exists(self, tmp_path):
         """Test removing existing file"""
@@ -278,25 +285,25 @@ class TestDeduplicationStore:
         store = DeduplicationStore(db_path)
 
         metadata = FileMetadata(
-            file_hash='removeme',
-            filename='remove.gif',
+            file_hash="removeme",
+            filename="remove.gif",
             size_bytes=100,
-            mime_type='image/gif',
-            upload_time='2025-01-01T00:00:00'
+            mime_type="image/gif",
+            upload_time="2025-01-01T00:00:00",
         )
         store.add_file(metadata)
 
-        result = store.remove_file('removeme')
+        result = store.remove_file("removeme")
 
         assert result is True
-        assert not store.is_duplicate('removeme')
+        assert not store.is_duplicate("removeme")
 
     def test_remove_file_not_exists(self, tmp_path):
         """Test removing non-existent file"""
         db_path = str(tmp_path / "test.json")
         store = DeduplicationStore(db_path)
 
-        result = store.remove_file('doesntexist')
+        result = store.remove_file("doesntexist")
 
         assert result is False
 
@@ -307,11 +314,11 @@ class TestDeduplicationStore:
 
         for i in range(3):
             metadata = FileMetadata(
-                file_hash=f'hash{i}',
-                filename=f'file{i}.gif',
+                file_hash=f"hash{i}",
+                filename=f"file{i}.gif",
                 size_bytes=i * 100,
-                mime_type='image/gif',
-                upload_time='2025-01-01T00:00:00'
+                mime_type="image/gif",
+                upload_time="2025-01-01T00:00:00",
             )
             store.add_file(metadata)
 
@@ -326,21 +333,21 @@ class TestDeduplicationStore:
         store = DeduplicationStore(db_path)
 
         # Add files for different users
-        for i, user in enumerate(['user1', 'user2', 'user1']):
+        for i, user in enumerate(["user1", "user2", "user1"]):
             metadata = FileMetadata(
-                file_hash=f'hash_{user}_{i}',
-                filename=f'{user}_file.gif',
+                file_hash=f"hash_{user}_{i}",
+                filename=f"{user}_file.gif",
                 size_bytes=1000,
-                mime_type='image/gif',
-                upload_time='2025-01-01T00:00:00',
-                user_id=user
+                mime_type="image/gif",
+                upload_time="2025-01-01T00:00:00",
+                user_id=user,
             )
             store.add_file(metadata)
 
-        user1_files = store.get_user_files('user1')
+        user1_files = store.get_user_files("user1")
 
         assert len(user1_files) == 2
-        assert all(f.user_id == 'user1' for f in user1_files)
+        assert all(f.user_id == "user1" for f in user1_files)
 
     def test_get_stats_empty(self, tmp_path):
         """Test statistics for empty store"""
@@ -349,11 +356,11 @@ class TestDeduplicationStore:
 
         stats = store.get_stats()
 
-        assert stats['total_files'] == 0
-        assert stats['total_size_bytes'] == 0
-        assert stats['total_size_mb'] == 0
-        assert stats['unique_users'] == 0
-        assert stats['avg_file_size_mb'] == 0
+        assert stats["total_files"] == 0
+        assert stats["total_size_bytes"] == 0
+        assert stats["total_size_mb"] == 0
+        assert stats["unique_users"] == 0
+        assert stats["avg_file_size_mb"] == 0
 
     def test_get_stats_with_files(self, tmp_path):
         """Test statistics with files"""
@@ -363,22 +370,22 @@ class TestDeduplicationStore:
         # Add 3 files totaling 3MB
         for i in range(3):
             metadata = FileMetadata(
-                file_hash=f'hash{i}',
-                filename=f'file{i}.gif',
+                file_hash=f"hash{i}",
+                filename=f"file{i}.gif",
                 size_bytes=1024 * 1024,  # 1MB each
-                mime_type='image/gif',
-                upload_time='2025-01-01T00:00:00',
-                user_id=f'user{i % 2}'  # 2 unique users
+                mime_type="image/gif",
+                upload_time="2025-01-01T00:00:00",
+                user_id=f"user{i % 2}",  # 2 unique users
             )
             store.add_file(metadata)
 
         stats = store.get_stats()
 
-        assert stats['total_files'] == 3
-        assert stats['total_size_bytes'] == 3 * 1024 * 1024
-        assert stats['total_size_mb'] == 3.0
-        assert stats['unique_users'] == 2
-        assert stats['avg_file_size_mb'] == 1.0
+        assert stats["total_files"] == 3
+        assert stats["total_size_bytes"] == 3 * 1024 * 1024
+        assert stats["total_size_mb"] == 3.0
+        assert stats["unique_users"] == 2
+        assert stats["avg_file_size_mb"] == 1.0
 
 
 class TestUploadManager:
@@ -451,7 +458,7 @@ class TestUploadManager:
             user_id="user123",
             title="Test Upload",
             tags=["test", "upload"],
-            description="Test description"
+            description="Test description",
         )
 
         assert success
@@ -499,15 +506,16 @@ class TestUploadManager:
         """Test uploading with skip_duplicate_check flag"""
         storage_dir = str(tmp_path / "uploads")
         db_path = str(tmp_path / "dedupe.json")
-        manager = UploadManager(storage_dir=storage_dir, dedupe_store=DeduplicationStore(db_path))
+        manager = UploadManager(
+            storage_dir=storage_dir, dedupe_store=DeduplicationStore(db_path)
+        )
 
         test_file = tmp_path / "test.gif"
         test_file.write_bytes(b"content")
 
         # Upload with skip_duplicate_check
         success1, msg1, metadata1 = manager.upload_file(
-            str(test_file),
-            skip_duplicate_check=True
+            str(test_file), skip_duplicate_check=True
         )
 
         # Both should succeed when skip_duplicate_check is True
@@ -542,10 +550,7 @@ class TestUploadManager:
         # Verify path structure: storage_dir/XX/YY/hash
         file_hash = metadata.file_hash
         expected_path = os.path.join(
-            storage_dir,
-            file_hash[:2],
-            file_hash[2:4],
-            file_hash
+            storage_dir, file_hash[:2], file_hash[2:4], file_hash
         )
         assert metadata.storage_path == expected_path
         assert os.path.exists(metadata.storage_path)
@@ -640,9 +645,9 @@ class TestUploadManager:
 
         stats = manager.get_stats()
 
-        assert stats['total_files'] == 3
-        assert stats['total_size_mb'] == 3.0
-        assert stats['unique_users'] == 2
+        assert stats["total_files"] == 3
+        assert stats["total_size_mb"] == 3.0
+        assert stats["unique_users"] == 2
 
 
 class TestConvenienceFunctions:
@@ -687,7 +692,7 @@ class TestConvenienceFunctions:
             filename="dup.txt",
             size_bytes=len(content),
             mime_type="text/plain",
-            upload_time="2025-01-01T00:00:00"
+            upload_time="2025-01-01T00:00:00",
         )
         store.add_file(metadata)
 
@@ -712,7 +717,7 @@ class TestDataClasses:
             title="Test GIF",
             tags=["tag1", "tag2"],
             description="A test GIF",
-            storage_path="/path/to/file"
+            storage_path="/path/to/file",
         )
 
         assert metadata.file_hash == "abc123"
@@ -727,7 +732,7 @@ class TestDataClasses:
             session_id="session123",
             file_hash="hash123",
             filename="upload.gif",
-            total_size=2048
+            total_size=2048,
         )
 
         assert session.session_id == "session123"
@@ -757,8 +762,7 @@ class TestEdgeCases:
         test_file.write_bytes(binary_content)
 
         success, msg, metadata = manager.upload_file(
-            str(test_file),
-            mime_type="application/octet-stream"
+            str(test_file), mime_type="application/octet-stream"
         )
 
         assert success
@@ -775,8 +779,7 @@ class TestEdgeCases:
         long_filename = "a" * 255 + ".gif"
 
         success, msg, metadata = manager.upload_file(
-            str(test_file),
-            filename=long_filename
+            str(test_file), filename=long_filename
         )
 
         assert success
@@ -794,7 +797,7 @@ class TestEdgeCases:
             str(test_file),
             title="Test <>&\"'",
             tags=["tag with spaces", "tag-with-dashes", "tag_with_underscores"],
-            description="Description with\nnewlines\nand\ttabs"
+            description="Description with\nnewlines\nand\ttabs",
         )
 
         assert success

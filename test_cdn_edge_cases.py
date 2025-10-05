@@ -2,16 +2,12 @@
 Additional edge case tests for CDN module
 Focuses on uncovered edge cases and error conditions
 """
+
 import pytest
 from datetime import datetime, timedelta
 import time
 
-from cdn import (
-    CachePolicy,
-    RangeRequest,
-    SignedURL,
-    CDNHelper
-)
+from cdn import CachePolicy, RangeRequest, SignedURL, CDNHelper
 
 
 class TestCachePolicyEdgeCases:
@@ -22,7 +18,10 @@ class TestCachePolicyEdgeCases:
         # Current implementation allows negative, documents actual behavior
         headers = CachePolicy.get_headers(cache_duration=-1)
         # Negative duration is allowed in current implementation
-        assert "max-age=-1" in headers["Cache-Control"] or "no-cache" in headers["Cache-Control"]
+        assert (
+            "max-age=-1" in headers["Cache-Control"]
+            or "no-cache" in headers["Cache-Control"]
+        )
 
     def test_very_long_cache_duration(self):
         """Test with extremely long cache duration"""
@@ -33,9 +32,7 @@ class TestCachePolicyEdgeCases:
     def test_cache_private_with_immutable(self):
         """Test combining private and immutable flags"""
         headers = CachePolicy.get_headers(
-            cache_duration=3600,
-            is_private=True,
-            is_immutable=True
+            cache_duration=3600, is_private=True, is_immutable=True
         )
         assert "private" in headers["Cache-Control"]
         assert "immutable" in headers["Cache-Control"]
@@ -100,10 +97,7 @@ class TestRangeRequestEdgeCases:
     def test_get_range_response_headers_zero_length(self):
         """Test range response for zero-length content"""
         headers = RangeRequest.get_range_response_headers(
-            start=0,
-            end=0,
-            total_length=1,
-            content_type="application/octet-stream"
+            start=0, end=0, total_length=1, content_type="application/octet-stream"
         )
         assert headers["Content-Length"] == "1"
         assert headers["Content-Range"] == "bytes 0-0/1"
@@ -113,10 +107,9 @@ class TestRangeRequestEdgeCases:
         content_length = 1024
         # Last byte
         result = RangeRequest.parse_range_header(
-            f"bytes={content_length-1}-{content_length-1}",
-            content_length
+            f"bytes={content_length-1}-{content_length-1}", content_length
         )
-        assert result == (content_length-1, content_length-1)
+        assert result == (content_length - 1, content_length - 1)
 
     def test_range_exceeds_by_one(self):
         """Test range that exceeds file size by exactly one byte"""
@@ -157,8 +150,7 @@ class TestSignedURLEdgeCases:
         signer = SignedURL("secret")
         # 0 seconds means it might be expired immediately
         url = signer.generate_signed_url(
-            "https://cdn.com/asset.gif",
-            expiration_seconds=0
+            "https://cdn.com/asset.gif", expiration_seconds=0
         )
 
         # Might be valid or expired depending on timing
@@ -170,8 +162,7 @@ class TestSignedURLEdgeCases:
         signer = SignedURL("secret")
         ten_years = 10 * 365 * 24 * 60 * 60
         url = signer.generate_signed_url(
-            "https://cdn.com/asset.gif",
-            expiration_seconds=ten_years
+            "https://cdn.com/asset.gif", expiration_seconds=ten_years
         )
 
         is_valid, error = signer.validate_signed_url(url)
@@ -180,9 +171,7 @@ class TestSignedURLEdgeCases:
     def test_signature_with_special_chars_in_url(self):
         """Test signing URL with special characters"""
         signer = SignedURL("secret-key-123")
-        url = signer.generate_signed_url(
-            "https://cdn.com/path/to/asset-name_v2.gif"
-        )
+        url = signer.generate_signed_url("https://cdn.com/path/to/asset-name_v2.gif")
 
         is_valid, error = signer.validate_signed_url(url)
         assert is_valid is True
@@ -195,7 +184,7 @@ class TestSignedURLEdgeCases:
         url = signer.generate_signed_url(
             "https://cdn.com/asset.gif",
             expiration_seconds=3600,
-            additional_params={"expires": "999999999"}  # Try to override
+            additional_params={"expires": "999999999"},  # Try to override
         )
 
         # The last one set will win (additional_params), which may break validation
@@ -237,6 +226,7 @@ class TestSignedURLEdgeCases:
 
         # Extract signature
         from urllib.parse import urlparse, parse_qs
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
         signature = params["signature"][0]
@@ -293,8 +283,7 @@ class TestCDNHelperEdgeCases:
         """Test headers for zero-length content"""
         helper = CDNHelper()
         headers, range_spec, status = helper.get_asset_headers(
-            content_type="text/plain",
-            content_length=0
+            content_type="text/plain", content_length=0
         )
 
         assert status == 200
@@ -306,8 +295,7 @@ class TestCDNHelperEdgeCases:
         large_size = 10 * 1024 * 1024 * 1024  # 10GB
 
         headers, range_spec, status = helper.get_asset_headers(
-            content_type="video/mp4",
-            content_length=large_size
+            content_type="video/mp4", content_length=large_size
         )
 
         assert headers["Content-Length"] == str(large_size)
@@ -321,11 +309,11 @@ class TestCDNHelperEdgeCases:
         headers, range_spec, status = helper.get_asset_headers(
             content_type="image/gif",
             content_length=content_length,
-            range_header=f"bytes=0-{content_length-1}"
+            range_header=f"bytes=0-{content_length-1}",
         )
 
         assert status == 206
-        assert range_spec == (0, content_length-1)
+        assert range_spec == (0, content_length - 1)
 
     def test_multiple_range_handling(self):
         """Test that multipart ranges use first range only"""
@@ -334,7 +322,7 @@ class TestCDNHelperEdgeCases:
         headers, range_spec, status = helper.get_asset_headers(
             content_type="video/mp4",
             content_length=10000,
-            range_header="bytes=0-999,1000-1999,2000-2999"
+            range_header="bytes=0-999,1000-1999,2000-2999",
         )
 
         # Should process only first range
@@ -346,8 +334,7 @@ class TestCDNHelperEdgeCases:
         helper = CDNHelper(secret_key="test-secret")
 
         url = helper.create_signed_asset_url(
-            "https://cdn.com/asset.gif",
-            expiration_seconds=7200
+            "https://cdn.com/asset.gif", expiration_seconds=7200
         )
 
         is_valid, error = helper.validate_asset_url(url)
@@ -362,7 +349,7 @@ class TestCDNHelperEdgeCases:
             content_type="video/mp4",
             content_length=5000,
             cache_duration=CachePolicy.LONG_CACHE,
-            range_header="bytes=0-1000"
+            range_header="bytes=0-1000",
         )
 
         # Should have both cache and range headers
@@ -380,8 +367,7 @@ class TestIntegrationComplexScenarios:
 
         # Step 1: Create signed URL
         signed_url = helper.create_signed_asset_url(
-            "https://cdn.example.com/video.mp4",
-            expiration_seconds=3600
+            "https://cdn.example.com/video.mp4", expiration_seconds=3600
         )
 
         # Step 2: Validate it
@@ -394,7 +380,7 @@ class TestIntegrationComplexScenarios:
             content_length=52428800,  # 50MB
             is_immutable=True,
             cache_duration=CachePolicy.IMMUTABLE_CACHE,
-            range_header="bytes=0-1048575"  # First MB
+            range_header="bytes=0-1048575",  # First MB
         )
 
         # Verify all components work together
@@ -409,8 +395,7 @@ class TestIntegrationComplexScenarios:
 
         # Create URL that expires in 1 second
         url = helper.create_signed_asset_url(
-            "https://cdn.com/asset.gif",
-            expiration_seconds=1
+            "https://cdn.com/asset.gif", expiration_seconds=1
         )
 
         # Initially valid
@@ -433,7 +418,7 @@ class TestIntegrationComplexScenarios:
             content_type="application/json",
             content_length=2048,
             cache_duration=CachePolicy.NO_CACHE,
-            range_header="bytes=0-1023"
+            range_header="bytes=0-1023",
         )
 
         # Should have no-cache headers
@@ -473,7 +458,7 @@ class TestErrorConditions:
         helper = CDNHelper()
         headers, _, status = helper.get_asset_headers(
             content_type="application/vnd.custom+json; charset=utf-8",
-            content_length=1024
+            content_length=1024,
         )
 
         assert headers["Content-Type"] == "application/vnd.custom+json; charset=utf-8"

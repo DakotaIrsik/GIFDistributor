@@ -2,17 +2,13 @@
 Comprehensive tests for CDN module
 Tests cache headers, Range requests, and signed URLs
 """
+
 import pytest
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, parse_qs
 import time
 
-from cdn import (
-    CachePolicy,
-    RangeRequest,
-    SignedURL,
-    CDNHelper
-)
+from cdn import CachePolicy, RangeRequest, SignedURL, CDNHelper
 
 
 class TestCachePolicy:
@@ -21,9 +17,7 @@ class TestCachePolicy:
     def test_long_cache_public(self):
         """Test long cache policy with public caching"""
         headers = CachePolicy.get_headers(
-            cache_duration=CachePolicy.LONG_CACHE,
-            is_immutable=False,
-            is_private=False
+            cache_duration=CachePolicy.LONG_CACHE, is_immutable=False, is_private=False
         )
 
         assert "Cache-Control" in headers
@@ -34,8 +28,7 @@ class TestCachePolicy:
     def test_immutable_cache(self):
         """Test immutable cache policy"""
         headers = CachePolicy.get_headers(
-            cache_duration=CachePolicy.IMMUTABLE_CACHE,
-            is_immutable=True
+            cache_duration=CachePolicy.IMMUTABLE_CACHE, is_immutable=True
         )
 
         assert "immutable" in headers["Cache-Control"]
@@ -43,10 +36,7 @@ class TestCachePolicy:
 
     def test_private_cache(self):
         """Test private cache policy"""
-        headers = CachePolicy.get_headers(
-            cache_duration=3600,
-            is_private=True
-        )
+        headers = CachePolicy.get_headers(cache_duration=3600, is_private=True)
 
         assert "private" in headers["Cache-Control"]
         assert "public" not in headers["Cache-Control"]
@@ -120,10 +110,7 @@ class TestRangeRequest:
     def test_get_range_response_headers(self):
         """Test range response header generation"""
         headers = RangeRequest.get_range_response_headers(
-            start=0,
-            end=1023,
-            total_length=2048,
-            content_type="image/gif"
+            start=0, end=1023, total_length=2048, content_type="image/gif"
         )
 
         assert headers["Content-Type"] == "image/gif"
@@ -134,8 +121,7 @@ class TestRangeRequest:
     def test_get_full_response_headers(self):
         """Test full content response headers"""
         headers = RangeRequest.get_full_response_headers(
-            total_length=2048,
-            content_type="video/mp4"
+            total_length=2048, content_type="video/mp4"
         )
 
         assert headers["Content-Type"] == "video/mp4"
@@ -172,8 +158,7 @@ class TestSignedURL:
         """Test basic signed URL generation"""
         signer = SignedURL("test-secret-key")
         url = signer.generate_signed_url(
-            "https://cdn.example.com/assets/image.gif",
-            expiration_seconds=3600
+            "https://cdn.example.com/assets/image.gif", expiration_seconds=3600
         )
 
         assert "expires=" in url
@@ -184,8 +169,7 @@ class TestSignedURL:
         """Test validation of valid signed URL"""
         signer = SignedURL("test-secret-key")
         signed_url = signer.generate_signed_url(
-            "https://cdn.example.com/assets/image.gif",
-            expiration_seconds=3600
+            "https://cdn.example.com/assets/image.gif", expiration_seconds=3600
         )
 
         is_valid, error = signer.validate_signed_url(signed_url)
@@ -199,8 +183,7 @@ class TestSignedURL:
 
         # Create URL that expires in 1 second
         signed_url = signer.generate_signed_url(
-            "https://cdn.example.com/assets/image.gif",
-            expiration_seconds=1
+            "https://cdn.example.com/assets/image.gif", expiration_seconds=1
         )
 
         # Wait for expiration
@@ -215,8 +198,7 @@ class TestSignedURL:
         """Test validation detects tampered signature"""
         signer = SignedURL("test-secret-key")
         signed_url = signer.generate_signed_url(
-            "https://cdn.example.com/assets/image.gif",
-            expiration_seconds=3600
+            "https://cdn.example.com/assets/image.gif", expiration_seconds=3600
         )
 
         # Tamper with the signature
@@ -255,12 +237,10 @@ class TestSignedURL:
         signer2 = SignedURL("key2")
 
         url1 = signer1.generate_signed_url(
-            "https://cdn.example.com/assets/image.gif",
-            expiration_seconds=3600
+            "https://cdn.example.com/assets/image.gif", expiration_seconds=3600
         )
         url2 = signer2.generate_signed_url(
-            "https://cdn.example.com/assets/image.gif",
-            expiration_seconds=3600
+            "https://cdn.example.com/assets/image.gif", expiration_seconds=3600
         )
 
         # Extract signatures
@@ -275,8 +255,7 @@ class TestSignedURL:
         signer2 = SignedURL("wrong-key")
 
         signed_url = signer1.generate_signed_url(
-            "https://cdn.example.com/assets/image.gif",
-            expiration_seconds=3600
+            "https://cdn.example.com/assets/image.gif", expiration_seconds=3600
         )
 
         is_valid, error = signer2.validate_signed_url(signed_url)
@@ -289,7 +268,7 @@ class TestSignedURL:
         url = signer.generate_signed_url(
             "https://cdn.example.com/assets/image.gif",
             expiration_seconds=3600,
-            additional_params={"width": "500", "quality": "high"}
+            additional_params={"width": "500", "quality": "high"},
         )
 
         assert "width=500" in url
@@ -309,7 +288,7 @@ class TestSignedURL:
         signer = SignedURL("test-secret-key")
         url = signer.generate_signed_url(
             "https://cdn.example.com/assets/image.gif?version=2",
-            expiration_seconds=3600
+            expiration_seconds=3600,
         )
 
         assert "version=2" in url
@@ -327,8 +306,7 @@ class TestCDNHelper:
         """Test getting headers for full content delivery"""
         helper = CDNHelper()
         headers, range_spec, status = helper.get_asset_headers(
-            content_type="image/gif",
-            content_length=2048
+            content_type="image/gif", content_length=2048
         )
 
         assert status == 200
@@ -341,9 +319,7 @@ class TestCDNHelper:
         """Test getting headers for range request"""
         helper = CDNHelper()
         headers, range_spec, status = helper.get_asset_headers(
-            content_type="video/mp4",
-            content_length=4096,
-            range_header="bytes=0-1023"
+            content_type="video/mp4", content_length=4096, range_header="bytes=0-1023"
         )
 
         assert status == 206  # Partial Content
@@ -359,7 +335,7 @@ class TestCDNHelper:
             content_type="image/gif",
             content_length=2048,
             is_immutable=True,
-            cache_duration=CachePolicy.IMMUTABLE_CACHE
+            cache_duration=CachePolicy.IMMUTABLE_CACHE,
         )
 
         assert "immutable" in headers["Cache-Control"]
@@ -369,8 +345,7 @@ class TestCDNHelper:
         """Test creating signed URL through helper"""
         helper = CDNHelper(secret_key="test-key")
         url = helper.create_signed_asset_url(
-            "https://cdn.example.com/asset.gif",
-            expiration_seconds=1800
+            "https://cdn.example.com/asset.gif", expiration_seconds=1800
         )
 
         assert "signature=" in url
@@ -386,9 +361,7 @@ class TestCDNHelper:
     def test_validate_url(self):
         """Test validating signed URL through helper"""
         helper = CDNHelper(secret_key="test-key")
-        url = helper.create_signed_asset_url(
-            "https://cdn.example.com/asset.gif"
-        )
+        url = helper.create_signed_asset_url("https://cdn.example.com/asset.gif")
 
         is_valid, error = helper.validate_asset_url(url)
 
@@ -408,7 +381,7 @@ class TestCDNHelper:
         headers, range_spec, status = helper.get_asset_headers(
             content_type="image/gif",
             content_length=2048,
-            range_header="bytes=5000-6000"  # Invalid range
+            range_header="bytes=5000-6000",  # Invalid range
         )
 
         assert status == 200  # Full content, not 206
@@ -426,8 +399,7 @@ class TestIntegration:
 
         # Create signed URL
         signed_url = helper.create_signed_asset_url(
-            "https://cdn.example.com/large-video.mp4",
-            expiration_seconds=3600
+            "https://cdn.example.com/large-video.mp4", expiration_seconds=3600
         )
 
         # Validate URL
@@ -439,7 +411,7 @@ class TestIntegration:
             content_type="video/mp4",
             content_length=10485760,  # 10MB
             range_header="bytes=0-1048575",  # First 1MB
-            cache_duration=CachePolicy.LONG_CACHE
+            cache_duration=CachePolicy.LONG_CACHE,
         )
 
         assert status == 206
@@ -454,7 +426,7 @@ class TestIntegration:
         # Create signed URL for immutable asset
         url = helper.create_signed_asset_url(
             "https://cdn.example.com/static/logo-v2.gif",
-            expiration_seconds=31536000  # 1 year
+            expiration_seconds=31536000,  # 1 year
         )
 
         # Get headers with immutable cache
@@ -462,7 +434,7 @@ class TestIntegration:
             content_type="image/gif",
             content_length=4096,
             is_immutable=True,
-            cache_duration=CachePolicy.IMMUTABLE_CACHE
+            cache_duration=CachePolicy.IMMUTABLE_CACHE,
         )
 
         assert status == 200
@@ -484,7 +456,7 @@ class TestIntegration:
             headers, range_spec, status = helper.get_asset_headers(
                 content_type="video/mp4",
                 content_length=content_length,
-                range_header=f"bytes={start}-{end}"
+                range_header=f"bytes={start}-{end}",
             )
 
             assert status == 206

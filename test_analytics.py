@@ -2,6 +2,7 @@
 Tests for Analytics Module
 Issue: #33
 """
+
 import pytest
 from analytics import AnalyticsTracker, EventType, Platform
 from datetime import datetime, timedelta
@@ -47,11 +48,7 @@ class TestAnalyticsTracker:
     def test_track_event_with_short_code(self):
         """Test tracking event with short code"""
         tracker = AnalyticsTracker()
-        event = tracker.track_event(
-            "asset4",
-            EventType.VIEW,
-            short_code="abc123"
-        )
+        event = tracker.track_event("asset4", EventType.VIEW, short_code="abc123")
 
         assert event["short_code"] == "abc123"
 
@@ -59,11 +56,7 @@ class TestAnalyticsTracker:
         """Test tracking event with additional metadata"""
         tracker = AnalyticsTracker()
         metadata = {"user_agent": "Mozilla/5.0", "referrer": "https://example.com"}
-        event = tracker.track_event(
-            "asset5",
-            EventType.VIEW,
-            metadata=metadata
-        )
+        event = tracker.track_event("asset5", EventType.VIEW, metadata=metadata)
 
         assert event["metadata"]["user_agent"] == "Mozilla/5.0"
         assert event["metadata"]["referrer"] == "https://example.com"
@@ -414,11 +407,19 @@ class TestIntegration:
         tracker = AnalyticsTracker()
 
         # Simulate user interactions across platforms
-        tracker.track_event("asset1", EventType.VIEW, Platform.SLACK, short_code="link1")
-        tracker.track_event("asset1", EventType.PLAY, Platform.SLACK, short_code="link1")
-        tracker.track_event("asset1", EventType.VIEW, Platform.DISCORD, short_code="link2")
+        tracker.track_event(
+            "asset1", EventType.VIEW, Platform.SLACK, short_code="link1"
+        )
+        tracker.track_event(
+            "asset1", EventType.PLAY, Platform.SLACK, short_code="link1"
+        )
+        tracker.track_event(
+            "asset1", EventType.VIEW, Platform.DISCORD, short_code="link2"
+        )
         tracker.track_event("asset1", EventType.VIEW, Platform.WEB)
-        tracker.track_event("asset1", EventType.CLICK, Platform.SLACK, short_code="link1")
+        tracker.track_event(
+            "asset1", EventType.CLICK, Platform.SLACK, short_code="link1"
+        )
 
         # Check overall metrics
         metrics = tracker.get_asset_metrics("asset1")
@@ -463,8 +464,15 @@ class TestEnumEdgeCases:
     def test_event_with_all_platforms(self):
         """Test tracking events across all platform types"""
         tracker = AnalyticsTracker()
-        platforms = [Platform.WEB, Platform.SLACK, Platform.DISCORD,
-                     Platform.TEAMS, Platform.TWITTER, Platform.FACEBOOK, Platform.OTHER]
+        platforms = [
+            Platform.WEB,
+            Platform.SLACK,
+            Platform.DISCORD,
+            Platform.TEAMS,
+            Platform.TWITTER,
+            Platform.FACEBOOK,
+            Platform.OTHER,
+        ]
 
         for platform in platforms:
             tracker.track_event("asset1", EventType.VIEW, platform)
@@ -572,7 +580,9 @@ class TestTimeframeBoundaries:
         past = now - timedelta(hours=1)
         future = now + timedelta(hours=1)
 
-        events = tracker.get_events_by_timeframe("asset1", start_time=past, end_time=future)
+        events = tracker.get_events_by_timeframe(
+            "asset1", start_time=past, end_time=future
+        )
         assert len(events) == 3
 
     def test_zero_results_timeframe(self):
@@ -585,7 +595,9 @@ class TestTimeframeBoundaries:
         future_start = datetime.utcnow() + timedelta(days=1)
         future_end = datetime.utcnow() + timedelta(days=2)
 
-        events = tracker.get_events_by_timeframe("asset1", start_time=future_start, end_time=future_end)
+        events = tracker.get_events_by_timeframe(
+            "asset1", start_time=future_start, end_time=future_end
+        )
         assert len(events) == 0
 
 

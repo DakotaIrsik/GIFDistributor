@@ -23,6 +23,7 @@ from PIL import Image
 
 class MediaType(str, Enum):
     """Supported media types"""
+
     GIF = "gif"
     MP4 = "mp4"
     UNKNOWN = "unknown"
@@ -30,6 +31,7 @@ class MediaType(str, Enum):
 
 class OutputFormat(str, Enum):
     """Frame output format options"""
+
     PIL_IMAGE = "pil"  # PIL Image objects
     BYTES = "bytes"  # Raw image bytes (PNG format)
     FILE = "file"  # Save to files
@@ -38,6 +40,7 @@ class OutputFormat(str, Enum):
 @dataclass
 class FrameInfo:
     """Information about an extracted frame"""
+
     index: int  # Frame index in original media
     timestamp_ms: Optional[float] = None  # Timestamp in milliseconds (for video)
     width: Optional[int] = None
@@ -48,6 +51,7 @@ class FrameInfo:
 @dataclass
 class SamplerResult:
     """Result from frame sampling operation"""
+
     frames: List[Union[Image.Image, bytes, str]]  # Frames in requested format
     frame_info: List[FrameInfo]  # Metadata for each frame
     total_frames: int  # Total frames in source media
@@ -73,20 +77,20 @@ class FrameSampler:
         """
         ext = Path(file_path).suffix.lower()
 
-        if ext == '.gif':
+        if ext == ".gif":
             return MediaType.GIF
-        elif ext in ['.mp4', '.m4v', '.mov']:
+        elif ext in [".mp4", ".m4v", ".mov"]:
             return MediaType.MP4
 
         # Try to detect from content
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 header = f.read(12)
                 # Check for GIF magic number
-                if header.startswith(b'GIF89a') or header.startswith(b'GIF87a'):
+                if header.startswith(b"GIF89a") or header.startswith(b"GIF87a"):
                     return MediaType.GIF
                 # Check for MP4/MOV signatures
-                if b'ftyp' in header:
+                if b"ftyp" in header:
                     return MediaType.MP4
         except Exception:
             pass
@@ -105,7 +109,7 @@ class FrameSampler:
             Number of frames
         """
         with Image.open(file_path) as img:
-            if not getattr(img, 'is_animated', False):
+            if not getattr(img, "is_animated", False):
                 return 1
 
             frame_count = 0
@@ -132,19 +136,37 @@ class FrameSampler:
         try:
             # Get frame count
             cmd_frames = [
-                'ffprobe', '-v', 'error', '-select_streams', 'v:0',
-                '-count_packets', '-show_entries', 'stream=nb_read_packets',
-                '-of', 'csv=p=0', file_path
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-count_packets",
+                "-show_entries",
+                "stream=nb_read_packets",
+                "-of",
+                "csv=p=0",
+                file_path,
             ]
-            result = subprocess.run(cmd_frames, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                cmd_frames, capture_output=True, text=True, check=True
+            )
             frame_count = int(result.stdout.strip())
 
             # Get duration
             cmd_duration = [
-                'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
-                '-of', 'csv=p=0', file_path
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "csv=p=0",
+                file_path,
             ]
-            result = subprocess.run(cmd_duration, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                cmd_duration, capture_output=True, text=True, check=True
+            )
             duration_sec = float(result.stdout.strip())
 
             return frame_count, duration_sec * 1000
@@ -185,7 +207,7 @@ class FrameSampler:
         file_path: str,
         num_frames: int,
         output_format: OutputFormat = OutputFormat.PIL_IMAGE,
-        output_dir: Optional[str] = None
+        output_dir: Optional[str] = None,
     ) -> SamplerResult:
         """
         Sample frames from GIF file
@@ -211,13 +233,10 @@ class FrameSampler:
         with Image.open(file_path) as img:
             for idx in indices:
                 img.seek(idx)
-                frame = img.copy().convert('RGB')
+                frame = img.copy().convert("RGB")
 
                 info = FrameInfo(
-                    index=idx,
-                    width=frame.width,
-                    height=frame.height,
-                    format='RGB'
+                    index=idx, width=frame.width, height=frame.height, format="RGB"
                 )
                 frame_info.append(info)
 
@@ -225,7 +244,7 @@ class FrameSampler:
                     frames.append(frame)
                 elif output_format == OutputFormat.BYTES:
                     buffer = io.BytesIO()
-                    frame.save(buffer, format='PNG')
+                    frame.save(buffer, format="PNG")
                     frames.append(buffer.getvalue())
                 elif output_format == OutputFormat.FILE:
                     if not output_dir:
@@ -233,14 +252,14 @@ class FrameSampler:
                     os.makedirs(output_dir, exist_ok=True)
                     filename = f"frame_{idx:04d}.png"
                     filepath = os.path.join(output_dir, filename)
-                    frame.save(filepath, format='PNG')
+                    frame.save(filepath, format="PNG")
                     frames.append(filepath)
 
         return SamplerResult(
             frames=frames,
             frame_info=frame_info,
             total_frames=total_frames,
-            media_type=MediaType.GIF
+            media_type=MediaType.GIF,
         )
 
     @staticmethod
@@ -248,7 +267,7 @@ class FrameSampler:
         file_path: str,
         num_frames: int,
         output_format: OutputFormat = OutputFormat.PIL_IMAGE,
-        output_dir: Optional[str] = None
+        output_dir: Optional[str] = None,
     ) -> SamplerResult:
         """
         Sample frames from MP4/video file using ffmpeg
@@ -275,14 +294,23 @@ class FrameSampler:
         with tempfile.TemporaryDirectory() as temp_dir:
             for idx in indices:
                 # Calculate timestamp
-                timestamp_ms = (idx / total_frames) * duration_ms if total_frames > 0 else 0
+                timestamp_ms = (
+                    (idx / total_frames) * duration_ms if total_frames > 0 else 0
+                )
                 timestamp_sec = timestamp_ms / 1000
 
                 # Extract frame using ffmpeg
                 temp_frame = os.path.join(temp_dir, f"frame_{idx}.png")
                 cmd = [
-                    'ffmpeg', '-ss', str(timestamp_sec), '-i', file_path,
-                    '-frames:v', '1', '-y', temp_frame
+                    "ffmpeg",
+                    "-ss",
+                    str(timestamp_sec),
+                    "-i",
+                    file_path,
+                    "-frames:v",
+                    "1",
+                    "-y",
+                    temp_frame,
                 ]
 
                 try:
@@ -290,21 +318,23 @@ class FrameSampler:
                         cmd,
                         capture_output=True,
                         check=True,
-                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                        creationflags=(
+                            subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+                        ),
                     )
                 except subprocess.CalledProcessError as e:
                     raise RuntimeError(f"ffmpeg failed: {e.stderr.decode()}")
 
                 # Load and process frame
                 with Image.open(temp_frame) as frame:
-                    frame = frame.convert('RGB')
+                    frame = frame.convert("RGB")
 
                     info = FrameInfo(
                         index=idx,
                         timestamp_ms=timestamp_ms,
                         width=frame.width,
                         height=frame.height,
-                        format='RGB'
+                        format="RGB",
                     )
                     frame_info.append(info)
 
@@ -312,15 +342,17 @@ class FrameSampler:
                         frames.append(frame.copy())
                     elif output_format == OutputFormat.BYTES:
                         buffer = io.BytesIO()
-                        frame.save(buffer, format='PNG')
+                        frame.save(buffer, format="PNG")
                         frames.append(buffer.getvalue())
                     elif output_format == OutputFormat.FILE:
                         if not output_dir:
-                            raise ValueError("output_dir required for FILE output format")
+                            raise ValueError(
+                                "output_dir required for FILE output format"
+                            )
                         os.makedirs(output_dir, exist_ok=True)
                         filename = f"frame_{idx:04d}.png"
                         filepath = os.path.join(output_dir, filename)
-                        frame.save(filepath, format='PNG')
+                        frame.save(filepath, format="PNG")
                         frames.append(filepath)
 
         return SamplerResult(
@@ -328,7 +360,7 @@ class FrameSampler:
             frame_info=frame_info,
             total_frames=total_frames,
             media_type=MediaType.MP4,
-            duration_ms=duration_ms
+            duration_ms=duration_ms,
         )
 
     @staticmethod
@@ -337,7 +369,7 @@ class FrameSampler:
         num_frames: int,
         output_format: OutputFormat = OutputFormat.PIL_IMAGE,
         output_dir: Optional[str] = None,
-        media_type: Optional[MediaType] = None
+        media_type: Optional[MediaType] = None,
     ) -> SamplerResult:
         """
         Sample frames from GIF or MP4 (auto-detects type)
@@ -356,19 +388,22 @@ class FrameSampler:
             media_type = FrameSampler.detect_media_type(file_path)
 
         if media_type == MediaType.GIF:
-            return FrameSampler.sample_gif(file_path, num_frames, output_format, output_dir)
+            return FrameSampler.sample_gif(
+                file_path, num_frames, output_format, output_dir
+            )
         elif media_type == MediaType.MP4:
-            return FrameSampler.sample_video(file_path, num_frames, output_format, output_dir)
+            return FrameSampler.sample_video(
+                file_path, num_frames, output_format, output_dir
+            )
         else:
             raise ValueError(f"Unsupported media type: {media_type}")
 
 
 # Convenience functions
 
+
 def sample_frames(
-    file_path: str,
-    num_frames: int,
-    output_format: str = "pil"
+    file_path: str, num_frames: int, output_format: str = "pil"
 ) -> List[Union[Image.Image, bytes]]:
     """
     Quick helper to sample frames from media file
@@ -407,7 +442,7 @@ def get_frame_count(file_path: str) -> int:
         raise ValueError(f"Unsupported media type: {media_type}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
 
     print("Frame Sampler - Extract evenly-spaced frames from GIF/MP4")
@@ -423,10 +458,7 @@ if __name__ == '__main__':
 
     # Sample frames and save to files
     result = FrameSampler.sample_media(
-        file_path,
-        num_frames,
-        output_format=OutputFormat.FILE,
-        output_dir=output_dir
+        file_path, num_frames, output_format=OutputFormat.FILE, output_dir=output_dir
     )
 
     print(f"\nMedia Type: {result.media_type.value}")

@@ -2,6 +2,7 @@
 Integration Tests for Analytics + ShareLinks
 Tests the interaction between analytics and share link modules
 """
+
 import pytest
 import tempfile
 import os
@@ -22,9 +23,15 @@ class TestAnalyticsShareLinksIntegration:
         short_code = link["short_code"]
 
         # Track events with the short code
-        tracker.track_event("asset123", EventType.VIEW, Platform.SLACK, short_code=short_code)
-        tracker.track_event("asset123", EventType.PLAY, Platform.SLACK, short_code=short_code)
-        tracker.track_event("asset123", EventType.CLICK, Platform.SLACK, short_code=short_code)
+        tracker.track_event(
+            "asset123", EventType.VIEW, Platform.SLACK, short_code=short_code
+        )
+        tracker.track_event(
+            "asset123", EventType.PLAY, Platform.SLACK, short_code=short_code
+        )
+        tracker.track_event(
+            "asset123", EventType.CLICK, Platform.SLACK, short_code=short_code
+        )
 
         # Verify analytics
         metrics = tracker.get_short_link_metrics(short_code)
@@ -48,9 +55,15 @@ class TestAnalyticsShareLinksIntegration:
         link2 = gen.create_share_link("asset999", title="Link 2")
 
         # Track events for different links
-        tracker.track_event("asset999", EventType.VIEW, Platform.SLACK, short_code=link1["short_code"])
-        tracker.track_event("asset999", EventType.VIEW, Platform.DISCORD, short_code=link2["short_code"])
-        tracker.track_event("asset999", EventType.CLICK, Platform.SLACK, short_code=link1["short_code"])
+        tracker.track_event(
+            "asset999", EventType.VIEW, Platform.SLACK, short_code=link1["short_code"]
+        )
+        tracker.track_event(
+            "asset999", EventType.VIEW, Platform.DISCORD, short_code=link2["short_code"]
+        )
+        tracker.track_event(
+            "asset999", EventType.CLICK, Platform.SLACK, short_code=link1["short_code"]
+        )
 
         # Check overall asset metrics
         asset_metrics = tracker.get_asset_metrics("asset999")
@@ -76,10 +89,16 @@ class TestAnalyticsShareLinksIntegration:
 
         # Track events from different platforms
         for _ in range(5):
-            tracker.track_event("asset777", EventType.VIEW, Platform.SLACK, short_code=short_code)
+            tracker.track_event(
+                "asset777", EventType.VIEW, Platform.SLACK, short_code=short_code
+            )
         for _ in range(3):
-            tracker.track_event("asset777", EventType.VIEW, Platform.DISCORD, short_code=short_code)
-        tracker.track_event("asset777", EventType.CLICK, Platform.SLACK, short_code=short_code)
+            tracker.track_event(
+                "asset777", EventType.VIEW, Platform.DISCORD, short_code=short_code
+            )
+        tracker.track_event(
+            "asset777", EventType.CLICK, Platform.SLACK, short_code=short_code
+        )
 
         # Check platform breakdown
         platform_metrics = tracker.get_platform_metrics("asset777")
@@ -108,7 +127,7 @@ class TestHashBasedWorkflow:
     def test_hash_to_analytics_workflow(self):
         """Test workflow from file hash to analytics tracking"""
         # Create test file
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
             f.write(b"GIF content here")
             temp_path = f.name
 
@@ -147,11 +166,11 @@ class TestHashBasedWorkflow:
         content = b"Duplicate test content"
 
         # Upload "same" content twice
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f1:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f1:
             f1.write(content)
             path1 = f1.name
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f2:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f2:
             f2.write(content)
             path2 = f2.name
 
@@ -186,9 +205,7 @@ class TestCrossModuleMetadata:
 
         # Create share link with metadata
         link = gen.create_share_link(
-            "asset444",
-            title="Epic GIF",
-            tags=["funny", "viral"]
+            "asset444", title="Epic GIF", tags=["funny", "viral"]
         )
 
         # Get share link metadata
@@ -197,13 +214,13 @@ class TestCrossModuleMetadata:
         # Track event with metadata
         event_metadata = {
             "referrer": "https://example.com",
-            "user_agent": "Mozilla/5.0"
+            "user_agent": "Mozilla/5.0",
         }
         tracker.track_event(
             "asset444",
             EventType.VIEW,
             short_code=link["short_code"],
-            metadata=event_metadata
+            metadata=event_metadata,
         )
 
         # Verify both maintain their own metadata
@@ -245,22 +262,42 @@ class TestRealWorldScenarios:
 
         # Simulate viral spread on Slack
         for _ in range(100):
-            tracker.track_event("viral_gif", EventType.VIEW, Platform.SLACK,
-                              short_code=slack_link["short_code"])
+            tracker.track_event(
+                "viral_gif",
+                EventType.VIEW,
+                Platform.SLACK,
+                short_code=slack_link["short_code"],
+            )
         for _ in range(80):
-            tracker.track_event("viral_gif", EventType.PLAY, Platform.SLACK,
-                              short_code=slack_link["short_code"])
+            tracker.track_event(
+                "viral_gif",
+                EventType.PLAY,
+                Platform.SLACK,
+                short_code=slack_link["short_code"],
+            )
         for _ in range(20):
-            tracker.track_event("viral_gif", EventType.CLICK, Platform.SLACK,
-                              short_code=slack_link["short_code"])
+            tracker.track_event(
+                "viral_gif",
+                EventType.CLICK,
+                Platform.SLACK,
+                short_code=slack_link["short_code"],
+            )
 
         # Simulate spread on Discord
         for _ in range(50):
-            tracker.track_event("viral_gif", EventType.VIEW, Platform.DISCORD,
-                              short_code=discord_link["short_code"])
+            tracker.track_event(
+                "viral_gif",
+                EventType.VIEW,
+                Platform.DISCORD,
+                short_code=discord_link["short_code"],
+            )
         for _ in range(30):
-            tracker.track_event("viral_gif", EventType.PLAY, Platform.DISCORD,
-                              short_code=discord_link["short_code"])
+            tracker.track_event(
+                "viral_gif",
+                EventType.PLAY,
+                Platform.DISCORD,
+                short_code=discord_link["short_code"],
+            )
 
         # Check overall metrics
         asset_metrics = tracker.get_asset_metrics("viral_gif")
@@ -291,14 +328,22 @@ class TestRealWorldScenarios:
 
         # Simulate traffic
         for _ in range(100):
-            tracker.track_event("asset_ab", EventType.VIEW, short_code=variant_a["short_code"])
+            tracker.track_event(
+                "asset_ab", EventType.VIEW, short_code=variant_a["short_code"]
+            )
         for _ in range(10):
-            tracker.track_event("asset_ab", EventType.CLICK, short_code=variant_a["short_code"])
+            tracker.track_event(
+                "asset_ab", EventType.CLICK, short_code=variant_a["short_code"]
+            )
 
         for _ in range(100):
-            tracker.track_event("asset_ab", EventType.VIEW, short_code=variant_b["short_code"])
+            tracker.track_event(
+                "asset_ab", EventType.VIEW, short_code=variant_b["short_code"]
+            )
         for _ in range(25):
-            tracker.track_event("asset_ab", EventType.CLICK, short_code=variant_b["short_code"])
+            tracker.track_event(
+                "asset_ab", EventType.CLICK, short_code=variant_b["short_code"]
+            )
 
         # Compare performance
         a_metrics = tracker.get_short_link_metrics(variant_a["short_code"])
@@ -315,23 +360,47 @@ class TestRealWorldScenarios:
         campaign_asset = "campaign_2025"
 
         # Create platform-specific links
-        twitter_link = gen.create_share_link(campaign_asset, tags=["campaign", "twitter"])
-        facebook_link = gen.create_share_link(campaign_asset, tags=["campaign", "facebook"])
+        twitter_link = gen.create_share_link(
+            campaign_asset, tags=["campaign", "twitter"]
+        )
+        facebook_link = gen.create_share_link(
+            campaign_asset, tags=["campaign", "facebook"]
+        )
         email_link = gen.create_share_link(campaign_asset, tags=["campaign", "email"])
 
         # Track campaign performance
-        tracker.track_event(campaign_asset, EventType.VIEW, Platform.TWITTER,
-                          short_code=twitter_link["short_code"])
-        tracker.track_event(campaign_asset, EventType.CLICK, Platform.TWITTER,
-                          short_code=twitter_link["short_code"])
+        tracker.track_event(
+            campaign_asset,
+            EventType.VIEW,
+            Platform.TWITTER,
+            short_code=twitter_link["short_code"],
+        )
+        tracker.track_event(
+            campaign_asset,
+            EventType.CLICK,
+            Platform.TWITTER,
+            short_code=twitter_link["short_code"],
+        )
 
-        tracker.track_event(campaign_asset, EventType.VIEW, Platform.FACEBOOK,
-                          short_code=facebook_link["short_code"])
+        tracker.track_event(
+            campaign_asset,
+            EventType.VIEW,
+            Platform.FACEBOOK,
+            short_code=facebook_link["short_code"],
+        )
 
-        tracker.track_event(campaign_asset, EventType.VIEW, Platform.WEB,
-                          short_code=email_link["short_code"])
-        tracker.track_event(campaign_asset, EventType.PLAY, Platform.WEB,
-                          short_code=email_link["short_code"])
+        tracker.track_event(
+            campaign_asset,
+            EventType.VIEW,
+            Platform.WEB,
+            short_code=email_link["short_code"],
+        )
+        tracker.track_event(
+            campaign_asset,
+            EventType.PLAY,
+            Platform.WEB,
+            short_code=email_link["short_code"],
+        )
 
         # Analyze campaign
         campaign_metrics = tracker.get_asset_metrics(campaign_asset)
@@ -380,8 +449,12 @@ class TestErrorHandlingIntegration:
         link = gen.create_share_link("mixed_asset")
 
         # Some events with short code
-        tracker.track_event("mixed_asset", EventType.VIEW, short_code=link["short_code"])
-        tracker.track_event("mixed_asset", EventType.PLAY, short_code=link["short_code"])
+        tracker.track_event(
+            "mixed_asset", EventType.VIEW, short_code=link["short_code"]
+        )
+        tracker.track_event(
+            "mixed_asset", EventType.PLAY, short_code=link["short_code"]
+        )
 
         # Some events without (direct canonical URL access)
         tracker.track_event("mixed_asset", EventType.VIEW)

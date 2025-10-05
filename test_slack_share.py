@@ -2,6 +2,7 @@
 Tests for Slack Share Module
 Issue: #41
 """
+
 import pytest
 from slack_share import SlackShareHandler, SlackUnfurlBlock
 
@@ -27,8 +28,7 @@ class TestSlackShareHandler:
     def test_generate_unfurl_response_basic(self, handler):
         """Test basic unfurl response generation"""
         result = handler.generate_unfurl_response(
-            asset_id="abc123",
-            asset_url="https://cdn.gifdist.io/abc123.gif"
+            asset_id="abc123", asset_url="https://cdn.gifdist.io/abc123.gif"
         )
 
         assert "unfurls" in result
@@ -46,7 +46,7 @@ class TestSlackShareHandler:
         result = handler.generate_unfurl_response(
             asset_id="abc123",
             asset_url="https://cdn.gifdist.io/abc123.gif",
-            title="Dancing Cat"
+            title="Dancing Cat",
         )
 
         unfurl = result["unfurls"]["https://gifdist.io/a/abc123"]
@@ -57,7 +57,7 @@ class TestSlackShareHandler:
         result = handler.generate_unfurl_response(
             asset_id="abc123",
             asset_url="https://cdn.gifdist.io/abc123.gif",
-            tags=["cat", "dancing", "funny"]
+            tags=["cat", "dancing", "funny"],
         )
 
         unfurl = result["unfurls"]["https://gifdist.io/a/abc123"]
@@ -70,7 +70,7 @@ class TestSlackShareHandler:
             asset_url="https://cdn.gifdist.io/abc123.gif",
             title="Dancing Cat",
             tags=["cat", "dancing"],
-            file_type="mp4"
+            file_type="mp4",
         )
 
         unfurl = result["unfurls"]["https://gifdist.io/a/abc123"]
@@ -90,8 +90,7 @@ class TestSlackShareHandler:
     def test_create_message_attachment_with_title(self, handler):
         """Test message attachment with title"""
         attachment = handler.create_message_attachment(
-            asset_url="https://cdn.gifdist.io/abc123.gif",
-            title="Dancing Cat"
+            asset_url="https://cdn.gifdist.io/abc123.gif", title="Dancing Cat"
         )
 
         assert attachment["title"] == "Dancing Cat"
@@ -101,7 +100,7 @@ class TestSlackShareHandler:
         """Test message attachment with canonical URL"""
         attachment = handler.create_message_attachment(
             asset_url="https://cdn.gifdist.io/abc123.gif",
-            canonical_url="https://gifdist.io/a/abc123"
+            canonical_url="https://gifdist.io/a/abc123",
         )
 
         assert attachment["title_link"] == "https://gifdist.io/a/abc123"
@@ -109,8 +108,7 @@ class TestSlackShareHandler:
     def test_create_message_attachment_with_tags(self, handler):
         """Test message attachment with tags"""
         attachment = handler.create_message_attachment(
-            asset_url="https://cdn.gifdist.io/abc123.gif",
-            tags=["cat", "funny"]
+            asset_url="https://cdn.gifdist.io/abc123.gif", tags=["cat", "funny"]
         )
 
         assert attachment["footer"] == "Tags: cat, funny"
@@ -123,14 +121,17 @@ class TestSlackShareHandler:
 
         assert "attachments" in message
         assert len(message["attachments"]) == 1
-        assert message["attachments"][0]["image_url"] == "https://cdn.gifdist.io/abc123.gif"
+        assert (
+            message["attachments"][0]["image_url"]
+            == "https://cdn.gifdist.io/abc123.gif"
+        )
 
     def test_build_share_message_with_text(self, handler):
         """Test share message with text"""
         message = handler.build_share_message(
             asset_url="https://cdn.gifdist.io/abc123.gif",
             canonical_url="https://gifdist.io/a/abc123",
-            include_text=True
+            include_text=True,
         )
 
         assert message["text"] == "https://gifdist.io/a/abc123"
@@ -140,7 +141,7 @@ class TestSlackShareHandler:
         message = handler.build_share_message(
             asset_url="https://cdn.gifdist.io/abc123.gif",
             canonical_url="https://gifdist.io/a/abc123",
-            include_text=False
+            include_text=False,
         )
 
         assert "text" not in message
@@ -148,8 +149,7 @@ class TestSlackShareHandler:
     def test_create_opengraph_metadata_basic(self, handler):
         """Test basic Open Graph metadata creation"""
         metadata = handler.create_opengraph_metadata(
-            asset_id="abc123",
-            asset_url="https://cdn.gifdist.io/abc123.gif"
+            asset_id="abc123", asset_url="https://cdn.gifdist.io/abc123.gif"
         )
 
         assert metadata["og:type"] == "website"
@@ -165,7 +165,7 @@ class TestSlackShareHandler:
         metadata = handler.create_opengraph_metadata(
             asset_id="abc123",
             asset_url="https://cdn.gifdist.io/abc123.gif",
-            title="Dancing Cat"
+            title="Dancing Cat",
         )
 
         assert metadata["og:title"] == "Dancing Cat"
@@ -176,7 +176,7 @@ class TestSlackShareHandler:
         metadata = handler.create_opengraph_metadata(
             asset_id="abc123",
             asset_url="https://cdn.gifdist.io/abc123.gif",
-            tags=["cat", "dancing"]
+            tags=["cat", "dancing"],
         )
 
         assert "cat, dancing" in metadata["og:description"]
@@ -186,7 +186,7 @@ class TestSlackShareHandler:
         metadata = handler.create_opengraph_metadata(
             asset_id="abc123",
             asset_url="https://cdn.gifdist.io/abc123.mp4",
-            file_type="mp4"
+            file_type="mp4",
         )
 
         assert metadata["og:image:type"] == "video/mp4"
@@ -196,7 +196,7 @@ class TestSlackShareHandler:
         metadata = handler.create_opengraph_metadata(
             asset_id="abc123",
             asset_url="https://cdn.gifdist.io/abc123.webp",
-            file_type="webp"
+            file_type="webp",
         )
 
         assert metadata["og:image:type"] == "image/webp"
@@ -206,7 +206,7 @@ class TestSlackShareHandler:
         metadata = handler.create_opengraph_metadata(
             asset_id="abc123",
             asset_url="https://cdn.gifdist.io/abc123.gif",
-            title="Dancing Cat"
+            title="Dancing Cat",
         )
 
         assert metadata["twitter:card"] == "summary_large_image"
@@ -220,7 +220,7 @@ class TestSlackShareHandler:
             filename="test.gif",
             channel_id="C123456",
             title="Test GIF",
-            comment="Check this out!"
+            comment="Check this out!",
         )
 
         assert result["ok"] is True
@@ -231,9 +231,7 @@ class TestSlackShareHandler:
     def test_handle_external_upload_without_optional_params(self, handler):
         """Test external upload without optional parameters"""
         result = handler.handle_external_upload(
-            file_data=b"fake_gif_data",
-            filename="test.gif",
-            channel_id="C123456"
+            file_data=b"fake_gif_data", filename="test.gif", channel_id="C123456"
         )
 
         assert result["ok"] is True
@@ -245,20 +243,14 @@ class TestSlackShareHandler:
             "type": "link_shared",
             "channel": "C123456",
             "message_ts": "1234567890.123456",
-            "links": [
-                {"url": "https://gifdist.io/a/abc123"}
-            ]
+            "links": [{"url": "https://gifdist.io/a/abc123"}],
         }
 
         assert handler.validate_unfurl_event(event) is True
 
     def test_validate_unfurl_event_missing_type(self, handler):
         """Test validation fails with missing type"""
-        event = {
-            "channel": "C123456",
-            "message_ts": "1234567890.123456",
-            "links": []
-        }
+        event = {"channel": "C123456", "message_ts": "1234567890.123456", "links": []}
 
         assert handler.validate_unfurl_event(event) is False
 
@@ -268,7 +260,7 @@ class TestSlackShareHandler:
             "type": "message",
             "channel": "C123456",
             "message_ts": "1234567890.123456",
-            "links": []
+            "links": [],
         }
 
         assert handler.validate_unfurl_event(event) is False
@@ -278,7 +270,7 @@ class TestSlackShareHandler:
         event = {
             "type": "link_shared",
             "channel": "C123456",
-            "message_ts": "1234567890.123456"
+            "message_ts": "1234567890.123456",
         }
 
         assert handler.validate_unfurl_event(event) is False
@@ -289,7 +281,7 @@ class TestSlackShareHandler:
             "type": "link_shared",
             "channel": "C123456",
             "message_ts": "1234567890.123456",
-            "links": "not_a_list"
+            "links": "not_a_list",
         }
 
         assert handler.validate_unfurl_event(event) is False
@@ -345,7 +337,7 @@ class TestSlackUnfurlBlock:
         block = SlackUnfurlBlock(
             title="Test Title",
             title_link="https://gifdist.io/a/abc123",
-            image_url="https://cdn.gifdist.io/abc123.gif"
+            image_url="https://cdn.gifdist.io/abc123.gif",
         )
 
         assert block.title == "Test Title"
@@ -363,7 +355,7 @@ class TestSlackUnfurlBlock:
             text="Description text",
             footer="GIFDistributor",
             footer_icon="https://gifdist.io/icon.png",
-            ts=1234567890
+            ts=1234567890,
         )
 
         assert block.title == "Test Title"
@@ -388,9 +380,7 @@ class TestSlackShareIntegration:
             "type": "link_shared",
             "channel": "C123456",
             "message_ts": "1234567890.123456",
-            "links": [
-                {"url": "https://gifdist.io/a/abc123"}
-            ]
+            "links": [{"url": "https://gifdist.io/a/abc123"}],
         }
 
         # Validate event
@@ -405,7 +395,7 @@ class TestSlackShareIntegration:
             asset_id=asset_id,
             asset_url="https://cdn.gifdist.io/abc123.gif",
             title="Dancing Cat",
-            tags=["cat", "funny"]
+            tags=["cat", "funny"],
         )
 
         # Verify unfurl structure
@@ -429,15 +419,12 @@ class TestSlackShareIntegration:
             title=title,
             canonical_url=f"https://gifdist.io/a/{asset_id}",
             tags=tags,
-            include_text=True
+            include_text=True,
         )
 
         # Generate Open Graph metadata
         og_metadata = handler.create_opengraph_metadata(
-            asset_id=asset_id,
-            asset_url=asset_url,
-            title=title,
-            tags=tags
+            asset_id=asset_id, asset_url=asset_url, title=title, tags=tags
         )
 
         # Verify message structure

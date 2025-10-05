@@ -19,6 +19,7 @@ import hmac
 
 class MessageExtensionType(Enum):
     """Types of message extension commands"""
+
     SEARCH = "search"
     COMPOSE = "compose"
     ACTION = "action"
@@ -26,6 +27,7 @@ class MessageExtensionType(Enum):
 
 class CardType(Enum):
     """Adaptive card types"""
+
     PREVIEW = "preview"
     FULL = "full"
     HERO = "hero"
@@ -34,6 +36,7 @@ class CardType(Enum):
 @dataclass
 class TeamsAttachment:
     """Teams adaptive card attachment"""
+
     content_type: str
     content: Dict[str, Any]
     preview: Optional[Dict[str, Any]] = None
@@ -42,6 +45,7 @@ class TeamsAttachment:
 @dataclass
 class TeamsMessageExtensionResult:
     """Result from message extension query"""
+
     attachment_layout: str = "list"  # "list" or "grid"
     attachments: List[TeamsAttachment] = field(default_factory=list)
     type: str = "result"
@@ -50,6 +54,7 @@ class TeamsMessageExtensionResult:
 @dataclass
 class GIFCard:
     """GIF card data for Teams"""
+
     asset_id: str
     title: str
     mp4_url: str
@@ -69,7 +74,9 @@ class AdaptiveCardBuilder:
     """Builder for Teams adaptive cards"""
 
     @staticmethod
-    def create_gif_card(gif: GIFCard, card_type: CardType = CardType.FULL) -> Dict[str, Any]:
+    def create_gif_card(
+        gif: GIFCard, card_type: CardType = CardType.FULL
+    ) -> Dict[str, Any]:
         """
         Create an adaptive card for a GIF
 
@@ -106,9 +113,9 @@ class AdaptiveCardBuilder:
                                     "type": "Image",
                                     "url": gif.thumbnail_url,
                                     "size": "Small",
-                                    "width": "60px"
+                                    "width": "60px",
                                 }
-                            ]
+                            ],
                         },
                         {
                             "type": "Column",
@@ -118,20 +125,20 @@ class AdaptiveCardBuilder:
                                     "type": "TextBlock",
                                     "text": gif.title,
                                     "weight": "Bolder",
-                                    "wrap": True
+                                    "wrap": True,
                                 },
                                 {
                                     "type": "TextBlock",
                                     "text": f"{gif.width}x{gif.height} • {gif.duration_ms/1000:.1f}s",
                                     "size": "Small",
                                     "color": "Accent",
-                                    "spacing": "None"
-                                }
-                            ]
-                        }
-                    ]
+                                    "spacing": "None",
+                                },
+                            ],
+                        },
+                    ],
                 }
-            ]
+            ],
         }
 
     @staticmethod
@@ -143,22 +150,16 @@ class AdaptiveCardBuilder:
                 "title": gif.title,
                 "subtitle": f"{gif.width}x{gif.height} • {gif.duration_ms/1000:.1f}s",
                 "text": gif.description if gif.description else None,
-                "images": [
-                    {"url": gif.thumbnail_url}
-                ],
+                "images": [{"url": gif.thumbnail_url}],
                 "buttons": [
                     {
                         "type": "openUrl",
                         "title": "View GIF",
-                        "value": gif.canonical_url
+                        "value": gif.canonical_url,
                     },
-                    {
-                        "type": "openUrl",
-                        "title": "Share",
-                        "value": gif.short_url
-                    }
-                ]
-            }
+                    {"type": "openUrl", "title": "Share", "value": gif.short_url},
+                ],
+            },
         }
 
     @staticmethod
@@ -174,69 +175,65 @@ class AdaptiveCardBuilder:
                     "text": gif.title,
                     "weight": "Bolder",
                     "size": "Large",
-                    "wrap": True
+                    "wrap": True,
                 },
                 {
                     "type": "Media",
                     "poster": gif.thumbnail_url,
-                    "sources": [
-                        {
-                            "mimeType": "video/mp4",
-                            "url": gif.mp4_url
-                        }
-                    ],
-                    "altText": gif.title
+                    "sources": [{"mimeType": "video/mp4", "url": gif.mp4_url}],
+                    "altText": gif.title,
                 },
                 {
                     "type": "FactSet",
                     "facts": [
-                        {
-                            "title": "Dimensions:",
-                            "value": f"{gif.width}x{gif.height}"
-                        },
-                        {
-                            "title": "Duration:",
-                            "value": f"{gif.duration_ms/1000:.1f}s"
-                        },
+                        {"title": "Dimensions:", "value": f"{gif.width}x{gif.height}"},
+                        {"title": "Duration:", "value": f"{gif.duration_ms/1000:.1f}s"},
                         {
                             "title": "Size:",
-                            "value": AdaptiveCardBuilder._format_file_size(gif.file_size)
-                        }
-                    ]
-                }
+                            "value": AdaptiveCardBuilder._format_file_size(
+                                gif.file_size
+                            ),
+                        },
+                    ],
+                },
             ],
             "actions": [
                 {
                     "type": "Action.OpenUrl",
                     "title": "View Original",
-                    "url": gif.canonical_url
+                    "url": gif.canonical_url,
                 },
                 {
                     "type": "Action.OpenUrl",
                     "title": "Copy Share Link",
-                    "url": gif.short_url
-                }
-            ]
+                    "url": gif.short_url,
+                },
+            ],
         }
 
         # Add tags if available
         if gif.tags:
-            card["body"].append({
-                "type": "TextBlock",
-                "text": " ".join([f"`{tag}`" for tag in gif.tags[:5]]),
-                "size": "Small",
-                "color": "Accent",
-                "wrap": True
-            })
+            card["body"].append(
+                {
+                    "type": "TextBlock",
+                    "text": " ".join([f"`{tag}`" for tag in gif.tags[:5]]),
+                    "size": "Small",
+                    "color": "Accent",
+                    "wrap": True,
+                }
+            )
 
         # Add description if available
         if gif.description:
-            card["body"].insert(1, {
-                "type": "TextBlock",
-                "text": gif.description,
-                "wrap": True,
-                "spacing": "Small"
-            })
+            card["body"].insert(
+                1,
+                {
+                    "type": "TextBlock",
+                    "text": gif.description,
+                    "wrap": True,
+                    "spacing": "Small",
+                },
+            )
 
         return card
 
@@ -264,7 +261,7 @@ class TeamsMessageExtension:
         app_id: str,
         app_secret: str,
         bot_endpoint: str = "",
-        enable_link_unfurling: bool = True
+        enable_link_unfurling: bool = True,
     ):
         """
         Initialize Teams message extension
@@ -304,10 +301,7 @@ class TeamsMessageExtension:
         return True
 
     def handle_search_query(
-        self,
-        query: str,
-        limit: int = 10,
-        context: Optional[Dict[str, Any]] = None
+        self, query: str, limit: int = 10, context: Optional[Dict[str, Any]] = None
     ) -> TeamsMessageExtensionResult:
         """
         Handle a search query from Teams message extension
@@ -321,11 +315,9 @@ class TeamsMessageExtension:
             Message extension result with cards
         """
         # Track the search query
-        self._search_queries.append({
-            "query": query,
-            "timestamp": time.time(),
-            "context": context or {}
-        })
+        self._search_queries.append(
+            {"query": query, "timestamp": time.time(), "context": context or {}}
+        )
 
         # Search for matching GIFs
         matching_gifs = self._search_gifs(query, limit)
@@ -342,14 +334,14 @@ class TeamsMessageExtension:
                 content=full_card,
                 preview={
                     "content": preview_card,
-                    "contentType": "application/vnd.microsoft.card.adaptive"
-                }
+                    "contentType": "application/vnd.microsoft.card.adaptive",
+                },
             )
             attachments.append(attachment)
 
         return TeamsMessageExtensionResult(
             attachment_layout="grid" if len(matching_gifs) > 1 else "list",
-            attachments=attachments
+            attachments=attachments,
         )
 
     def _search_gifs(self, query: str, limit: int) -> List[GIFCard]:
@@ -368,9 +360,11 @@ class TeamsMessageExtension:
 
         for gif in self._gif_registry.values():
             # Match on title, description, or tags
-            if (query_lower in gif.title.lower() or
-                query_lower in gif.description.lower() or
-                any(query_lower in tag.lower() for tag in gif.tags)):
+            if (
+                query_lower in gif.title.lower()
+                or query_lower in gif.description.lower()
+                or any(query_lower in tag.lower() for tag in gif.tags)
+            ):
                 results.append(gif)
 
                 if len(results) >= limit:
@@ -379,9 +373,7 @@ class TeamsMessageExtension:
         return results
 
     def get_gif_card(
-        self,
-        asset_id: str,
-        card_type: CardType = CardType.FULL
+        self, asset_id: str, card_type: CardType = CardType.FULL
     ) -> Optional[Dict[str, Any]]:
         """
         Get adaptive card for a specific GIF
@@ -425,8 +417,7 @@ class TeamsMessageExtension:
         card = AdaptiveCardBuilder.create_gif_card(gif, CardType.FULL)
 
         return TeamsAttachment(
-            content_type="application/vnd.microsoft.card.adaptive",
-            content=card
+            content_type="application/vnd.microsoft.card.adaptive", content=card
         )
 
     def _extract_asset_id(self, url: str) -> Optional[str]:
@@ -450,7 +441,7 @@ class TeamsMessageExtension:
         asset_id: str,
         interaction_type: str,
         user_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Track card interaction for analytics
@@ -461,13 +452,15 @@ class TeamsMessageExtension:
             user_id: User who interacted
             metadata: Additional metadata
         """
-        self._card_interactions.append({
-            "asset_id": asset_id,
-            "interaction_type": interaction_type,
-            "user_id": user_id,
-            "timestamp": time.time(),
-            "metadata": metadata or {}
-        })
+        self._card_interactions.append(
+            {
+                "asset_id": asset_id,
+                "interaction_type": interaction_type,
+                "user_id": user_id,
+                "timestamp": time.time(),
+                "metadata": metadata or {},
+            }
+        )
 
     def get_analytics(self) -> Dict[str, Any]:
         """
@@ -481,7 +474,7 @@ class TeamsMessageExtension:
             "total_searches": len(self._search_queries),
             "total_interactions": len(self._card_interactions),
             "popular_queries": self._get_popular_queries(),
-            "popular_gifs": self._get_popular_gifs()
+            "popular_gifs": self._get_popular_gifs(),
         }
 
     def _get_popular_queries(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -491,11 +484,9 @@ class TeamsMessageExtension:
             query = search["query"]
             query_counts[query] = query_counts.get(query, 0) + 1
 
-        sorted_queries = sorted(
-            query_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:limit]
+        sorted_queries = sorted(query_counts.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
 
         return [{"query": q, "count": c} for q, c in sorted_queries]
 
@@ -506,19 +497,13 @@ class TeamsMessageExtension:
             asset_id = interaction["asset_id"]
             gif_counts[asset_id] = gif_counts.get(asset_id, 0) + 1
 
-        sorted_gifs = sorted(
-            gif_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:limit]
+        sorted_gifs = sorted(gif_counts.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
 
         return [{"asset_id": g, "interactions": c} for g, c in sorted_gifs]
 
-    def verify_request_signature(
-        self,
-        payload: str,
-        signature: str
-    ) -> bool:
+    def verify_request_signature(self, payload: str, signature: str) -> bool:
         """
         Verify Teams request signature for security
 
@@ -530,17 +515,12 @@ class TeamsMessageExtension:
             True if signature is valid
         """
         expected_signature = hmac.new(
-            self.app_secret.encode(),
-            payload.encode(),
-            hashlib.sha256
+            self.app_secret.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
 
         return hmac.compare_digest(signature, expected_signature)
 
-    def create_compose_extension_response(
-        self,
-        gif: GIFCard
-    ) -> Dict[str, Any]:
+    def create_compose_extension_response(self, gif: GIFCard) -> Dict[str, Any]:
         """
         Create response for compose extension
 
@@ -559,9 +539,9 @@ class TeamsMessageExtension:
                 "attachments": [
                     {
                         "contentType": "application/vnd.microsoft.card.adaptive",
-                        "content": card
+                        "content": card,
                     }
-                ]
+                ],
             }
         }
 

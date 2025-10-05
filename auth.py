@@ -21,6 +21,7 @@ from enum import Enum
 
 class AuthProvider(Enum):
     """Supported authentication providers"""
+
     EMAIL = "email"
     GOOGLE = "google"
     GITHUB = "github"
@@ -29,6 +30,7 @@ class AuthProvider(Enum):
 
 class UserRole(Enum):
     """User roles for RBAC"""
+
     ADMIN = "admin"
     USER = "user"
     MODERATOR = "moderator"
@@ -37,6 +39,7 @@ class UserRole(Enum):
 @dataclass
 class User:
     """User model"""
+
     id: str
     email: str
     provider: AuthProvider
@@ -50,6 +53,7 @@ class User:
 @dataclass
 class Session:
     """Session model"""
+
     session_id: str
     user_id: str
     created_at: datetime
@@ -60,11 +64,13 @@ class Session:
 
 class AuthenticationError(Exception):
     """Raised when authentication fails"""
+
     pass
 
 
 class AuthorizationError(Exception):
     """Raised when authorization fails"""
+
     pass
 
 
@@ -80,7 +86,7 @@ class AuthManager:
         self,
         secret_key: Optional[str] = None,
         session_lifetime_hours: int = 24,
-        oauth_config: Optional[Dict[str, Dict[str, str]]] = None
+        oauth_config: Optional[Dict[str, Dict[str, str]]] = None,
     ):
         """
         Initialize auth manager
@@ -105,17 +111,17 @@ class AuthManager:
             salt = secrets.token_hex(16)
 
         pwd_hash = hashlib.pbkdf2_hmac(
-            'sha256',
-            password.encode('utf-8'),
-            salt.encode('utf-8'),
-            100000  # iterations
+            "sha256",
+            password.encode("utf-8"),
+            salt.encode("utf-8"),
+            100000,  # iterations
         )
         return f"{salt}${pwd_hash.hex()}"
 
     def _verify_password(self, password: str, hashed: str) -> bool:
         """Verify password against hash"""
         try:
-            salt, pwd_hash = hashed.split('$')
+            salt, pwd_hash = hashed.split("$")
             return self._hash_password(password, salt) == hashed
         except (ValueError, AttributeError):
             return False
@@ -125,10 +131,7 @@ class AuthManager:
         return secrets.token_urlsafe(32)
 
     def register_email_user(
-        self,
-        email: str,
-        password: str,
-        role: UserRole = UserRole.USER
+        self, email: str, password: str, role: UserRole = UserRole.USER
     ) -> User:
         """
         Register a new user with email/password
@@ -154,7 +157,7 @@ class AuthManager:
             provider=AuthProvider.EMAIL,
             role=role,
             created_at=datetime.utcnow(),
-            email_verified=False
+            email_verified=False,
         )
 
         self._users[user_id] = user
@@ -167,7 +170,7 @@ class AuthManager:
         email: str,
         password: str,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> tuple[User, Session]:
         """
         Authenticate user with email/password
@@ -191,10 +194,7 @@ class AuthManager:
             raise AuthenticationError("Invalid email or password")
 
         # Find user by email
-        user = next(
-            (u for u in self._users.values() if u.email == email),
-            None
-        )
+        user = next((u for u in self._users.values() if u.email == email), None)
 
         if not user:
             raise AuthenticationError("User not found")
@@ -213,7 +213,7 @@ class AuthManager:
         oauth_token: str,
         user_info: Dict[str, Any],
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> tuple[User, Session]:
         """
         Authenticate user with OAuth provider
@@ -234,15 +234,18 @@ class AuthManager:
         if provider == AuthProvider.EMAIL:
             raise AuthenticationError("Use authenticate_email for email auth")
 
-        email = user_info.get('email')
+        email = user_info.get("email")
         if not email:
             raise AuthenticationError("Email not provided by OAuth provider")
 
         # Find existing user or create new one
         user = next(
-            (u for u in self._users.values()
-             if u.email == email and u.provider == provider),
-            None
+            (
+                u
+                for u in self._users.values()
+                if u.email == email and u.provider == provider
+            ),
+            None,
         )
 
         if not user:
@@ -254,7 +257,7 @@ class AuthManager:
                 role=UserRole.USER,
                 created_at=datetime.utcnow(),
                 email_verified=True,  # OAuth emails are pre-verified
-                metadata=user_info
+                metadata=user_info,
             )
             self._users[user_id] = user
 
@@ -270,7 +273,7 @@ class AuthManager:
         self,
         user_id: str,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> Session:
         """Create a new session for user"""
         session_id = self._generate_session_id()
@@ -280,7 +283,7 @@ class AuthManager:
             created_at=datetime.utcnow(),
             expires_at=datetime.utcnow() + self.session_lifetime,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         self._sessions[session_id] = session
         return session
@@ -322,10 +325,7 @@ class AuthManager:
         return False
 
     def get_oauth_authorization_url(
-        self,
-        provider: AuthProvider,
-        redirect_uri: str,
-        state: Optional[str] = None
+        self, provider: AuthProvider, redirect_uri: str, state: Optional[str] = None
     ) -> str:
         """
         Get OAuth authorization URL for provider
@@ -348,7 +348,7 @@ class AuthManager:
             raise ValueError(f"Provider {provider.value} not configured")
 
         config = self.oauth_config[provider.value]
-        client_id = config.get('client_id')
+        client_id = config.get("client_id")
 
         if not client_id:
             raise ValueError(f"No client_id configured for {provider.value}")
@@ -357,7 +357,7 @@ class AuthManager:
         auth_urls = {
             AuthProvider.GOOGLE: "https://accounts.google.com/o/oauth2/v2/auth",
             AuthProvider.GITHUB: "https://github.com/login/oauth/authorize",
-            AuthProvider.MICROSOFT: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+            AuthProvider.MICROSOFT: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
         }
 
         base_url = auth_urls.get(provider)
@@ -366,16 +366,16 @@ class AuthManager:
 
         # Build authorization URL
         params = {
-            'client_id': client_id,
-            'redirect_uri': redirect_uri,
-            'response_type': 'code',
-            'scope': 'email profile'
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "email profile",
         }
 
         if state:
-            params['state'] = state
+            params["state"] = state
 
-        query_string = '&'.join(f"{k}={v}" for k, v in params.items())
+        query_string = "&".join(f"{k}={v}" for k, v in params.items())
         return f"{base_url}?{query_string}"
 
 
@@ -390,14 +390,14 @@ class RBACManager:
         # Define role permissions
         self.permissions = {
             UserRole.ADMIN: {
-                'upload', 'delete', 'moderate', 'manage_users', 'view_analytics'
+                "upload",
+                "delete",
+                "moderate",
+                "manage_users",
+                "view_analytics",
             },
-            UserRole.MODERATOR: {
-                'upload', 'delete', 'moderate', 'view_analytics'
-            },
-            UserRole.USER: {
-                'upload', 'delete_own'
-            }
+            UserRole.MODERATOR: {"upload", "delete", "moderate", "view_analytics"},
+            UserRole.USER: {"upload", "delete_own"},
         }
 
     def can_perform(self, user: User, action: str) -> bool:
@@ -447,21 +447,20 @@ if __name__ == "__main__":
     # Initialize auth manager
     auth = AuthManager(
         oauth_config={
-            'google': {
-                'client_id': 'your-google-client-id',
-                'client_secret': 'your-google-client-secret'
+            "google": {
+                "client_id": "your-google-client-id",
+                "client_secret": "your-google-client-secret",
             },
-            'github': {
-                'client_id': 'your-github-client-id',
-                'client_secret': 'your-github-client-secret'
-            }
+            "github": {
+                "client_id": "your-github-client-id",
+                "client_secret": "your-github-client-secret",
+            },
         }
     )
 
     # Register email user
     user = auth.register_email_user(
-        email="user@example.com",
-        password="secure_password_123"
+        email="user@example.com", password="secure_password_123"
     )
     print(f"Registered user: {user.email}")
 
@@ -469,7 +468,7 @@ if __name__ == "__main__":
     user, session = auth.authenticate_email(
         email="user@example.com",
         password="secure_password_123",
-        ip_address="192.168.1.1"
+        ip_address="192.168.1.1",
     )
     print(f"Authenticated user: {user.email}, session: {session.session_id}")
 
@@ -486,6 +485,6 @@ if __name__ == "__main__":
     oauth_url = auth.get_oauth_authorization_url(
         provider=AuthProvider.GOOGLE,
         redirect_uri="https://yourapp.com/auth/callback",
-        state="random_state_token"
+        state="random_state_token",
     )
     print(f"OAuth URL: {oauth_url}")

@@ -3,6 +3,7 @@ SFW-only Moderation Pipeline & Audit
 Provides content moderation with automated scanning and audit trail
 Issue: #25
 """
+
 import time
 import hashlib
 from typing import Dict, List, Optional, Tuple
@@ -13,6 +14,7 @@ from datetime import datetime, timezone
 
 class ModerationDecision(Enum):
     """Moderation decision outcomes"""
+
     APPROVED = "approved"
     REJECTED = "rejected"
     FLAGGED = "flagged"  # Requires manual review
@@ -21,6 +23,7 @@ class ModerationDecision(Enum):
 
 class ContentCategory(Enum):
     """Content classification categories"""
+
     SAFE = "safe"
     NSFW = "nsfw"
     GRAPHIC_VIOLENCE = "graphic_violence"
@@ -32,24 +35,29 @@ class ContentCategory(Enum):
 
 class ModerationError(Exception):
     """Exception raised when moderation fails"""
+
     pass
 
 
 @dataclass
 class ModerationResult:
     """Result of content moderation"""
+
     decision: ModerationDecision
     category: ContentCategory
     confidence: float  # 0.0 to 1.0
     reasons: List[str] = field(default_factory=list)
     scan_id: str = ""
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     metadata: Dict = field(default_factory=dict)
 
 
 @dataclass
 class AuditEntry:
     """Audit trail entry for moderation actions"""
+
     audit_id: str
     asset_id: str
     decision: ModerationDecision
@@ -74,21 +82,21 @@ class ContentScanner:
         self.strict_mode = strict_mode
         # Simulated keyword blocklist
         self.nsfw_keywords = {
-            "explicit", "nude", "adult", "xxx", "porn", "sex",
-            "nsfw", "18+", "mature"
+            "explicit",
+            "nude",
+            "adult",
+            "xxx",
+            "porn",
+            "sex",
+            "nsfw",
+            "18+",
+            "mature",
         }
-        self.violence_keywords = {
-            "gore", "blood", "violence", "brutal", "graphic"
-        }
-        self.hate_keywords = {
-            "hate", "slur", "racist", "nazi", "supremacist"
-        }
+        self.violence_keywords = {"gore", "blood", "violence", "brutal", "graphic"}
+        self.hate_keywords = {"hate", "slur", "racist", "nazi", "supremacist"}
 
     def scan_metadata(
-        self,
-        title: str = "",
-        tags: Optional[List[str]] = None,
-        description: str = ""
+        self, title: str = "", tags: Optional[List[str]] = None, description: str = ""
     ) -> Tuple[ContentCategory, float, List[str]]:
         """
         Scan text metadata for inappropriate content
@@ -128,9 +136,7 @@ class ContentScanner:
         return ContentCategory.SAFE, 0.99, ["No policy violations detected"]
 
     def scan_visual_content(
-        self,
-        file_path: str,
-        file_hash: str
+        self, file_path: str, file_hash: str
     ) -> Tuple[ContentCategory, float, List[str]]:
         """
         Scan visual content (simulated - would use AI/ML service)
@@ -159,25 +165,21 @@ class ContentScanner:
 
         # 95% of content is safe in simulation
         if hash_int % 100 < 95:
-            return (
-                ContentCategory.SAFE,
-                0.98,
-                ["Visual content analysis passed"]
-            )
+            return (ContentCategory.SAFE, 0.98, ["Visual content analysis passed"])
 
         # 3% is flagged for review
         if hash_int % 100 < 98:
             return (
                 ContentCategory.UNKNOWN,
                 0.60,
-                ["Low confidence - requires manual review"]
+                ["Low confidence - requires manual review"],
             )
 
         # 2% is rejected
         return (
             ContentCategory.NSFW,
             0.85,
-            ["Visual content detected inappropriate imagery"]
+            ["Visual content detected inappropriate imagery"],
         )
 
 
@@ -189,7 +191,7 @@ class ModerationPipeline:
         strict_mode: bool = True,
         auto_approve_threshold: float = 0.95,
         auto_reject_threshold: float = 0.80,
-        enable_audit: bool = True
+        enable_audit: bool = True,
     ):
         """
         Initialize moderation pipeline
@@ -215,7 +217,7 @@ class ModerationPipeline:
             "approved": 0,
             "rejected": 0,
             "flagged": 0,
-            "pending": 0
+            "pending": 0,
         }
 
     def _generate_scan_id(self, asset_id: str) -> str:
@@ -238,7 +240,7 @@ class ModerationPipeline:
         title: str = "",
         tags: Optional[List[str]] = None,
         description: str = "",
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> ModerationResult:
         """
         Moderate content through complete pipeline
@@ -261,9 +263,7 @@ class ModerationPipeline:
 
         # Step 1: Scan metadata
         meta_category, meta_confidence, meta_reasons = self.scanner.scan_metadata(
-            title=title,
-            tags=tags,
-            description=description
+            title=title, tags=tags, description=description
         )
 
         # Early rejection if metadata fails
@@ -274,15 +274,14 @@ class ModerationPipeline:
                 confidence=meta_confidence,
                 reasons=meta_reasons,
                 scan_id=scan_id,
-                metadata={"scan_type": "metadata_only"}
+                metadata={"scan_type": "metadata_only"},
             )
             self._record_decision(asset_id, result, "automated")
             return result
 
         # Step 2: Scan visual content
-        visual_category, visual_confidence, visual_reasons = self.scanner.scan_visual_content(
-            file_path=file_path,
-            file_hash=file_hash
+        visual_category, visual_confidence, visual_reasons = (
+            self.scanner.scan_visual_content(file_path=file_path, file_hash=file_hash)
         )
 
         # Determine overall decision
@@ -299,7 +298,9 @@ class ModerationPipeline:
                 decision = ModerationDecision.FLAGGED
                 category = ContentCategory.UNKNOWN
                 confidence = visual_confidence
-                reasons.append(f"Low confidence ({confidence:.2f}) - manual review required")
+                reasons.append(
+                    f"Low confidence ({confidence:.2f}) - manual review required"
+                )
 
         elif visual_category == ContentCategory.UNKNOWN:
             # Uncertain content - flag for manual review
@@ -318,7 +319,9 @@ class ModerationPipeline:
                 decision = ModerationDecision.FLAGGED
                 category = visual_category
                 confidence = visual_confidence
-                reasons.append(f"Potential violation (confidence: {confidence:.2f}) - manual review required")
+                reasons.append(
+                    f"Potential violation (confidence: {confidence:.2f}) - manual review required"
+                )
 
         result = ModerationResult(
             decision=decision,
@@ -329,8 +332,8 @@ class ModerationPipeline:
             metadata={
                 "scan_type": "full",
                 "metadata_check": "passed",
-                "visual_check": visual_category.value
-            }
+                "visual_check": visual_category.value,
+            },
         )
 
         self._record_decision(asset_id, result, "automated")
@@ -342,7 +345,7 @@ class ModerationPipeline:
         scan_id: str,
         decision: ModerationDecision,
         reviewer_id: str,
-        notes: str = ""
+        notes: str = "",
     ) -> AuditEntry:
         """
         Record manual review decision
@@ -376,10 +379,7 @@ class ModerationPipeline:
             moderator=reviewer_id,
             timestamp=datetime.now(timezone.utc).isoformat(),
             reasons=[f"Manual review: {notes}"] if notes else ["Manual review"],
-            metadata={
-                "scan_id": scan_id,
-                "review_type": "manual"
-            }
+            metadata={"scan_id": scan_id, "review_type": "manual"},
         )
 
         if self.enable_audit:
@@ -390,10 +390,7 @@ class ModerationPipeline:
         return entry
 
     def _record_decision(
-        self,
-        asset_id: str,
-        result: ModerationResult,
-        moderator: str
+        self, asset_id: str, result: ModerationResult, moderator: str
     ) -> None:
         """Record moderation decision in audit trail"""
         if not self.enable_audit:
@@ -410,7 +407,7 @@ class ModerationPipeline:
             moderator=moderator,
             timestamp=result.timestamp,
             reasons=result.reasons,
-            metadata=result.metadata
+            metadata=result.metadata,
         )
 
         self._audit_trail.append(entry)
@@ -420,7 +417,7 @@ class ModerationPipeline:
         self,
         asset_id: Optional[str] = None,
         decision: Optional[ModerationDecision] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[AuditEntry]:
         """
         Get audit trail entries
@@ -471,16 +468,12 @@ class ModerationPipeline:
             asset_id: Clear entries for specific asset, or all if None
         """
         if asset_id:
-            self._audit_trail = [
-                e for e in self._audit_trail if e.asset_id != asset_id
-            ]
+            self._audit_trail = [e for e in self._audit_trail if e.asset_id != asset_id]
         else:
             self._audit_trail.clear()
 
     def export_audit_trail(
-        self,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None
+        self, start_time: Optional[str] = None, end_time: Optional[str] = None
     ) -> List[Dict]:
         """
         Export audit trail for compliance reporting
@@ -510,7 +503,7 @@ class ModerationPipeline:
                 "moderator": e.moderator,
                 "timestamp": e.timestamp,
                 "reasons": e.reasons,
-                "metadata": e.metadata
+                "metadata": e.metadata,
             }
             for e in entries
         ]

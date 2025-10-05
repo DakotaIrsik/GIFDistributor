@@ -3,6 +3,7 @@ GIPHY Publisher Module for GIF Distributor
 Provides channel management and programmatic upload integration with GIPHY API
 Issue: #12
 """
+
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 from enum import Enum
@@ -13,6 +14,7 @@ import time
 
 class GiphyContentRating(Enum):
     """Content rating levels for GIPHY uploads"""
+
     G = "g"  # General audiences, safe for all
     PG = "pg"  # Parental guidance suggested
     PG13 = "pg-13"  # Parents strongly cautioned
@@ -21,6 +23,7 @@ class GiphyContentRating(Enum):
 
 class GiphyChannelType(Enum):
     """GIPHY channel types"""
+
     BRAND = "brand"  # Brand/official channel
     ARTIST = "artist"  # Artist/creator channel
     COMMUNITY = "community"  # Community channel
@@ -29,6 +32,7 @@ class GiphyChannelType(Enum):
 @dataclass
 class GiphyUploadMetadata:
     """Metadata for a GIPHY upload"""
+
     media_url: str
     title: str
     tags: List[str]
@@ -42,6 +46,7 @@ class GiphyUploadMetadata:
 @dataclass
 class GiphyChannel:
     """GIPHY channel configuration"""
+
     channel_id: str
     display_name: str
     channel_type: GiphyChannelType
@@ -55,6 +60,7 @@ class GiphyChannel:
 @dataclass
 class GiphyUploadResult:
     """Result of a GIPHY upload operation"""
+
     success: bool
     giphy_id: Optional[str] = None
     giphy_url: Optional[str] = None
@@ -79,7 +85,7 @@ class GiphyPublisher:
         api_key: str,
         username: str,
         base_url: str = "https://upload.giphy.com/v1",
-        sfw_only: bool = True
+        sfw_only: bool = True,
     ):
         """
         Initialize GIPHY publisher
@@ -92,12 +98,14 @@ class GiphyPublisher:
         """
         self.api_key = api_key
         self.username = username
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.sfw_only = sfw_only
         self.app_name = "GIFDistributor"
         self.channels: Dict[str, GiphyChannel] = {}
 
-    def validate_metadata(self, metadata: GiphyUploadMetadata) -> tuple[bool, Optional[str]]:
+    def validate_metadata(
+        self, metadata: GiphyUploadMetadata
+    ) -> tuple[bool, Optional[str]]:
         """
         Validate upload metadata before submission
 
@@ -133,7 +141,10 @@ class GiphyPublisher:
                 return False, f"Tag '{tag}' exceeds 50 character limit"
 
         # Check content rating for SFW-only mode
-        if self.sfw_only and metadata.content_rating not in [GiphyContentRating.G, GiphyContentRating.PG]:
+        if self.sfw_only and metadata.content_rating not in [
+            GiphyContentRating.G,
+            GiphyContentRating.PG,
+        ]:
             return False, "Only G or PG rated content is allowed in SFW-only mode"
 
         # Validate channel if specified
@@ -171,7 +182,7 @@ class GiphyPublisher:
                 continue
 
             # GIPHY tags are typically lowercase with hyphens
-            tag = tag_lower.replace(' ', '-')
+            tag = tag_lower.replace(" ", "-")
 
             seen.add(tag)
             sanitized.append(tag)
@@ -233,7 +244,7 @@ class GiphyPublisher:
             "tags": ",".join(self.sanitize_tags(metadata.tags)),
             "rating": metadata.content_rating.value,
             "api_key": self.api_key,
-            "username": self.username
+            "username": self.username,
         }
 
         # Add optional fields
@@ -265,8 +276,7 @@ class GiphyPublisher:
         is_valid, error_msg = self.validate_metadata(metadata)
         if not is_valid:
             return GiphyUploadResult(
-                success=False,
-                error_message=f"Validation failed: {error_msg}"
+                success=False, error_message=f"Validation failed: {error_msg}"
             )
 
         # Build payload
@@ -285,7 +295,7 @@ class GiphyPublisher:
             giphy_id=giphy_id,
             giphy_url=giphy_url,
             embed_url=embed_url,
-            status_code=200
+            status_code=200,
         )
 
     def _generate_mock_id(self, media_url: str) -> str:
@@ -299,7 +309,7 @@ class GiphyPublisher:
             Mock GIPHY ID
         """
         # Create a hash-based ID similar to GIPHY's format
-        hash_input = f"{media_url}{time.time()}".encode('utf-8')
+        hash_input = f"{media_url}{time.time()}".encode("utf-8")
         hash_value = hashlib.sha256(hash_input).hexdigest()[:16]
         return hash_value
 
@@ -320,14 +330,10 @@ class GiphyPublisher:
             "url": f"https://giphy.com/gifs/{giphy_id}",
             "views": 0,
             "favorites": 0,
-            "import_datetime": time.time()
+            "import_datetime": time.time(),
         }
 
-    def generate_giphy_search_url(
-        self,
-        tags: List[str],
-        limit: int = 10
-    ) -> str:
+    def generate_giphy_search_url(self, tags: List[str], limit: int = 10) -> str:
         """
         Generate a GIPHY search URL for verification
 
@@ -342,9 +348,7 @@ class GiphyPublisher:
         return f"https://giphy.com/search/{search_query.replace(' ', '-')}"
 
     def format_tags_for_giphy(
-        self,
-        tags: List[str],
-        include_platform_tags: bool = True
+        self, tags: List[str], include_platform_tags: bool = True
     ) -> List[str]:
         """
         Format tags specifically for GIPHY's tagging system
@@ -381,12 +385,11 @@ class GiphyPublisher:
             "estimated_monthly_searches": total_searches,
             "competition_level": "high",
             "recommended_tags": ["reaction", "sticker", "animated"],
-            "tag_count": len(tags)
+            "tag_count": len(tags),
         }
 
     def batch_upload(
-        self,
-        uploads: List[GiphyUploadMetadata]
+        self, uploads: List[GiphyUploadMetadata]
     ) -> List[GiphyUploadResult]:
         """
         Upload multiple GIFs in batch
@@ -421,7 +424,7 @@ class GiphyPublisher:
             "follower_count": 0,
             "channel_count": len(self.channels),
             "top_tags": [],
-            "upload_limit_remaining": 5000
+            "upload_limit_remaining": 5000,
         }
 
     def get_channel_stats(self, channel_id: str) -> Optional[Dict]:
@@ -447,14 +450,14 @@ class GiphyPublisher:
             "total_favorites": 0,
             "follower_count": 0,
             "is_verified": channel.is_verified,
-            "top_performing_gifs": []
+            "top_performing_gifs": [],
         }
 
     def update_gif_metadata(
         self,
         giphy_id: str,
         title: Optional[str] = None,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
     ) -> bool:
         """
         Update metadata for an existing GIF
@@ -512,14 +515,10 @@ class GiphyPublisher:
             "thumbs-up",
             "dancing",
             "celebrate",
-            "wow"
+            "wow",
         ][:limit]
 
-    def search_similar_gifs(
-        self,
-        giphy_id: str,
-        limit: int = 5
-    ) -> List[Dict]:
+    def search_similar_gifs(self, giphy_id: str, limit: int = 5) -> List[Dict]:
         """
         Find similar GIFs to a given GIF
 
@@ -535,7 +534,7 @@ class GiphyPublisher:
             {
                 "giphy_id": f"similar-{i}",
                 "title": f"Similar GIF {i}",
-                "url": f"https://giphy.com/gifs/similar-{i}"
+                "url": f"https://giphy.com/gifs/similar-{i}",
             }
             for i in range(limit)
         ]

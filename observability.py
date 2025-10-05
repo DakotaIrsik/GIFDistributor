@@ -16,11 +16,12 @@ from dataclasses import dataclass, field, asdict
 import contextvars
 
 # Context variable for trace ID
-_trace_context = contextvars.ContextVar('trace_context', default=None)
+_trace_context = contextvars.ContextVar("trace_context", default=None)
 
 
 class LogLevel(Enum):
     """Standard log levels"""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -30,6 +31,7 @@ class LogLevel(Enum):
 
 class MetricType(Enum):
     """Types of metrics"""
+
     COUNTER = "counter"
     GAUGE = "gauge"
     HISTOGRAM = "histogram"
@@ -39,6 +41,7 @@ class MetricType(Enum):
 @dataclass
 class LogEntry:
     """Structured log entry"""
+
     timestamp: str
     level: str
     message: str
@@ -55,6 +58,7 @@ class LogEntry:
 @dataclass
 class Metric:
     """Metric data point"""
+
     name: str
     value: float
     metric_type: str
@@ -69,6 +73,7 @@ class Metric:
 @dataclass
 class Span:
     """Distributed tracing span"""
+
     trace_id: str
     span_id: str
     parent_span_id: Optional[str]
@@ -88,12 +93,14 @@ class Span:
 
     def add_log(self, message: str, level: str = "INFO", **kwargs):
         """Add a log entry to this span"""
-        self.logs.append({
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "level": level,
-            "message": message,
-            **kwargs
-        })
+        self.logs.append(
+            {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "level": level,
+                "message": message,
+                **kwargs,
+            }
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
@@ -122,8 +129,13 @@ class StructuredLogger:
 
     def _should_log(self, level: LogLevel) -> bool:
         """Check if message at level should be logged"""
-        levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARNING,
-                  LogLevel.ERROR, LogLevel.CRITICAL]
+        levels = [
+            LogLevel.DEBUG,
+            LogLevel.INFO,
+            LogLevel.WARNING,
+            LogLevel.ERROR,
+            LogLevel.CRITICAL,
+        ]
         return levels.index(level) >= levels.index(self.min_level)
 
     def _log(self, level: LogLevel, message: str, **metadata):
@@ -142,7 +154,7 @@ class StructuredLogger:
             service=self.service_name,
             trace_id=trace_id,
             span_id=span_id,
-            metadata=metadata
+            metadata=metadata,
         )
         self._logs.append(entry)
 
@@ -204,7 +216,9 @@ class MetricsCollector:
         self._histograms: Dict[str, List[float]] = defaultdict(list)
         self._metrics: List[Metric] = []
 
-    def increment_counter(self, name: str, value: float = 1.0, tags: Optional[Dict[str, str]] = None):
+    def increment_counter(
+        self, name: str, value: float = 1.0, tags: Optional[Dict[str, str]] = None
+    ):
         """
         Increment a counter metric
 
@@ -221,7 +235,7 @@ class MetricsCollector:
             value=value,
             metric_type=MetricType.COUNTER.value,
             timestamp=datetime.utcnow().isoformat() + "Z",
-            tags=tags or {}
+            tags=tags or {},
         )
         self._metrics.append(metric)
 
@@ -242,11 +256,13 @@ class MetricsCollector:
             value=value,
             metric_type=MetricType.GAUGE.value,
             timestamp=datetime.utcnow().isoformat() + "Z",
-            tags=tags or {}
+            tags=tags or {},
         )
         self._metrics.append(metric)
 
-    def record_histogram(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
+    def record_histogram(
+        self, name: str, value: float, tags: Optional[Dict[str, str]] = None
+    ):
         """
         Record a value in a histogram
 
@@ -263,7 +279,7 @@ class MetricsCollector:
             value=value,
             metric_type=MetricType.HISTOGRAM.value,
             timestamp=datetime.utcnow().isoformat() + "Z",
-            tags=tags or {}
+            tags=tags or {},
         )
         self._metrics.append(metric)
 
@@ -287,12 +303,16 @@ class MetricsCollector:
         key = self._make_key(name, tags or {})
         return self._counters.get(key, 0.0)
 
-    def get_gauge(self, name: str, tags: Optional[Dict[str, str]] = None) -> Optional[float]:
+    def get_gauge(
+        self, name: str, tags: Optional[Dict[str, str]] = None
+    ) -> Optional[float]:
         """Get current gauge value"""
         key = self._make_key(name, tags or {})
         return self._gauges.get(key)
 
-    def get_histogram_stats(self, name: str, tags: Optional[Dict[str, str]] = None) -> Dict[str, float]:
+    def get_histogram_stats(
+        self, name: str, tags: Optional[Dict[str, str]] = None
+    ) -> Dict[str, float]:
         """
         Get statistics for a histogram
 
@@ -318,7 +338,7 @@ class MetricsCollector:
             "median": sorted_values[n // 2],
             "p95": sorted_values[p95_idx],
             "p99": sorted_values[p99_idx],
-            "count": n
+            "count": n,
         }
 
     def get_all_metrics(self) -> List[Metric]:
@@ -371,7 +391,9 @@ class Tracer:
         self._active_spans: Dict[str, Span] = {}
         self._span_counter = 0
 
-    def start_trace(self, operation: str, tags: Optional[Dict[str, str]] = None) -> Span:
+    def start_trace(
+        self, operation: str, tags: Optional[Dict[str, str]] = None
+    ) -> Span:
         """
         Start a new trace (root span)
 
@@ -391,7 +413,7 @@ class Tracer:
             parent_span_id=None,
             operation=operation,
             start_time=time.time(),
-            tags=tags or {}
+            tags=tags or {},
         )
 
         self._spans[trace_id].append(span)
@@ -402,8 +424,9 @@ class Tracer:
 
         return span
 
-    def start_span(self, operation: str, parent_span: Span,
-                   tags: Optional[Dict[str, str]] = None) -> Span:
+    def start_span(
+        self, operation: str, parent_span: Span, tags: Optional[Dict[str, str]] = None
+    ) -> Span:
         """
         Start a child span
 
@@ -423,7 +446,7 @@ class Tracer:
             parent_span_id=parent_span.span_id,
             operation=operation,
             start_time=time.time(),
-            tags=tags or {}
+            tags=tags or {},
         )
 
         self._spans[parent_span.trace_id].append(span)
@@ -470,6 +493,7 @@ class Tracer:
     def _generate_trace_id(self) -> str:
         """Generate a unique trace ID"""
         import uuid
+
         return uuid.uuid4().hex
 
     def _generate_span_id(self) -> str:
@@ -508,10 +532,12 @@ class ObservabilityStack:
     def finish_span(self, span: Span, status: str = "success"):
         """Finish a span"""
         self.tracer.finish_span(span, status)
-        self.logger.info(f"Finished span: {span.operation}",
-                        trace_id=span.trace_id,
-                        duration_ms=span.duration_ms,
-                        status=status)
+        self.logger.info(
+            f"Finished span: {span.operation}",
+            trace_id=span.trace_id,
+            duration_ms=span.duration_ms,
+            status=status,
+        )
         self.metrics.record_histogram("span.duration", span.duration_ms)
 
     def get_dashboard_data(self) -> Dict[str, Any]:
@@ -526,21 +552,22 @@ class ObservabilityStack:
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "logs": {
                 "total": len(self.logger.get_logs()),
-                "by_level": self._count_logs_by_level()
+                "by_level": self._count_logs_by_level(),
             },
             "metrics": {
                 "counters": dict(self.metrics._counters),
                 "gauges": dict(self.metrics._gauges),
                 "histograms": {
-                    name: self.metrics.get_histogram_stats(name.split("{")[0],
-                                                           self._parse_tags(name))
+                    name: self.metrics.get_histogram_stats(
+                        name.split("{")[0], self._parse_tags(name)
+                    )
                     for name in self.metrics._histograms.keys()
-                }
+                },
             },
             "traces": {
                 "total": len(self.tracer._spans),
-                "active": len(self.tracer._active_spans)
-            }
+                "active": len(self.tracer._active_spans),
+            },
         }
 
     def _count_logs_by_level(self) -> Dict[str, int]:

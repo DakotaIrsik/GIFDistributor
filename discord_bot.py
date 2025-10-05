@@ -19,15 +19,19 @@ class DiscordOAuth2:
     """
 
     def __init__(self):
-        self.client_id = os.getenv('DISCORD_CLIENT_ID')
-        self.client_secret = os.getenv('DISCORD_CLIENT_SECRET')
-        self.redirect_uri = os.getenv('DISCORD_REDIRECT_URI', 'http://localhost:3000/auth/discord/callback')
+        self.client_id = os.getenv("DISCORD_CLIENT_ID")
+        self.client_secret = os.getenv("DISCORD_CLIENT_SECRET")
+        self.redirect_uri = os.getenv(
+            "DISCORD_REDIRECT_URI", "http://localhost:3000/auth/discord/callback"
+        )
 
-        self.oauth_url = 'https://discord.com/api/oauth2/authorize'
-        self.token_url = 'https://discord.com/api/oauth2/token'
-        self.api_base = 'https://discord.com/api/v10'
+        self.oauth_url = "https://discord.com/api/oauth2/authorize"
+        self.token_url = "https://discord.com/api/oauth2/token"
+        self.api_base = "https://discord.com/api/v10"
 
-    def get_authorization_url(self, state: Optional[str] = None, scopes: Optional[list] = None) -> str:
+    def get_authorization_url(
+        self, state: Optional[str] = None, scopes: Optional[list] = None
+    ) -> str:
         """
         Generate Discord OAuth2 authorization URL
 
@@ -39,17 +43,17 @@ class DiscordOAuth2:
             Authorization URL for redirecting users
         """
         if scopes is None:
-            scopes = ['identify', 'guilds', 'webhook.incoming']
+            scopes = ["identify", "guilds", "webhook.incoming"]
 
         params = {
-            'client_id': self.client_id,
-            'redirect_uri': self.redirect_uri,
-            'response_type': 'code',
-            'scope': ' '.join(scopes)
+            "client_id": self.client_id,
+            "redirect_uri": self.redirect_uri,
+            "response_type": "code",
+            "scope": " ".join(scopes),
         }
 
         if state:
-            params['state'] = state
+            params["state"] = state
 
         return f"{self.oauth_url}?{urlencode(params)}"
 
@@ -64,16 +68,14 @@ class DiscordOAuth2:
             Token response containing access_token, refresh_token, etc.
         """
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': self.redirect_uri
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": self.redirect_uri,
         }
 
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         response = requests.post(self.token_url, data=data, headers=headers)
         response.raise_for_status()
@@ -91,15 +93,13 @@ class DiscordOAuth2:
             New token response
         """
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': refresh_token
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
         }
 
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         response = requests.post(self.token_url, data=data, headers=headers)
         response.raise_for_status()
@@ -116,11 +116,9 @@ class DiscordOAuth2:
         Returns:
             User information from Discord API
         """
-        headers = {
-            'Authorization': f'Bearer {access_token}'
-        }
+        headers = {"Authorization": f"Bearer {access_token}"}
 
-        response = requests.get(f'{self.api_base}/users/@me', headers=headers)
+        response = requests.get(f"{self.api_base}/users/@me", headers=headers)
         response.raise_for_status()
 
         return response.json()
@@ -135,11 +133,9 @@ class DiscordOAuth2:
         Returns:
             List of guild objects
         """
-        headers = {
-            'Authorization': f'Bearer {access_token}'
-        }
+        headers = {"Authorization": f"Bearer {access_token}"}
 
-        response = requests.get(f'{self.api_base}/users/@me/guilds', headers=headers)
+        response = requests.get(f"{self.api_base}/users/@me/guilds", headers=headers)
         response.raise_for_status()
 
         return response.json()
@@ -157,15 +153,15 @@ class DiscordMessenger:
         Args:
             bot_token: Discord bot token (optional, can also use OAuth tokens)
         """
-        self.bot_token = bot_token or os.getenv('DISCORD_BOT_TOKEN')
-        self.api_base = 'https://discord.com/api/v10'
+        self.bot_token = bot_token or os.getenv("DISCORD_BOT_TOKEN")
+        self.api_base = "https://discord.com/api/v10"
 
     def send_embed(
         self,
         channel_id: str,
         embed: Dict[str, Any],
         access_token: Optional[str] = None,
-        content: Optional[str] = None
+        content: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Send an embed to a Discord channel
@@ -181,21 +177,16 @@ class DiscordMessenger:
         """
         # Determine which token to use
         token = access_token or self.bot_token
-        auth_header = f'Bearer {token}' if access_token else f'Bot {self.bot_token}'
+        auth_header = f"Bearer {token}" if access_token else f"Bot {self.bot_token}"
 
-        headers = {
-            'Authorization': auth_header,
-            'Content-Type': 'application/json'
-        }
+        headers = {"Authorization": auth_header, "Content-Type": "application/json"}
 
-        payload = {
-            'embeds': [embed]
-        }
+        payload = {"embeds": [embed]}
 
         if content:
-            payload['content'] = content
+            payload["content"] = content
 
-        url = f'{self.api_base}/channels/{channel_id}/messages'
+        url = f"{self.api_base}/channels/{channel_id}/messages"
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
 
@@ -207,7 +198,7 @@ class DiscordMessenger:
         file_url: str,
         filename: str,
         access_token: Optional[str] = None,
-        content: Optional[str] = None
+        content: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Send an attachment to a Discord channel
@@ -228,22 +219,18 @@ class DiscordMessenger:
 
         # Determine which token to use
         token = access_token or self.bot_token
-        auth_header = f'Bearer {token}' if access_token else f'Bot {self.bot_token}'
+        auth_header = f"Bearer {token}" if access_token else f"Bot {self.bot_token}"
 
-        headers = {
-            'Authorization': auth_header
-        }
+        headers = {"Authorization": auth_header}
 
         # Prepare multipart form data
-        files = {
-            'file': (filename, file_response.content)
-        }
+        files = {"file": (filename, file_response.content)}
 
         data = {}
         if content:
-            data['content'] = content
+            data["content"] = content
 
-        url = f'{self.api_base}/channels/{channel_id}/messages'
+        url = f"{self.api_base}/channels/{channel_id}/messages"
         response = requests.post(url, headers=headers, files=files, data=data)
         response.raise_for_status()
 
@@ -258,7 +245,7 @@ class DiscordMessenger:
         image_url: Optional[str] = None,
         thumbnail_url: Optional[str] = None,
         footer_text: Optional[str] = None,
-        author_name: Optional[str] = None
+        author_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Create a Discord embed object
@@ -279,24 +266,24 @@ class DiscordMessenger:
         embed: Dict[str, Any] = {}
 
         if title:
-            embed['title'] = title
+            embed["title"] = title
         if description:
-            embed['description'] = description
+            embed["description"] = description
         if url:
-            embed['url'] = url
+            embed["url"] = url
         if color:
-            embed['color'] = color
+            embed["color"] = color
         else:
-            embed['color'] = 5814783  # Discord blurple default
+            embed["color"] = 5814783  # Discord blurple default
 
         if image_url:
-            embed['image'] = {'url': image_url}
+            embed["image"] = {"url": image_url}
         if thumbnail_url:
-            embed['thumbnail'] = {'url': thumbnail_url}
+            embed["thumbnail"] = {"url": thumbnail_url}
         if footer_text:
-            embed['footer'] = {'text': footer_text}
+            embed["footer"] = {"text": footer_text}
         if author_name:
-            embed['author'] = {'name': author_name}
+            embed["author"] = {"name": author_name}
 
         return embed
 
@@ -307,7 +294,7 @@ class DiscordMessenger:
         title: str,
         description: Optional[str] = None,
         source_url: Optional[str] = None,
-        access_token: Optional[str] = None
+        access_token: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Send a GIF as an embed to a Discord channel
@@ -328,20 +315,20 @@ class DiscordMessenger:
             description=description,
             url=source_url,
             image_url=gif_url,
-            footer_text='Powered by GIF Distributor'
+            footer_text="Powered by GIF Distributor",
         )
 
         return self.send_embed(channel_id, embed, access_token)
 
 
 # Example usage
-if __name__ == '__main__':
+if __name__ == "__main__":
     # OAuth2 flow example
     oauth = DiscordOAuth2()
 
     # Step 1: Get authorization URL
-    auth_url = oauth.get_authorization_url(state='random_state_123')
-    print(f'Authorization URL: {auth_url}')
+    auth_url = oauth.get_authorization_url(state="random_state_123")
+    print(f"Authorization URL: {auth_url}")
 
     # Step 2: After user authorizes, exchange code for token
     # code = 'authorization_code_from_callback'

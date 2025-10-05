@@ -9,7 +9,7 @@ from teams_extension import (
     AdaptiveCardBuilder,
     CardType,
     MessageExtensionType,
-    TeamsAttachment
+    TeamsAttachment,
 )
 
 
@@ -29,7 +29,7 @@ def sample_gif():
         height=270,
         duration_ms=3000,
         tags=["cat", "funny", "pets"],
-        description="A hilarious cat doing backflips"
+        description="A hilarious cat doing backflips",
     )
 
 
@@ -39,7 +39,7 @@ def teams_extension():
     return TeamsMessageExtension(
         app_id="test-app-id",
         app_secret="test-app-secret",
-        bot_endpoint="https://bot.example.com/messages"
+        bot_endpoint="https://bot.example.com/messages",
     )
 
 
@@ -83,7 +83,8 @@ class TestAdaptiveCardBuilder:
 
         # Find tags in card body
         tag_blocks = [
-            item for item in card["body"]
+            item
+            for item in card["body"]
             if item.get("type") == "TextBlock" and "cat" in item.get("text", "")
         ]
         assert len(tag_blocks) > 0
@@ -94,8 +95,10 @@ class TestAdaptiveCardBuilder:
 
         # Find description in card body
         desc_blocks = [
-            item for item in card["body"]
-            if item.get("type") == "TextBlock" and sample_gif.description in item.get("text", "")
+            item
+            for item in card["body"]
+            if item.get("type") == "TextBlock"
+            and sample_gif.description in item.get("text", "")
         ]
         assert len(desc_blocks) > 0
 
@@ -112,7 +115,7 @@ class TestAdaptiveCardBuilder:
             file_size=500000,
             width=320,
             height=180,
-            duration_ms=2000
+            duration_ms=2000,
         )
 
         card = AdaptiveCardBuilder.create_gif_card(gif, CardType.FULL)
@@ -135,10 +138,7 @@ class TestTeamsMessageExtension:
 
     def test_initialization(self):
         """Test message extension initialization"""
-        ext = TeamsMessageExtension(
-            app_id="test-id",
-            app_secret="test-secret"
-        )
+        ext = TeamsMessageExtension(app_id="test-id", app_secret="test-secret")
 
         assert ext.app_id == "test-id"
         assert ext.app_secret == "test-secret"
@@ -164,7 +164,7 @@ class TestTeamsMessageExtension:
             file_size=1000,
             width=100,
             height=100,
-            duration_ms=1000
+            duration_ms=1000,
         )
 
         result = teams_extension.register_gif(gif)
@@ -178,7 +178,10 @@ class TestTeamsMessageExtension:
 
         assert result.type == "result"
         assert len(result.attachments) == 1
-        assert result.attachments[0].content_type == "application/vnd.microsoft.card.adaptive"
+        assert (
+            result.attachments[0].content_type
+            == "application/vnd.microsoft.card.adaptive"
+        )
 
     def test_search_query_no_results(self, teams_extension):
         """Test search query with no results"""
@@ -224,7 +227,7 @@ class TestTeamsMessageExtension:
                 width=100,
                 height=100,
                 duration_ms=1000,
-                tags=["cat"]
+                tags=["cat"],
             )
             teams_extension.register_gif(gif)
 
@@ -257,9 +260,7 @@ class TestTeamsMessageExtension:
     def test_unfurl_link_disabled(self, sample_gif):
         """Test link unfurling when disabled"""
         ext = TeamsMessageExtension(
-            app_id="test-id",
-            app_secret="test-secret",
-            enable_link_unfurling=False
+            app_id="test-id", app_secret="test-secret", enable_link_unfurling=False
         )
 
         ext.register_gif(sample_gif)
@@ -275,9 +276,7 @@ class TestTeamsMessageExtension:
     def test_track_card_interaction(self, teams_extension):
         """Test tracking card interactions"""
         teams_extension.track_card_interaction(
-            asset_id="test123",
-            interaction_type="view",
-            user_id="user456"
+            asset_id="test123", interaction_type="view", user_id="user456"
         )
 
         assert len(teams_extension._card_interactions) == 1
@@ -289,9 +288,7 @@ class TestTeamsMessageExtension:
         metadata = {"channel": "general", "team": "marketing"}
 
         teams_extension.track_card_interaction(
-            asset_id="test123",
-            interaction_type="click",
-            metadata=metadata
+            asset_id="test123", interaction_type="click", metadata=metadata
         )
 
         assert teams_extension._card_interactions[0]["metadata"] == metadata
@@ -345,9 +342,7 @@ class TestTeamsMessageExtension:
         import hashlib
 
         signature = hmac.new(
-            teams_extension.app_secret.encode(),
-            payload.encode(),
-            hashlib.sha256
+            teams_extension.app_secret.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
 
         assert teams_extension.verify_request_signature(payload, signature) is True
@@ -357,7 +352,10 @@ class TestTeamsMessageExtension:
         payload = '{"test": "data"}'
         invalid_signature = "invalid"
 
-        assert teams_extension.verify_request_signature(payload, invalid_signature) is False
+        assert (
+            teams_extension.verify_request_signature(payload, invalid_signature)
+            is False
+        )
 
     def test_create_compose_extension_response(self, teams_extension, sample_gif):
         """Test creating compose extension response"""
@@ -400,10 +398,7 @@ class TestIntegration:
 
     def test_full_workflow(self):
         """Test complete workflow from registration to interaction"""
-        ext = TeamsMessageExtension(
-            app_id="test-id",
-            app_secret="test-secret"
-        )
+        ext = TeamsMessageExtension(app_id="test-id", app_secret="test-secret")
 
         # Register a GIF
         gif = GIFCard(
@@ -419,7 +414,7 @@ class TestIntegration:
             height=360,
             duration_ms=5000,
             tags=["workflow", "test"],
-            description="Testing the full workflow"
+            description="Testing the full workflow",
         )
 
         assert ext.register_gif(gif) is True
@@ -452,7 +447,7 @@ class TestIntegration:
             height=300,
             duration_ms=4000,
             tags=["penguin", "dance", "antarctica"],
-            description="A cute penguin dancing on ice"
+            description="A cute penguin dancing on ice",
         )
 
         teams_extension.register_gif(gif)
@@ -484,7 +479,7 @@ class TestIntegration:
             width=100,
             height=100,
             duration_ms=1000,
-            tags=["unique"]
+            tags=["unique"],
         )
         teams_extension.register_gif(gif1)
 
@@ -504,7 +499,7 @@ class TestIntegration:
             width=100,
             height=100,
             duration_ms=1000,
-            tags=["common"]
+            tags=["common"],
         )
         gif3 = GIFCard(
             asset_id="multi2",
@@ -518,7 +513,7 @@ class TestIntegration:
             width=100,
             height=100,
             duration_ms=1000,
-            tags=["common"]
+            tags=["common"],
         )
         teams_extension.register_gif(gif2)
         teams_extension.register_gif(gif3)

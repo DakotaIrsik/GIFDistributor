@@ -3,6 +3,7 @@ Transcode Module for GIF Distributor
 Handles transcoding GIF to MP4/WebP with GIF fallback
 Issue: #29
 """
+
 import subprocess
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ from enum import Enum
 
 class OutputFormat(Enum):
     """Supported output formats"""
+
     MP4 = "mp4"
     WEBP = "webp"
     GIF = "gif"
@@ -19,6 +21,7 @@ class OutputFormat(Enum):
 
 class TranscodeError(Exception):
     """Exception raised for transcoding errors"""
+
     pass
 
 
@@ -44,13 +47,13 @@ class Transcoder:
                 [self.ffmpeg_path, "-version"],
                 capture_output=True,
                 check=True,
-                timeout=5
+                timeout=5,
             )
             subprocess.run(
                 [self.ffprobe_path, "-version"],
                 capture_output=True,
                 check=True,
-                timeout=5
+                timeout=5,
             )
         except (subprocess.SubprocessError, FileNotFoundError) as e:
             raise TranscodeError(f"ffmpeg/ffprobe not found or not working: {e}")
@@ -72,28 +75,38 @@ class Transcoder:
             result = subprocess.run(
                 [
                     self.ffprobe_path,
-                    "-v", "quiet",
-                    "-print_format", "json",
+                    "-v",
+                    "quiet",
+                    "-print_format",
+                    "json",
                     "-show_format",
                     "-show_streams",
-                    input_path
+                    input_path,
                 ],
                 capture_output=True,
                 check=True,
-                timeout=10
+                timeout=10,
             )
             import json
+
             info = json.loads(result.stdout)
 
             # Extract relevant info
-            video_stream = next((s for s in info.get("streams", []) if s.get("codec_type") == "video"), None)
+            video_stream = next(
+                (s for s in info.get("streams", []) if s.get("codec_type") == "video"),
+                None,
+            )
 
             return {
                 "duration": float(info.get("format", {}).get("duration", 0)),
                 "size": int(info.get("format", {}).get("size", 0)),
                 "width": int(video_stream.get("width", 0)) if video_stream else 0,
                 "height": int(video_stream.get("height", 0)) if video_stream else 0,
-                "codec": video_stream.get("codec_name", "unknown") if video_stream else "unknown"
+                "codec": (
+                    video_stream.get("codec_name", "unknown")
+                    if video_stream
+                    else "unknown"
+                ),
             }
         except subprocess.SubprocessError as e:
             raise TranscodeError(f"Failed to get media info: {e}")
@@ -105,7 +118,7 @@ class Transcoder:
         input_path: str,
         output_path: Optional[str] = None,
         quality: str = "high",
-        max_width: Optional[int] = None
+        max_width: Optional[int] = None,
     ) -> str:
         """
         Transcode GIF to MP4 format
@@ -129,19 +142,25 @@ class Transcoder:
         quality_settings = {
             "low": {"crf": "28", "preset": "fast"},
             "medium": {"crf": "23", "preset": "medium"},
-            "high": {"crf": "18", "preset": "slow"}
+            "high": {"crf": "18", "preset": "slow"},
         }
         settings = quality_settings.get(quality, quality_settings["high"])
 
         # Build ffmpeg command
         cmd = [
             self.ffmpeg_path,
-            "-i", input_path,
-            "-movflags", "faststart",  # Enable streaming
-            "-pix_fmt", "yuv420p",     # Ensure compatibility
-            "-vcodec", "libx264",
-            "-crf", settings["crf"],
-            "-preset", settings["preset"],
+            "-i",
+            input_path,
+            "-movflags",
+            "faststart",  # Enable streaming
+            "-pix_fmt",
+            "yuv420p",  # Ensure compatibility
+            "-vcodec",
+            "libx264",
+            "-crf",
+            settings["crf"],
+            "-preset",
+            settings["preset"],
         ]
 
         # Add scaling if max_width specified
@@ -161,7 +180,7 @@ class Transcoder:
         input_path: str,
         output_path: Optional[str] = None,
         quality: int = 80,
-        lossless: bool = False
+        lossless: bool = False,
     ) -> str:
         """
         Transcode GIF to WebP format
@@ -183,7 +202,8 @@ class Transcoder:
 
         cmd = [
             self.ffmpeg_path,
-            "-i", input_path,
+            "-i",
+            input_path,
         ]
 
         if lossless:
@@ -204,7 +224,7 @@ class Transcoder:
         input_path: str,
         output_path: Optional[str] = None,
         max_colors: int = 256,
-        max_width: Optional[int] = None
+        max_width: Optional[int] = None,
     ) -> str:
         """
         Optimize GIF file (reduce size while maintaining quality)
@@ -231,13 +251,16 @@ class Transcoder:
             filters.append(f"scale='min({max_width},iw)':-1:flags=lanczos")
 
         # Add palette generation for better color optimization
-        filters.append(f"split[s0][s1];[s0]palettegen=max_colors={max_colors}[p];[s1][p]paletteuse")
+        filters.append(
+            f"split[s0][s1];[s0]palettegen=max_colors={max_colors}[p];[s1][p]paletteuse"
+        )
 
         filter_str = ",".join(filters) if filters else None
 
         cmd = [
             self.ffmpeg_path,
-            "-i", input_path,
+            "-i",
+            input_path,
         ]
 
         if filter_str:
@@ -252,10 +275,7 @@ class Transcoder:
             raise TranscodeError(f"Failed to optimize GIF: {e}")
 
     def transcode_all_formats(
-        self,
-        input_path: str,
-        output_dir: Optional[str] = None,
-        quality: str = "high"
+        self, input_path: str, output_dir: Optional[str] = None, quality: str = "high"
     ) -> Dict[str, str]:
         """
         Transcode to all supported formats (MP4, WebP, optimized GIF)

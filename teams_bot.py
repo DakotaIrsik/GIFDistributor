@@ -27,6 +27,7 @@ from datetime import datetime, timedelta
 
 class ActivityType(Enum):
     """Teams activity types"""
+
     MESSAGE = "message"
     CONVERSATION_UPDATE = "conversationUpdate"
     MESSAGE_REACTION = "messageReaction"
@@ -35,6 +36,7 @@ class ActivityType(Enum):
 
 class ConversationType(Enum):
     """Teams conversation types"""
+
     PERSONAL = "personal"
     GROUP_CHAT = "groupChat"
     CHANNEL = "channel"
@@ -43,6 +45,7 @@ class ConversationType(Enum):
 @dataclass
 class TeamsIdentity:
     """Teams user or bot identity"""
+
     id: str
     name: str
     aad_object_id: Optional[str] = None
@@ -51,6 +54,7 @@ class TeamsIdentity:
 @dataclass
 class TeamsConversation:
     """Teams conversation context"""
+
     id: str
     conversation_type: ConversationType
     tenant_id: Optional[str] = None
@@ -60,6 +64,7 @@ class TeamsConversation:
 @dataclass
 class TeamsActivity:
     """Teams activity (message, event, etc.)"""
+
     type: ActivityType
     id: str
     timestamp: datetime
@@ -73,6 +78,7 @@ class TeamsActivity:
 @dataclass
 class BotMessage:
     """Message to send via bot"""
+
     text: str
     attachments: List[Dict[str, Any]] = field(default_factory=list)
     conversation_id: Optional[str] = None
@@ -87,12 +93,7 @@ class TeamsOAuthManager:
     and user authentication flows.
     """
 
-    def __init__(
-        self,
-        app_id: str,
-        app_password: str,
-        tenant_id: str = "common"
-    ):
+    def __init__(self, app_id: str, app_password: str, tenant_id: str = "common"):
         """
         Initialize OAuth manager
 
@@ -122,8 +123,11 @@ class TeamsOAuthManager:
             Bot access token
         """
         # Check if cached token is still valid
-        if (self._bot_token and self._token_expires_at and
-            datetime.utcnow() < self._token_expires_at):
+        if (
+            self._bot_token
+            and self._token_expires_at
+            and datetime.utcnow() < self._token_expires_at
+        ):
             return self._bot_token
 
         # In production: POST to https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token
@@ -137,10 +141,7 @@ class TeamsOAuthManager:
         return self._bot_token
 
     def get_user_auth_url(
-        self,
-        state: str,
-        redirect_uri: str,
-        scope: str = "User.Read"
+        self, state: str, redirect_uri: str, scope: str = "User.Read"
     ) -> str:
         """
         Get OAuth URL for user authentication
@@ -153,25 +154,23 @@ class TeamsOAuthManager:
         Returns:
             Authorization URL
         """
-        base_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
+        base_url = (
+            f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
+        )
 
         params = {
-            'client_id': self.app_id,
-            'response_type': 'code',
-            'redirect_uri': redirect_uri,
-            'scope': scope,
-            'state': state,
-            'response_mode': 'query'
+            "client_id": self.app_id,
+            "response_type": "code",
+            "redirect_uri": redirect_uri,
+            "scope": scope,
+            "state": state,
+            "response_mode": "query",
         }
 
-        query_string = '&'.join(f"{k}={v}" for k, v in params.items())
+        query_string = "&".join(f"{k}={v}" for k, v in params.items())
         return f"{base_url}?{query_string}"
 
-    def exchange_code_for_token(
-        self,
-        code: str,
-        redirect_uri: str
-    ) -> Dict[str, Any]:
+    def exchange_code_for_token(self, code: str, redirect_uri: str) -> Dict[str, Any]:
         """
         Exchange authorization code for access token
 
@@ -189,18 +188,19 @@ class TeamsOAuthManager:
         # Mock response
         user_id = secrets.token_urlsafe(16)
         token_data = {
-            'access_token': f"user_token_{secrets.token_urlsafe(32)}",
-            'refresh_token': f"refresh_{secrets.token_urlsafe(32)}",
-            'expires_in': 3600,
-            'token_type': 'Bearer',
-            'scope': 'User.Read',
-            'user_id': user_id
+            "access_token": f"user_token_{secrets.token_urlsafe(32)}",
+            "refresh_token": f"refresh_{secrets.token_urlsafe(32)}",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+            "scope": "User.Read",
+            "user_id": user_id,
         }
 
         # Cache user token
         self._user_tokens[user_id] = {
             **token_data,
-            'expires_at': datetime.utcnow() + timedelta(seconds=token_data['expires_in'])
+            "expires_at": datetime.utcnow()
+            + timedelta(seconds=token_data["expires_in"]),
         }
 
         return token_data
@@ -220,12 +220,12 @@ class TeamsOAuthManager:
             return None
 
         # Check expiration
-        if datetime.utcnow() >= token_data['expires_at']:
+        if datetime.utcnow() >= token_data["expires_at"]:
             # Token expired - should refresh here
             del self._user_tokens[user_id]
             return None
 
-        return token_data['access_token']
+        return token_data["access_token"]
 
     def revoke_user_token(self, user_id: str) -> bool:
         """
@@ -256,7 +256,7 @@ class TeamsBot:
         app_id: str,
         app_password: str,
         service_url: str = "https://smba.trafficmanager.net/amer/",
-        oauth_manager: Optional[TeamsOAuthManager] = None
+        oauth_manager: Optional[TeamsOAuthManager] = None,
     ):
         """
         Initialize Teams bot
@@ -269,7 +269,7 @@ class TeamsBot:
         """
         self.app_id = app_id
         self.app_password = app_password
-        self.service_url = service_url.rstrip('/')
+        self.service_url = service_url.rstrip("/")
 
         # OAuth
         self.oauth = oauth_manager or TeamsOAuthManager(app_id, app_password)
@@ -284,11 +284,7 @@ class TeamsBot:
         # Analytics
         self._activity_log: List[Dict[str, Any]] = []
 
-    def verify_request(
-        self,
-        auth_header: str,
-        request_body: str
-    ) -> bool:
+    def verify_request(self, auth_header: str, request_body: str) -> bool:
         """
         Verify incoming request from Bot Framework
 
@@ -303,12 +299,14 @@ class TeamsBot:
         # against Microsoft's public keys
 
         # For development, simple validation
-        if not auth_header or not auth_header.startswith('Bearer '):
+        if not auth_header or not auth_header.startswith("Bearer "):
             return False
 
         return True
 
-    def handle_activity(self, activity_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def handle_activity(
+        self, activity_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """
         Handle incoming activity from Teams
 
@@ -322,12 +320,14 @@ class TeamsBot:
         activity = self._parse_activity(activity_data)
 
         # Log activity
-        self._activity_log.append({
-            'activity_type': activity.type.value,
-            'conversation_id': activity.conversation.id,
-            'from': activity.from_identity.name,
-            'timestamp': activity.timestamp.isoformat()
-        })
+        self._activity_log.append(
+            {
+                "activity_type": activity.type.value,
+                "conversation_id": activity.conversation.id,
+                "from": activity.from_identity.name,
+                "timestamp": activity.timestamp.isoformat(),
+            }
+        )
 
         # Route to appropriate handler
         if activity.type == ActivityType.MESSAGE:
@@ -342,27 +342,29 @@ class TeamsBot:
     def _parse_activity(self, data: Dict[str, Any]) -> TeamsActivity:
         """Parse activity data into TeamsActivity object"""
         return TeamsActivity(
-            type=ActivityType(data.get('type', 'message')),
-            id=data.get('id', ''),
+            type=ActivityType(data.get("type", "message")),
+            id=data.get("id", ""),
             timestamp=datetime.fromisoformat(
-                data.get('timestamp', datetime.utcnow().isoformat()).replace('Z', '+00:00')
+                data.get("timestamp", datetime.utcnow().isoformat()).replace(
+                    "Z", "+00:00"
+                )
             ),
             from_identity=TeamsIdentity(
-                id=data.get('from', {}).get('id', ''),
-                name=data.get('from', {}).get('name', ''),
-                aad_object_id=data.get('from', {}).get('aadObjectId')
+                id=data.get("from", {}).get("id", ""),
+                name=data.get("from", {}).get("name", ""),
+                aad_object_id=data.get("from", {}).get("aadObjectId"),
             ),
             conversation=TeamsConversation(
-                id=data.get('conversation', {}).get('id', ''),
+                id=data.get("conversation", {}).get("id", ""),
                 conversation_type=ConversationType(
-                    data.get('conversation', {}).get('conversationType', 'personal')
+                    data.get("conversation", {}).get("conversationType", "personal")
                 ),
-                tenant_id=data.get('conversation', {}).get('tenantId'),
-                name=data.get('conversation', {}).get('name')
+                tenant_id=data.get("conversation", {}).get("tenantId"),
+                name=data.get("conversation", {}).get("name"),
             ),
-            text=data.get('text'),
-            attachments=data.get('attachments', []),
-            value=data.get('value')
+            text=data.get("text"),
+            attachments=data.get("attachments", []),
+            value=data.get("value"),
         )
 
     def _handle_message(self, activity: TeamsActivity) -> Optional[Dict[str, Any]]:
@@ -377,12 +379,14 @@ class TeamsBot:
                 return response
 
         # Default response
-        if activity.text and 'help' in activity.text.lower():
+        if activity.text and "help" in activity.text.lower():
             return self._create_help_response()
 
         return None
 
-    def _handle_conversation_update(self, activity: TeamsActivity) -> Optional[Dict[str, Any]]:
+    def _handle_conversation_update(
+        self, activity: TeamsActivity
+    ) -> Optional[Dict[str, Any]]:
         """Handle conversation update (bot added/removed)"""
         # Call registered handlers
         for handler in self._conversation_update_handlers:
@@ -396,9 +400,9 @@ class TeamsBot:
     def _handle_invoke(self, activity: TeamsActivity) -> Optional[Dict[str, Any]]:
         """Handle invoke activity (adaptive card actions)"""
         if activity.value:
-            action = activity.value.get('action')
+            action = activity.value.get("action")
 
-            if action == 'auth':
+            if action == "auth":
                 # Return OAuth card
                 return self._create_oauth_card_response()
 
@@ -410,23 +414,25 @@ class TeamsBot:
 
         if conv_id not in self._conversations:
             self._conversations[conv_id] = {
-                'id': conv_id,
-                'type': activity.conversation.conversation_type.value,
-                'created_at': datetime.utcnow().isoformat(),
-                'messages': []
+                "id": conv_id,
+                "type": activity.conversation.conversation_type.value,
+                "created_at": datetime.utcnow().isoformat(),
+                "messages": [],
             }
 
-        self._conversations[conv_id]['messages'].append({
-            'from': activity.from_identity.name,
-            'text': activity.text,
-            'timestamp': activity.timestamp.isoformat()
-        })
+        self._conversations[conv_id]["messages"].append(
+            {
+                "from": activity.from_identity.name,
+                "text": activity.text,
+                "timestamp": activity.timestamp.isoformat(),
+            }
+        )
 
     def send_message(
         self,
         conversation_id: str,
         text: str,
-        attachments: Optional[List[Dict[str, Any]]] = None
+        attachments: Optional[List[Dict[str, Any]]] = None,
     ) -> bool:
         """
         Send message to conversation
@@ -444,30 +450,27 @@ class TeamsBot:
 
         # Build message payload
         payload = {
-            'type': 'message',
-            'from': {
-                'id': f"28:{self.app_id}",
-                'name': 'GIF Distribution Bot'
-            },
-            'conversation': {
-                'id': conversation_id
-            },
-            'text': text
+            "type": "message",
+            "from": {"id": f"28:{self.app_id}", "name": "GIF Distribution Bot"},
+            "conversation": {"id": conversation_id},
+            "text": text,
         }
 
         if attachments:
-            payload['attachments'] = attachments
+            payload["attachments"] = attachments
 
         # In production: POST to {service_url}/v3/conversations/{conversation_id}/activities
         # with Authorization: Bearer {token}
 
         # Log the message
-        self._activity_log.append({
-            'type': 'outgoing_message',
-            'conversation_id': conversation_id,
-            'text': text,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+        self._activity_log.append(
+            {
+                "type": "outgoing_message",
+                "conversation_id": conversation_id,
+                "text": text,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
 
         return True
 
@@ -477,7 +480,7 @@ class TeamsBot:
         gif_url: str,
         title: str,
         description: str = "",
-        share_url: Optional[str] = None
+        share_url: Optional[str] = None,
     ) -> bool:
         """
         Send adaptive card with GIF
@@ -501,69 +504,54 @@ class TeamsBot:
                     "type": "TextBlock",
                     "text": title,
                     "weight": "Bolder",
-                    "size": "Large"
+                    "size": "Large",
                 },
-                {
-                    "type": "Image",
-                    "url": gif_url,
-                    "size": "Stretch"
-                }
-            ]
+                {"type": "Image", "url": gif_url, "size": "Stretch"},
+            ],
         }
 
         if description:
-            card["body"].insert(1, {
-                "type": "TextBlock",
-                "text": description,
-                "wrap": True
-            })
+            card["body"].insert(
+                1, {"type": "TextBlock", "text": description, "wrap": True}
+            )
 
         if share_url:
             card["actions"] = [
-                {
-                    "type": "Action.OpenUrl",
-                    "title": "Share",
-                    "url": share_url
-                }
+                {"type": "Action.OpenUrl", "title": "Share", "url": share_url}
             ]
 
         attachment = {
             "contentType": "application/vnd.microsoft.card.adaptive",
-            "content": card
+            "content": card,
         }
 
-        return self.send_message(
-            conversation_id,
-            text="",
-            attachments=[attachment]
-        )
+        return self.send_message(conversation_id, text="", attachments=[attachment])
 
     def _create_welcome_response(self) -> Dict[str, Any]:
         """Create welcome message response"""
         return {
-            'type': 'message',
-            'text': 'Welcome to GIF Distribution Bot! 🎉\n\n'
-                   'I can help you share GIFs across platforms.\n\n'
-                   'Type "help" to see what I can do.'
+            "type": "message",
+            "text": "Welcome to GIF Distribution Bot! 🎉\n\n"
+            "I can help you share GIFs across platforms.\n\n"
+            'Type "help" to see what I can do.',
         }
 
     def _create_help_response(self) -> Dict[str, Any]:
         """Create help message response"""
         return {
-            'type': 'message',
-            'text': '**GIF Distribution Bot Commands**\n\n'
-                   '• `help` - Show this help message\n'
-                   '• `login` - Authenticate with OAuth\n'
-                   '• `search [query]` - Search for GIFs\n'
-                   '• `share [gif_id]` - Share a GIF'
+            "type": "message",
+            "text": "**GIF Distribution Bot Commands**\n\n"
+            "• `help` - Show this help message\n"
+            "• `login` - Authenticate with OAuth\n"
+            "• `search [query]` - Search for GIFs\n"
+            "• `share [gif_id]` - Share a GIF",
         }
 
     def _create_oauth_card_response(self) -> Dict[str, Any]:
         """Create OAuth sign-in card"""
         state = secrets.token_urlsafe(16)
         auth_url = self.oauth.get_user_auth_url(
-            state=state,
-            redirect_uri="https://yourapp.com/auth/callback"
+            state=state, redirect_uri="https://yourapp.com/auth/callback"
         )
 
         card = {
@@ -575,31 +563,27 @@ class TeamsBot:
                     "type": "TextBlock",
                     "text": "Sign in to continue",
                     "weight": "Bolder",
-                    "size": "Medium"
+                    "size": "Medium",
                 },
                 {
                     "type": "TextBlock",
                     "text": "Click below to sign in with your Microsoft account",
-                    "wrap": True
-                }
+                    "wrap": True,
+                },
             ],
             "actions": [
-                {
-                    "type": "Action.OpenUrl",
-                    "title": "Sign In",
-                    "url": auth_url
-                }
-            ]
+                {"type": "Action.OpenUrl", "title": "Sign In", "url": auth_url}
+            ],
         }
 
         return {
-            'type': 'message',
-            'attachments': [
+            "type": "message",
+            "attachments": [
                 {
-                    'contentType': 'application/vnd.microsoft.card.adaptive',
-                    'content': card
+                    "contentType": "application/vnd.microsoft.card.adaptive",
+                    "content": card,
                 }
-            ]
+            ],
         }
 
     def on_message(self, handler: callable):
@@ -645,52 +629,40 @@ class TeamsBot:
         # Count by type
         activity_types = {}
         for activity in self._activity_log:
-            atype = activity.get('activity_type', activity.get('type', 'unknown'))
+            atype = activity.get("activity_type", activity.get("type", "unknown"))
             activity_types[atype] = activity_types.get(atype, 0) + 1
 
         return {
-            'total_activities': total_activities,
-            'total_conversations': total_conversations,
-            'activity_types': activity_types,
-            'active_users': len(set(
-                a.get('from') for a in self._activity_log if a.get('from')
-            ))
+            "total_activities": total_activities,
+            "total_conversations": total_conversations,
+            "activity_types": activity_types,
+            "active_users": len(
+                set(a.get("from") for a in self._activity_log if a.get("from"))
+            ),
         }
 
 
 # Example usage
 if __name__ == "__main__":
     # Initialize bot
-    bot = TeamsBot(
-        app_id="your-app-id",
-        app_password="your-app-password"
-    )
+    bot = TeamsBot(app_id="your-app-id", app_password="your-app-password")
 
     # Register custom message handler
     def custom_message_handler(activity: TeamsActivity):
-        if activity.text and 'gif' in activity.text.lower():
-            return {
-                'type': 'message',
-                'text': 'Looking for GIFs? Try searching!'
-            }
+        if activity.text and "gif" in activity.text.lower():
+            return {"type": "message", "text": "Looking for GIFs? Try searching!"}
         return None
 
     bot.on_message(custom_message_handler)
 
     # Simulate incoming activity
     activity_data = {
-        'type': 'message',
-        'id': '12345',
-        'timestamp': datetime.utcnow().isoformat() + 'Z',
-        'from': {
-            'id': 'user123',
-            'name': 'Test User'
-        },
-        'conversation': {
-            'id': 'conv123',
-            'conversationType': 'personal'
-        },
-        'text': 'hello'
+        "type": "message",
+        "id": "12345",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "from": {"id": "user123", "name": "Test User"},
+        "conversation": {"id": "conv123", "conversationType": "personal"},
+        "text": "hello",
     }
 
     response = bot.handle_activity(activity_data)
@@ -698,11 +670,11 @@ if __name__ == "__main__":
 
     # Send GIF
     bot.send_gif_card(
-        conversation_id='conv123',
-        gif_url='https://example.com/cat.gif',
-        title='Cute Cat',
-        description='A very cute cat doing cat things',
-        share_url='https://gifdist.io/s/abc123'
+        conversation_id="conv123",
+        gif_url="https://example.com/cat.gif",
+        title="Cute Cat",
+        description="A very cute cat doing cat things",
+        share_url="https://gifdist.io/s/abc123",
     )
 
     # Get analytics

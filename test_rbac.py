@@ -11,7 +11,7 @@ from rbac import (
     Resource,
     ResourceType,
     PermissionDeniedError,
-    AccessControlEntry
+    AccessControlEntry,
 )
 
 
@@ -176,10 +176,7 @@ class TestResourceACL:
         rbac = RBACManager(enable_audit=False)
         rbac.assign_role("user_1", UserRole.USER, "system")
 
-        resource = Resource(
-            resource_type=ResourceType.ASSET,
-            resource_id="asset_123"
-        )
+        resource = Resource(resource_type=ResourceType.ASSET, resource_id="asset_123")
 
         # User doesn't have update permission by role
         assert not rbac.has_permission("user_1", Permission.ASSET_UPDATE)
@@ -189,7 +186,7 @@ class TestResourceACL:
             user_id="user_1",
             resource=resource,
             permissions={Permission.ASSET_UPDATE},
-            granted_by="admin"
+            granted_by="admin",
         )
 
         # Now user has permission on this specific resource
@@ -197,34 +194,30 @@ class TestResourceACL:
 
         # But not on other resources
         other_resource = Resource(
-            resource_type=ResourceType.ASSET,
-            resource_id="asset_456"
+            resource_type=ResourceType.ASSET, resource_id="asset_456"
         )
-        assert not rbac.has_permission("user_1", Permission.ASSET_UPDATE, other_resource)
+        assert not rbac.has_permission(
+            "user_1", Permission.ASSET_UPDATE, other_resource
+        )
 
     def test_revoke_resource_access(self):
         """Test revoking resource access"""
         rbac = RBACManager(enable_audit=False)
         rbac.assign_role("user_1", UserRole.USER, "system")
 
-        resource = Resource(
-            resource_type=ResourceType.ASSET,
-            resource_id="asset_123"
-        )
+        resource = Resource(resource_type=ResourceType.ASSET, resource_id="asset_123")
 
         # Grant then revoke
         rbac.grant_resource_access(
             user_id="user_1",
             resource=resource,
             permissions={Permission.ASSET_UPDATE},
-            granted_by="admin"
+            granted_by="admin",
         )
         assert rbac.has_permission("user_1", Permission.ASSET_UPDATE, resource)
 
         rbac.revoke_resource_access(
-            user_id="user_1",
-            resource=resource,
-            revoked_by="admin"
+            user_id="user_1", resource=resource, revoked_by="admin"
         )
         assert not rbac.has_permission("user_1", Permission.ASSET_UPDATE, resource)
 
@@ -234,9 +227,7 @@ class TestResourceACL:
         rbac.assign_role("user_1", UserRole.USER, "system")
 
         resource = Resource(
-            resource_type=ResourceType.ASSET,
-            resource_id="asset_123",
-            owner_id="user_1"
+            resource_type=ResourceType.ASSET, resource_id="asset_123", owner_id="user_1"
         )
 
         # Owner has read, update, delete on their own resources
@@ -252,7 +243,7 @@ class TestResourceACL:
         resource = Resource(
             resource_type=ResourceType.ASSET,
             resource_id="asset_123",
-            owner_id="user_2"  # Different owner
+            owner_id="user_2",  # Different owner
         )
 
         # Non-owner doesn't have update/delete
@@ -264,10 +255,7 @@ class TestResourceACL:
         rbac = RBACManager(enable_audit=False)
         rbac.assign_role("user_1", UserRole.USER, "system")
 
-        resource = Resource(
-            resource_type=ResourceType.ASSET,
-            resource_id="asset_123"
-        )
+        resource = Resource(resource_type=ResourceType.ASSET, resource_id="asset_123")
 
         # Grant access that expires in the past
         past_time = datetime.utcnow() - timedelta(hours=1)
@@ -276,7 +264,7 @@ class TestResourceACL:
             resource=resource,
             permissions={Permission.ASSET_UPDATE},
             granted_by="admin",
-            expires_at=past_time
+            expires_at=past_time,
         )
 
         # Permission should be denied due to expiration
@@ -287,10 +275,7 @@ class TestResourceACL:
         rbac = RBACManager(enable_audit=False)
         rbac.assign_role("user_1", UserRole.USER, "system")
 
-        resource = Resource(
-            resource_type=ResourceType.ASSET,
-            resource_id="asset_123"
-        )
+        resource = Resource(resource_type=ResourceType.ASSET, resource_id="asset_123")
 
         # Grant access that expires in the future
         future_time = datetime.utcnow() + timedelta(hours=1)
@@ -299,7 +284,7 @@ class TestResourceACL:
             resource=resource,
             permissions={Permission.ASSET_UPDATE},
             granted_by="admin",
-            expires_at=future_time
+            expires_at=future_time,
         )
 
         # Permission should be granted
@@ -309,23 +294,20 @@ class TestResourceACL:
         """Test getting ACL for a resource"""
         rbac = RBACManager(enable_audit=False)
 
-        resource = Resource(
-            resource_type=ResourceType.ASSET,
-            resource_id="asset_123"
-        )
+        resource = Resource(resource_type=ResourceType.ASSET, resource_id="asset_123")
 
         rbac.grant_resource_access(
             user_id="user_1",
             resource=resource,
             permissions={Permission.ASSET_UPDATE},
-            granted_by="admin"
+            granted_by="admin",
         )
 
         rbac.grant_resource_access(
             user_id="user_2",
             resource=resource,
             permissions={Permission.ASSET_READ},
-            granted_by="admin"
+            granted_by="admin",
         )
 
         acl = rbac.get_resource_acl(resource)
@@ -408,7 +390,10 @@ class TestAuditLog:
 
         # Filter by user
         user1_log = rbac.get_audit_log(user_id="user_1")
-        assert all(entry.user_id == "user_1" or entry.user_id == "system" for entry in user1_log)
+        assert all(
+            entry.user_id == "user_1" or entry.user_id == "system"
+            for entry in user1_log
+        )
 
         # Filter by resource type
         system_log = rbac.get_audit_log(resource_type=ResourceType.SYSTEM)
@@ -479,7 +464,7 @@ class TestComplexScenarios:
         asset = Resource(
             resource_type=ResourceType.ASSET,
             resource_id="asset_collab",
-            owner_id=owner_id
+            owner_id=owner_id,
         )
 
         # Owner has full control
@@ -496,7 +481,7 @@ class TestComplexScenarios:
             resource=asset,
             permissions={Permission.ASSET_UPDATE},
             granted_by=owner_id,
-            expires_at=expiration
+            expires_at=expiration,
         )
 
         # Collaborator can now edit
@@ -518,7 +503,7 @@ class TestComplexScenarios:
         asset = Resource(
             resource_type=ResourceType.ASSET,
             resource_id="asset_flagged",
-            owner_id=user_id
+            owner_id=user_id,
         )
 
         # Moderator can read any content
@@ -562,13 +547,20 @@ class TestComplexScenarios:
         asset = Resource(
             resource_type=ResourceType.ASSET,
             resource_id="asset_shared",
-            owner_id="admin"
+            owner_id="admin",
         )
 
         # Grant different permissions to different users
         rbac.grant_resource_access("user_1", asset, {Permission.ASSET_READ}, "admin")
-        rbac.grant_resource_access("user_2", asset, {Permission.ASSET_READ, Permission.ASSET_UPDATE}, "admin")
-        rbac.grant_resource_access("user_3", asset, {Permission.ASSET_READ, Permission.ASSET_UPDATE, Permission.ASSET_DELETE}, "admin")
+        rbac.grant_resource_access(
+            "user_2", asset, {Permission.ASSET_READ, Permission.ASSET_UPDATE}, "admin"
+        )
+        rbac.grant_resource_access(
+            "user_3",
+            asset,
+            {Permission.ASSET_READ, Permission.ASSET_UPDATE, Permission.ASSET_DELETE},
+            "admin",
+        )
 
         # Verify each user has correct permissions
         assert rbac.has_permission("user_1", Permission.ASSET_READ, asset)
@@ -583,5 +575,5 @@ class TestComplexScenarios:
         assert rbac.has_permission("user_3", Permission.ASSET_DELETE, asset)
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

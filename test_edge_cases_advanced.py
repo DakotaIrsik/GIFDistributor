@@ -2,6 +2,7 @@
 Advanced Edge Cases and Stress Tests
 Additional comprehensive tests for error handling, limits, and edge cases
 """
+
 import pytest
 import tempfile
 import os
@@ -36,10 +37,10 @@ class TestFileOperationErrors:
 
     def test_create_hash_special_files(self):
         """Test hashing special system files (skip on Windows)"""
-        if sys.platform != 'win32':
+        if sys.platform != "win32":
             # On Unix, try /dev/null
             try:
-                hash_result = create_asset_hash('/dev/null')
+                hash_result = create_asset_hash("/dev/null")
                 # Should succeed and produce empty file hash
                 assert len(hash_result) == 64
             except:
@@ -48,14 +49,14 @@ class TestFileOperationErrors:
 
     def test_create_hash_symlink(self):
         """Test hashing a symbolic link"""
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             pytest.skip("Symlink test not reliable on Windows")
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
-            f.write(b'target content')
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
+            f.write(b"target content")
             target_path = f.name
 
-        link_path = target_path + '.link'
+        link_path = target_path + ".link"
         try:
             os.symlink(target_path, link_path)
             hash_target = create_asset_hash(target_path)
@@ -130,15 +131,7 @@ class TestAnalyticsInputValidation:
     def test_track_event_nested_metadata(self):
         """Test with deeply nested metadata"""
         tracker = AnalyticsTracker()
-        nested = {
-            "level1": {
-                "level2": {
-                    "level3": {
-                        "data": "deep"
-                    }
-                }
-            }
-        }
+        nested = {"level1": {"level2": {"level3": {"data": "deep"}}}}
         event = tracker.track_event("asset1", EventType.VIEW, metadata=nested)
         assert event["metadata"]["level1"]["level2"]["level3"]["data"] == "deep"
 
@@ -200,9 +193,7 @@ class TestAnalyticsStressAndLimits:
         tracker = AnalyticsTracker()
 
         # Create large metadata
-        large_meta = {
-            f"key_{i}": f"value_{i}" * 100 for i in range(100)
-        }
+        large_meta = {f"key_{i}": f"value_{i}" * 100 for i in range(100)}
 
         event = tracker.track_event("asset1", EventType.VIEW, metadata=large_meta)
         assert len(event["metadata"]) == 100
@@ -221,8 +212,15 @@ class TestAnalyticsStressAndLimits:
     def test_platform_metrics_with_all_platforms_heavy_load(self):
         """Test platform metrics with heavy load across all platforms"""
         tracker = AnalyticsTracker()
-        platforms = [Platform.WEB, Platform.SLACK, Platform.DISCORD,
-                     Platform.TEAMS, Platform.TWITTER, Platform.FACEBOOK, Platform.OTHER]
+        platforms = [
+            Platform.WEB,
+            Platform.SLACK,
+            Platform.DISCORD,
+            Platform.TEAMS,
+            Platform.TWITTER,
+            Platform.FACEBOOK,
+            Platform.OTHER,
+        ]
 
         # 1000 events per platform
         for platform in platforms:
@@ -263,7 +261,7 @@ class TestShareLinksInputValidation:
             "#hashtag",
             "@mention",
             "日本語タグ",
-            "emoji🎉tag"
+            "emoji🎉tag",
         ]
 
         result = gen.create_share_link("asset1", tags=special_tags)
@@ -400,7 +398,9 @@ class TestTimeframeEdgeCases:
         future = now + timedelta(hours=1)
 
         # Inverted range should return no events
-        events = tracker.get_events_by_timeframe("asset1", start_time=future, end_time=past)
+        events = tracker.get_events_by_timeframe(
+            "asset1", start_time=future, end_time=past
+        )
         assert len(events) == 0
 
     def test_timeframe_microsecond_precision(self):
@@ -415,7 +415,9 @@ class TestTimeframeEdgeCases:
         time2 = datetime.fromisoformat(event2["timestamp"])
 
         # Query between the two events
-        events = tracker.get_events_by_timeframe("asset1", start_time=time1, end_time=time2)
+        events = tracker.get_events_by_timeframe(
+            "asset1", start_time=time1, end_time=time2
+        )
         assert len(events) >= 1
 
 
@@ -435,8 +437,9 @@ class TestIntegrationStressScenarios:
                 link = gen.create_share_link(asset_id, title=f"Link {link_num}")
 
                 for _ in range(10):
-                    tracker.track_event(asset_id, EventType.VIEW,
-                                      short_code=link["short_code"])
+                    tracker.track_event(
+                        asset_id, EventType.VIEW, short_code=link["short_code"]
+                    )
 
         # Verify data integrity
         asset_metrics = tracker.get_asset_metrics("asset_0")
@@ -585,11 +588,11 @@ class TestAssetIDDeduplication:
         content1 = b"same_prefix_different_content_1"
         content2 = b"same_prefix_different_content_2"
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f1:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f1:
             f1.write(content1)
             path1 = f1.name
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f2:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f2:
             f2.write(content2)
             path2 = f2.name
 
@@ -605,11 +608,11 @@ class TestAssetIDDeduplication:
         """Test that same content in different files produces same hash"""
         content = b"identical content"
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb', suffix='.gif') as f1:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb", suffix=".gif") as f1:
             f1.write(content)
             path1 = f1.name
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb', suffix='.jpg') as f2:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb", suffix=".jpg") as f2:
             f2.write(content)
             path2 = f2.name
 

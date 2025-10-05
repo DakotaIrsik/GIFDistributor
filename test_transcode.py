@@ -1,6 +1,7 @@
 """
 Tests for the transcode module
 """
+
 import pytest
 import tempfile
 import os
@@ -14,14 +15,14 @@ from transcode import (
     TranscodeError,
     OutputFormat,
     get_file_size,
-    get_size_reduction
+    get_size_reduction,
 )
 
 
 @pytest.fixture
 def transcoder():
     """Create a transcoder instance with mocked ffmpeg"""
-    with patch('transcode.subprocess.run') as mock_run:
+    with patch("transcode.subprocess.run") as mock_run:
         # Mock successful ffmpeg/ffprobe verification
         mock_run.return_value = Mock(returncode=0)
         return Transcoder()
@@ -45,7 +46,7 @@ class TestTranscoder:
 
     def test_init_with_default_paths(self):
         """Test transcoder initialization with default paths"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             transcoder = Transcoder()
             assert transcoder.ffmpeg_path == "ffmpeg"
@@ -53,25 +54,24 @@ class TestTranscoder:
 
     def test_init_with_custom_paths(self):
         """Test transcoder initialization with custom paths"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             transcoder = Transcoder(
-                ffmpeg_path="/usr/bin/ffmpeg",
-                ffprobe_path="/usr/bin/ffprobe"
+                ffmpeg_path="/usr/bin/ffmpeg", ffprobe_path="/usr/bin/ffprobe"
             )
             assert transcoder.ffmpeg_path == "/usr/bin/ffmpeg"
             assert transcoder.ffprobe_path == "/usr/bin/ffprobe"
 
     def test_init_ffmpeg_not_found(self):
         """Test that initialization fails when ffmpeg is not found"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.side_effect = FileNotFoundError("ffmpeg not found")
             with pytest.raises(TranscodeError, match="ffmpeg/ffprobe not found"):
                 Transcoder()
 
     def test_verify_ffmpeg_timeout(self):
         """Test that initialization fails when ffmpeg times out"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.TimeoutExpired("ffmpeg", 5)
             with pytest.raises(TranscodeError):
                 Transcoder()
@@ -79,24 +79,20 @@ class TestTranscoder:
     def test_get_media_info_success(self, transcoder):
         """Test successful media info retrieval"""
         mock_info = {
-            "format": {
-                "duration": "5.5",
-                "size": "1024000"
-            },
+            "format": {"duration": "5.5", "size": "1024000"},
             "streams": [
                 {
                     "codec_type": "video",
                     "codec_name": "gif",
                     "width": 640,
-                    "height": 480
+                    "height": 480,
                 }
-            ]
+            ],
         }
 
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(
-                returncode=0,
-                stdout=json.dumps(mock_info).encode()
+                returncode=0, stdout=json.dumps(mock_info).encode()
             )
 
             info = transcoder.get_media_info("test.gif")
@@ -109,18 +105,11 @@ class TestTranscoder:
 
     def test_get_media_info_no_video_stream(self, transcoder):
         """Test media info with no video stream"""
-        mock_info = {
-            "format": {
-                "duration": "5.5",
-                "size": "1024000"
-            },
-            "streams": []
-        }
+        mock_info = {"format": {"duration": "5.5", "size": "1024000"}, "streams": []}
 
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(
-                returncode=0,
-                stdout=json.dumps(mock_info).encode()
+                returncode=0, stdout=json.dumps(mock_info).encode()
             )
 
             info = transcoder.get_media_info("test.gif")
@@ -131,7 +120,7 @@ class TestTranscoder:
 
     def test_get_media_info_ffprobe_error(self, transcoder):
         """Test media info when ffprobe fails"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "ffprobe")
 
             with pytest.raises(TranscodeError, match="Failed to get media info"):
@@ -139,18 +128,15 @@ class TestTranscoder:
 
     def test_get_media_info_invalid_json(self, transcoder):
         """Test media info with invalid JSON response"""
-        with patch('transcode.subprocess.run') as mock_run:
-            mock_run.return_value = Mock(
-                returncode=0,
-                stdout=b"invalid json"
-            )
+        with patch("transcode.subprocess.run") as mock_run:
+            mock_run.return_value = Mock(returncode=0, stdout=b"invalid json")
 
             with pytest.raises(TranscodeError, match="Failed to parse ffprobe output"):
                 transcoder.get_media_info("test.gif")
 
     def test_transcode_to_mp4_default_output(self, transcoder, temp_gif_file):
         """Test MP4 transcoding with default output path"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             output = transcoder.transcode_to_mp4(temp_gif_file)
@@ -172,7 +158,7 @@ class TestTranscoder:
         """Test MP4 transcoding with custom output path"""
         custom_output = "/tmp/custom_output.mp4"
 
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             output = transcoder.transcode_to_mp4(temp_gif_file, custom_output)
@@ -186,7 +172,7 @@ class TestTranscoder:
         qualities = ["low", "medium", "high"]
 
         for quality in qualities:
-            with patch('transcode.subprocess.run') as mock_run:
+            with patch("transcode.subprocess.run") as mock_run:
                 mock_run.return_value = Mock(returncode=0)
 
                 transcoder.transcode_to_mp4(temp_gif_file, quality=quality)
@@ -197,7 +183,7 @@ class TestTranscoder:
 
     def test_transcode_to_mp4_with_max_width(self, transcoder, temp_gif_file):
         """Test MP4 transcoding with max width constraint"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             transcoder.transcode_to_mp4(temp_gif_file, max_width=800)
@@ -210,7 +196,7 @@ class TestTranscoder:
 
     def test_transcode_to_mp4_ffmpeg_error(self, transcoder, temp_gif_file):
         """Test MP4 transcoding when ffmpeg fails"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
 
             with pytest.raises(TranscodeError, match="Failed to transcode to MP4"):
@@ -218,7 +204,7 @@ class TestTranscoder:
 
     def test_transcode_to_webp_default_output(self, transcoder, temp_gif_file):
         """Test WebP transcoding with default output path"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             output = transcoder.transcode_to_webp(temp_gif_file)
@@ -233,7 +219,7 @@ class TestTranscoder:
 
     def test_transcode_to_webp_custom_quality(self, transcoder, temp_gif_file):
         """Test WebP transcoding with custom quality"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             transcoder.transcode_to_webp(temp_gif_file, quality=90)
@@ -244,7 +230,7 @@ class TestTranscoder:
 
     def test_transcode_to_webp_lossless(self, transcoder, temp_gif_file):
         """Test WebP transcoding with lossless compression"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             transcoder.transcode_to_webp(temp_gif_file, lossless=True)
@@ -255,7 +241,7 @@ class TestTranscoder:
 
     def test_transcode_to_webp_ffmpeg_error(self, transcoder, temp_gif_file):
         """Test WebP transcoding when ffmpeg fails"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
 
             with pytest.raises(TranscodeError, match="Failed to transcode to WebP"):
@@ -263,7 +249,7 @@ class TestTranscoder:
 
     def test_optimize_gif_default_output(self, transcoder, temp_gif_file):
         """Test GIF optimization with default output path"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             output = transcoder.optimize_gif(temp_gif_file)
@@ -274,7 +260,7 @@ class TestTranscoder:
 
     def test_optimize_gif_custom_colors(self, transcoder, temp_gif_file):
         """Test GIF optimization with custom color palette"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             transcoder.optimize_gif(temp_gif_file, max_colors=128)
@@ -286,7 +272,7 @@ class TestTranscoder:
 
     def test_optimize_gif_with_max_width(self, transcoder, temp_gif_file):
         """Test GIF optimization with max width constraint"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             transcoder.optimize_gif(temp_gif_file, max_width=600)
@@ -300,7 +286,7 @@ class TestTranscoder:
 
     def test_optimize_gif_ffmpeg_error(self, transcoder, temp_gif_file):
         """Test GIF optimization when ffmpeg fails"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
 
             with pytest.raises(TranscodeError, match="Failed to optimize GIF"):
@@ -308,7 +294,7 @@ class TestTranscoder:
 
     def test_transcode_all_formats_default_output(self, transcoder, temp_gif_file):
         """Test transcoding to all formats with default output directory"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             results = transcoder.transcode_all_formats(temp_gif_file)
@@ -325,10 +311,12 @@ class TestTranscoder:
     def test_transcode_all_formats_custom_output_dir(self, transcoder, temp_gif_file):
         """Test transcoding to all formats with custom output directory"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            with patch('transcode.subprocess.run') as mock_run:
+            with patch("transcode.subprocess.run") as mock_run:
                 mock_run.return_value = Mock(returncode=0)
 
-                results = transcoder.transcode_all_formats(temp_gif_file, output_dir=temp_dir)
+                results = transcoder.transcode_all_formats(
+                    temp_gif_file, output_dir=temp_dir
+                )
 
                 # Verify all output files are in the custom directory
                 for format_key, output_path in results.items():
@@ -339,16 +327,18 @@ class TestTranscoder:
         with tempfile.TemporaryDirectory() as temp_dir:
             non_existent_dir = os.path.join(temp_dir, "new_dir")
 
-            with patch('transcode.subprocess.run') as mock_run:
+            with patch("transcode.subprocess.run") as mock_run:
                 mock_run.return_value = Mock(returncode=0)
 
-                transcoder.transcode_all_formats(temp_gif_file, output_dir=non_existent_dir)
+                transcoder.transcode_all_formats(
+                    temp_gif_file, output_dir=non_existent_dir
+                )
 
                 assert os.path.exists(non_existent_dir)
 
     def test_transcode_all_formats_quality_parameter(self, transcoder, temp_gif_file):
         """Test that quality parameter is passed to MP4 transcoding"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             transcoder.transcode_all_formats(temp_gif_file, quality="low")
@@ -358,11 +348,11 @@ class TestTranscoder:
 
     def test_transcode_all_formats_partial_failure(self, transcoder, temp_gif_file):
         """Test that transcode_all_formats fails if any transcoding fails"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             # First call succeeds (MP4), second fails (WebP)
             mock_run.side_effect = [
                 Mock(returncode=0),  # MP4 success
-                subprocess.CalledProcessError(1, "ffmpeg")  # WebP failure
+                subprocess.CalledProcessError(1, "ffmpeg"),  # WebP failure
             ]
 
             with pytest.raises(TranscodeError):
@@ -390,8 +380,9 @@ class TestUtilityFunctions:
 
     def test_get_size_reduction_smaller_file(self):
         """Test size reduction calculation when transcoded file is smaller"""
-        with tempfile.NamedTemporaryFile(delete=False) as f1, \
-             tempfile.NamedTemporaryFile(delete=False) as f2:
+        with tempfile.NamedTemporaryFile(
+            delete=False
+        ) as f1, tempfile.NamedTemporaryFile(delete=False) as f2:
             # Original: 1000 bytes
             f1.write(b"0" * 1000)
             f1.flush()
@@ -410,8 +401,9 @@ class TestUtilityFunctions:
 
     def test_get_size_reduction_larger_file(self):
         """Test size reduction calculation when transcoded file is larger"""
-        with tempfile.NamedTemporaryFile(delete=False) as f1, \
-             tempfile.NamedTemporaryFile(delete=False) as f2:
+        with tempfile.NamedTemporaryFile(
+            delete=False
+        ) as f1, tempfile.NamedTemporaryFile(delete=False) as f2:
             # Original: 500 bytes
             f1.write(b"0" * 500)
             f1.flush()
@@ -430,8 +422,9 @@ class TestUtilityFunctions:
 
     def test_get_size_reduction_same_size(self):
         """Test size reduction calculation when files are same size"""
-        with tempfile.NamedTemporaryFile(delete=False) as f1, \
-             tempfile.NamedTemporaryFile(delete=False) as f2:
+        with tempfile.NamedTemporaryFile(
+            delete=False
+        ) as f1, tempfile.NamedTemporaryFile(delete=False) as f2:
             f1.write(b"0" * 1000)
             f1.flush()
             f1_name = f1.name
@@ -448,8 +441,9 @@ class TestUtilityFunctions:
 
     def test_get_size_reduction_zero_size_original(self):
         """Test size reduction with zero-size original file"""
-        with tempfile.NamedTemporaryFile(delete=False) as f1, \
-             tempfile.NamedTemporaryFile(delete=False) as f2:
+        with tempfile.NamedTemporaryFile(
+            delete=False
+        ) as f1, tempfile.NamedTemporaryFile(delete=False) as f2:
             # Original: 0 bytes
             f1.flush()
             f1_name = f1.name
@@ -471,7 +465,7 @@ class TestEdgeCases:
 
     def test_transcode_nonexistent_file(self, transcoder):
         """Test transcoding a non-existent file"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
 
             with pytest.raises(TranscodeError):
@@ -479,7 +473,7 @@ class TestEdgeCases:
 
     def test_invalid_quality_parameter(self, transcoder, temp_gif_file):
         """Test that invalid quality falls back to default"""
-        with patch('transcode.subprocess.run') as mock_run:
+        with patch("transcode.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
 
             # Invalid quality should fall back to "high"

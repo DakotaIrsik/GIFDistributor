@@ -3,6 +3,7 @@ CDN Module for GIF Distributor
 Provides cache headers, Range support, and signed URLs
 Issue: #34
 """
+
 from typing import Dict, Optional, Tuple
 from datetime import datetime, timedelta
 import hashlib
@@ -24,7 +25,7 @@ class CachePolicy:
     def get_headers(
         cache_duration: int = LONG_CACHE,
         is_immutable: bool = False,
-        is_private: bool = False
+        is_private: bool = False,
     ) -> Dict[str, str]:
         """
         Generate cache control headers
@@ -41,7 +42,7 @@ class CachePolicy:
             return {
                 "Cache-Control": "no-cache, no-store, must-revalidate",
                 "Pragma": "no-cache",
-                "Expires": "0"
+                "Expires": "0",
             }
 
         cache_control_parts = []
@@ -56,9 +57,7 @@ class CachePolicy:
         if is_immutable:
             cache_control_parts.append("immutable")
 
-        headers = {
-            "Cache-Control": ", ".join(cache_control_parts)
-        }
+        headers = {"Cache-Control": ", ".join(cache_control_parts)}
 
         # Add Expires header for HTTP/1.0 compatibility
         expires_time = datetime.utcnow() + timedelta(seconds=cache_duration)
@@ -72,8 +71,7 @@ class RangeRequest:
 
     @staticmethod
     def parse_range_header(
-        range_header: str,
-        content_length: int
+        range_header: str, content_length: int
     ) -> Optional[Tuple[int, int]]:
         """
         Parse HTTP Range header
@@ -131,7 +129,7 @@ class RangeRequest:
         start: int,
         end: int,
         total_length: int,
-        content_type: str = "application/octet-stream"
+        content_type: str = "application/octet-stream",
     ) -> Dict[str, str]:
         """
         Generate headers for a range response
@@ -149,13 +147,12 @@ class RangeRequest:
             "Content-Type": content_type,
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{total_length}",
-            "Accept-Ranges": "bytes"
+            "Accept-Ranges": "bytes",
         }
 
     @staticmethod
     def get_full_response_headers(
-        total_length: int,
-        content_type: str = "application/octet-stream"
+        total_length: int, content_type: str = "application/octet-stream"
     ) -> Dict[str, str]:
         """
         Generate headers for a full content response
@@ -170,7 +167,7 @@ class RangeRequest:
         return {
             "Content-Type": content_type,
             "Content-Length": str(total_length),
-            "Accept-Ranges": "bytes"
+            "Accept-Ranges": "bytes",
         }
 
 
@@ -186,13 +183,15 @@ class SignedURL:
         """
         if not secret_key:
             raise ValueError("Secret key cannot be empty")
-        self.secret_key = secret_key.encode() if isinstance(secret_key, str) else secret_key
+        self.secret_key = (
+            secret_key.encode() if isinstance(secret_key, str) else secret_key
+        )
 
     def generate_signed_url(
         self,
         base_url: str,
         expiration_seconds: int = 3600,
-        additional_params: Optional[Dict[str, str]] = None
+        additional_params: Optional[Dict[str, str]] = None,
     ) -> str:
         """
         Generate a signed URL with expiration
@@ -206,7 +205,9 @@ class SignedURL:
             Signed URL string
         """
         # Calculate expiration timestamp
-        expires = int((datetime.utcnow() + timedelta(seconds=expiration_seconds)).timestamp())
+        expires = int(
+            (datetime.utcnow() + timedelta(seconds=expiration_seconds)).timestamp()
+        )
 
         # Parse URL to get path and existing params
         parsed = urlparse(base_url)
@@ -226,11 +227,7 @@ class SignedURL:
         payload = parsed.path + "?" + urlencode(sorted(flat_params.items()))
 
         # Generate signature
-        signature = hmac.new(
-            self.secret_key,
-            payload.encode(),
-            hashlib.sha256
-        ).digest()
+        signature = hmac.new(self.secret_key, payload.encode(), hashlib.sha256).digest()
 
         # Base64 encode and make URL-safe
         signature_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
@@ -239,7 +236,9 @@ class SignedURL:
         flat_params["signature"] = signature_b64
 
         # Construct final URL
-        signed_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(flat_params)}"
+        signed_url = (
+            f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(flat_params)}"
+        )
 
         return signed_url
 
@@ -260,7 +259,9 @@ class SignedURL:
             params = parse_qs(parsed.query)
 
             # Flatten params
-            flat_params = {k: v[0] if isinstance(v, list) else v for k, v in params.items()}
+            flat_params = {
+                k: v[0] if isinstance(v, list) else v for k, v in params.items()
+            }
 
             # Check for required fields
             if "expires" not in flat_params:
@@ -284,12 +285,12 @@ class SignedURL:
 
             # Generate expected signature
             expected_signature = hmac.new(
-                self.secret_key,
-                payload.encode(),
-                hashlib.sha256
+                self.secret_key, payload.encode(), hashlib.sha256
             ).digest()
 
-            expected_signature_b64 = base64.urlsafe_b64encode(expected_signature).decode().rstrip("=")
+            expected_signature_b64 = (
+                base64.urlsafe_b64encode(expected_signature).decode().rstrip("=")
+            )
 
             # Compare signatures (constant time comparison)
             if not hmac.compare_digest(provided_signature, expected_signature_b64):
@@ -319,7 +320,7 @@ class CDNHelper:
         content_length: int,
         is_immutable: bool = False,
         cache_duration: int = CachePolicy.LONG_CACHE,
-        range_header: Optional[str] = None
+        range_header: Optional[str] = None,
     ) -> Tuple[Dict[str, str], Optional[Tuple[int, int]], int]:
         """
         Get complete headers for asset delivery
@@ -343,8 +344,7 @@ class CDNHelper:
 
         # Add cache headers
         cache_headers = CachePolicy.get_headers(
-            cache_duration=cache_duration,
-            is_immutable=is_immutable
+            cache_duration=cache_duration, is_immutable=is_immutable
         )
         headers.update(cache_headers)
 
@@ -375,9 +375,7 @@ class CDNHelper:
         return headers, range_spec, status_code
 
     def create_signed_asset_url(
-        self,
-        asset_url: str,
-        expiration_seconds: int = 3600
+        self, asset_url: str, expiration_seconds: int = 3600
     ) -> str:
         """
         Create a signed URL for an asset
@@ -393,9 +391,13 @@ class CDNHelper:
             ValueError: If signed URL handler is not configured
         """
         if not self.signed_url_handler:
-            raise ValueError("Signed URL handler not configured. Provide secret_key during initialization.")
+            raise ValueError(
+                "Signed URL handler not configured. Provide secret_key during initialization."
+            )
 
-        return self.signed_url_handler.generate_signed_url(asset_url, expiration_seconds)
+        return self.signed_url_handler.generate_signed_url(
+            asset_url, expiration_seconds
+        )
 
     def validate_asset_url(self, url: str) -> Tuple[bool, Optional[str]]:
         """
@@ -411,6 +413,8 @@ class CDNHelper:
             ValueError: If signed URL handler is not configured
         """
         if not self.signed_url_handler:
-            raise ValueError("Signed URL handler not configured. Provide secret_key during initialization.")
+            raise ValueError(
+                "Signed URL handler not configured. Provide secret_key during initialization."
+            )
 
         return self.signed_url_handler.validate_signed_url(url)

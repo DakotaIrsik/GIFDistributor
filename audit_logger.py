@@ -3,6 +3,7 @@ Moderation Audit Logger with DB Schema & Retention
 Provides persistent audit trail storage with configurable retention policies
 Issue: #2
 """
+
 import time
 import sqlite3
 import hashlib
@@ -15,6 +16,7 @@ from enum import Enum
 
 class AuditEventType(Enum):
     """Types of auditable events"""
+
     MODERATION_SCAN = "moderation_scan"
     MANUAL_REVIEW = "manual_review"
     CONTENT_APPROVED = "content_approved"
@@ -28,6 +30,7 @@ class AuditEventType(Enum):
 
 class RetentionPolicy(Enum):
     """Audit data retention policies"""
+
     SHORT = 30  # 30 days
     MEDIUM = 90  # 90 days
     LONG = 365  # 1 year
@@ -38,6 +41,7 @@ class RetentionPolicy(Enum):
 @dataclass
 class AuditLog:
     """Audit log entry"""
+
     log_id: str
     event_type: str
     asset_id: Optional[str]
@@ -56,6 +60,7 @@ class AuditLog:
 
 class AuditLoggerError(Exception):
     """Exception raised when audit logging fails"""
+
     pass
 
 
@@ -78,7 +83,7 @@ class AuditLogger:
         self,
         db_path: str = "audit_trail.db",
         default_retention: RetentionPolicy = RetentionPolicy.LONG,
-        auto_cleanup: bool = True
+        auto_cleanup: bool = True,
     ):
         """
         Initialize audit logger
@@ -100,7 +105,7 @@ class AuditLogger:
             "total_logs": 0,
             "logs_by_type": {},
             "cleanup_runs": 0,
-            "records_purged": 0
+            "records_purged": 0,
         }
 
     def _init_database(self) -> None:
@@ -109,7 +114,8 @@ class AuditLogger:
         cursor = conn.cursor()
 
         # Create audit_logs table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS audit_logs (
                 log_id TEXT PRIMARY KEY,
                 event_type TEXT NOT NULL,
@@ -128,47 +134,63 @@ class AuditLogger:
                 expires_at TEXT NOT NULL,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
         # Create indexes for common queries
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_asset_id
             ON audit_logs(asset_id)
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_user_id
             ON audit_logs(user_id)
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_event_type
             ON audit_logs(event_type)
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_timestamp
             ON audit_logs(timestamp)
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_expires_at
             ON audit_logs(expires_at)
-        """)
+        """
+        )
 
         # Create metadata table for schema version
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS audit_metadata (
                 key TEXT PRIMARY KEY,
                 value TEXT
             )
-        """)
+        """
+        )
 
         # Store schema version
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO audit_metadata (key, value)
             VALUES ('schema_version', ?)
-        """, (str(self.SCHEMA_VERSION),))
+        """,
+            (str(self.SCHEMA_VERSION),),
+        )
 
         conn.commit()
         conn.close()
@@ -202,7 +224,7 @@ class AuditLogger:
         metadata: Optional[Dict[str, Any]] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-        retention_policy: Optional[RetentionPolicy] = None
+        retention_policy: Optional[RetentionPolicy] = None,
     ) -> str:
         """
         Log an audit event
@@ -244,24 +266,41 @@ class AuditLogger:
         cursor = conn.cursor()
 
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO audit_logs (
                     log_id, event_type, asset_id, user_id, moderator_id,
                     decision, category, confidence, timestamp, ip_address,
                     user_agent, reasons, metadata, retention_days, expires_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                log_id, event_type.value, asset_id, user_id, moderator_id,
-                decision, category, confidence, timestamp, ip_address,
-                user_agent, reasons_json, metadata_json, retention_days, expires_at
-            ))
+            """,
+                (
+                    log_id,
+                    event_type.value,
+                    asset_id,
+                    user_id,
+                    moderator_id,
+                    decision,
+                    category,
+                    confidence,
+                    timestamp,
+                    ip_address,
+                    user_agent,
+                    reasons_json,
+                    metadata_json,
+                    retention_days,
+                    expires_at,
+                ),
+            )
 
             conn.commit()
 
             # Update statistics
             self._stats["total_logs"] += 1
             event_key = event_type.value
-            self._stats["logs_by_type"][event_key] = self._stats["logs_by_type"].get(event_key, 0) + 1
+            self._stats["logs_by_type"][event_key] = (
+                self._stats["logs_by_type"].get(event_key, 0) + 1
+            )
 
             # Run auto cleanup if enabled
             if self.auto_cleanup:
@@ -283,7 +322,7 @@ class AuditLogger:
         start_time: Optional[str] = None,
         end_time: Optional[str] = None,
         limit: int = 100,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """
         Query audit logs
@@ -370,10 +409,7 @@ class AuditLogger:
         cursor = conn.cursor()
 
         try:
-            cursor.execute(
-                "SELECT * FROM audit_logs WHERE log_id = ?",
-                (log_id,)
-            )
+            cursor.execute("SELECT * FROM audit_logs WHERE log_id = ?", (log_id,))
             row = cursor.fetchone()
 
             if not row:
@@ -406,15 +442,13 @@ class AuditLogger:
         try:
             # Count records to be deleted
             cursor.execute(
-                "SELECT COUNT(*) FROM audit_logs WHERE expires_at <= ?",
-                (current_time,)
+                "SELECT COUNT(*) FROM audit_logs WHERE expires_at <= ?", (current_time,)
             )
             count = cursor.fetchone()[0]
 
             # Delete expired records
             cursor.execute(
-                "DELETE FROM audit_logs WHERE expires_at <= ?",
-                (current_time,)
+                "DELETE FROM audit_logs WHERE expires_at <= ?", (current_time,)
             )
 
             conn.commit()
@@ -435,7 +469,7 @@ class AuditLogger:
         """Automatically cleanup expired records (rate-limited)"""
         # Only run cleanup once per hour
         current_time = time.time()
-        last_cleanup = getattr(self, '_last_cleanup', 0)
+        last_cleanup = getattr(self, "_last_cleanup", 0)
 
         if current_time - last_cleanup > 3600:  # 1 hour
             self.cleanup_expired()
@@ -445,7 +479,7 @@ class AuditLogger:
         self,
         start_date: str,
         end_date: str,
-        event_types: Optional[List[AuditEventType]] = None
+        event_types: Optional[List[AuditEventType]] = None,
     ) -> Dict[str, Any]:
         """
         Generate compliance report for audit period
@@ -461,7 +495,7 @@ class AuditLogger:
         logs = self.get_logs(
             start_time=start_date,
             end_time=end_date,
-            limit=10000  # High limit for reports
+            limit=10000,  # High limit for reports
         )
 
         if event_types:
@@ -482,16 +516,13 @@ class AuditLogger:
                 decisions_by_type[decision] = decisions_by_type.get(decision, 0) + 1
 
         return {
-            "period": {
-                "start": start_date,
-                "end": end_date
-            },
+            "period": {"start": start_date, "end": end_date},
             "summary": {
                 "total_events": total_events,
                 "events_by_type": events_by_type,
-                "decisions_by_type": decisions_by_type
+                "decisions_by_type": decisions_by_type,
             },
-            "logs": logs
+            "logs": logs,
         }
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -510,23 +541,26 @@ class AuditLogger:
             total_records = cursor.fetchone()[0]
 
             # Count by event type
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT event_type, COUNT(*)
                 FROM audit_logs
                 GROUP BY event_type
-            """)
+            """
+            )
             by_type = dict(cursor.fetchall())
 
             # Count expired but not yet purged
             current_time = datetime.now(timezone.utc).isoformat()
             cursor.execute(
-                "SELECT COUNT(*) FROM audit_logs WHERE expires_at <= ?",
-                (current_time,)
+                "SELECT COUNT(*) FROM audit_logs WHERE expires_at <= ?", (current_time,)
             )
             expired_count = cursor.fetchone()[0]
 
             # Database size
-            db_size = Path(self.db_path).stat().st_size if Path(self.db_path).exists() else 0
+            db_size = (
+                Path(self.db_path).stat().st_size if Path(self.db_path).exists() else 0
+            )
 
             return {
                 "total_records": total_records,
@@ -534,7 +568,7 @@ class AuditLogger:
                 "expired_not_purged": expired_count,
                 "database_size_bytes": db_size,
                 "cleanup_runs": self._stats["cleanup_runs"],
-                "total_records_purged": self._stats["records_purged"]
+                "total_records_purged": self._stats["records_purged"],
             }
 
         except sqlite3.Error as e:

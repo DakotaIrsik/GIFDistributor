@@ -2,20 +2,21 @@
 Tests for AI Safety Scanner
 Tests OpenAI moderation and vision API integration
 """
+
 import pytest
 import os
 import sys
 from unittest.mock import Mock, patch, MagicMock
 
 # Mock openai module before importing ai_safety_scanner
-sys.modules['openai'] = Mock()
+sys.modules["openai"] = Mock()
 
 from ai_safety_scanner import (
     AISafetyError,
     SafetyScanResult,
     OpenAIModerationScanner,
     OpenAIVisionScanner,
-    AISafetyPipeline
+    AISafetyPipeline,
 )
 
 
@@ -29,7 +30,7 @@ class TestOpenAIModerationScanner:
 
     def test_init_from_env(self):
         """Test initialization from environment variable"""
-        with patch.dict(os.environ, {'OPENAI_API_KEY': 'env-key'}):
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "env-key"}):
             scanner = OpenAIModerationScanner()
             assert scanner.api_key == "env-key"
 
@@ -48,7 +49,7 @@ class TestOpenAIModerationScanner:
         mock_result.category_scores.model_dump.return_value = {
             "sexual": 0.001,
             "hate": 0.001,
-            "violence": 0.001
+            "violence": 0.001,
         }
         mock_response.results = [mock_result]
         mock_response.model = "text-moderation-latest"
@@ -95,17 +96,11 @@ class TestAISafetyPipeline:
 
         scan_results = {
             "text": SafetyScanResult(
-                is_safe=True,
-                confidence=0.95,
-                violations=[],
-                categories_flagged={}
+                is_safe=True, confidence=0.95, violations=[], categories_flagged={}
             ),
             "visual": SafetyScanResult(
-                is_safe=True,
-                confidence=0.90,
-                violations=[],
-                categories_flagged={}
-            )
+                is_safe=True, confidence=0.90, violations=[], categories_flagged={}
+            ),
         }
 
         is_safe, violations, confidence = pipeline.is_safe(scan_results)
@@ -123,14 +118,11 @@ class TestAISafetyPipeline:
                 is_safe=False,
                 confidence=0.85,
                 violations=["Sexual content"],
-                categories_flagged={"sexual": 0.95}
+                categories_flagged={"sexual": 0.95},
             ),
             "visual": SafetyScanResult(
-                is_safe=True,
-                confidence=0.90,
-                violations=[],
-                categories_flagged={}
-            )
+                is_safe=True, confidence=0.90, violations=[], categories_flagged={}
+            ),
         }
 
         is_safe, violations, confidence = pipeline.is_safe(scan_results)

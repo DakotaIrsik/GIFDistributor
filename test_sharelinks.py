@@ -2,6 +2,7 @@
 Tests for Share Links Module
 Issue: #40
 """
+
 import pytest
 from sharelinks import ShareLinkGenerator, create_asset_hash
 import tempfile
@@ -66,9 +67,7 @@ class TestShareLinkGenerator:
         """Test share link creation with title and tags"""
         gen = ShareLinkGenerator()
         result = gen.create_share_link(
-            "asset456",
-            title="Test GIF",
-            tags=["funny", "cats"]
+            "asset456", title="Test GIF", tags=["funny", "cats"]
         )
 
         assert result["short_code"] in gen._links_db
@@ -122,9 +121,7 @@ class TestShareLinkGenerator:
         """Test getting metadata for Open Graph tags"""
         gen = ShareLinkGenerator()
         result = gen.create_share_link(
-            "asset111",
-            title="Epic GIF",
-            tags=["awesome", "viral"]
+            "asset111", title="Epic GIF", tags=["awesome", "viral"]
         )
 
         metadata = gen.get_share_metadata(result["short_code"])
@@ -154,7 +151,7 @@ class TestAssetHash:
     def test_create_asset_hash(self):
         """Test creating hash from file"""
         # Create a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, mode='w') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="w") as f:
             f.write("test content")
             temp_path = f.name
 
@@ -169,7 +166,7 @@ class TestAssetHash:
         """Test that same content produces same hash"""
         content = b"consistent test data"
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
             f.write(content)
             temp_path = f.name
 
@@ -186,14 +183,17 @@ class TestEdgeCases:
 
     def test_create_asset_hash_empty_file(self):
         """Test hashing an empty file"""
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
             temp_path = f.name
 
         try:
             hash_result = create_asset_hash(temp_path)
             # SHA-256 of empty file is known
             assert len(hash_result) == 64
-            assert hash_result == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            assert (
+                hash_result
+                == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            )
         finally:
             os.unlink(temp_path)
 
@@ -204,9 +204,9 @@ class TestEdgeCases:
 
     def test_create_asset_hash_large_file(self):
         """Test hashing a large file (tests chunked reading)"""
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
             # Write 10MB of data
-            f.write(b'x' * (10 * 1024 * 1024))
+            f.write(b"x" * (10 * 1024 * 1024))
             temp_path = f.name
 
         try:
@@ -218,9 +218,9 @@ class TestEdgeCases:
 
     def test_create_asset_hash_binary_data(self):
         """Test hashing binary GIF-like data"""
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
             # GIF header
-            f.write(b'GIF89a\x01\x00\x01\x00\x80\x00\x00')
+            f.write(b"GIF89a\x01\x00\x01\x00\x80\x00\x00")
             temp_path = f.name
 
         try:
@@ -283,6 +283,7 @@ class TestEdgeCases:
         created_at = link_data["created_at"]
         # Should be parseable as ISO format
         from datetime import datetime
+
         parsed_time = datetime.fromisoformat(created_at)
         assert parsed_time is not None
 
@@ -293,7 +294,7 @@ class TestIntegration:
     def test_full_asset_workflow(self):
         """Test complete workflow: hash file -> generate ID -> create share link -> resolve"""
         # Create test file
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
             f.write(b"Test GIF content")
             temp_path = f.name
 
@@ -308,11 +309,7 @@ class TestIntegration:
             assert len(asset_id) == 16
 
             # Step 3: Create share link
-            result = gen.create_share_link(
-                asset_id,
-                title="Test GIF",
-                tags=["test"]
-            )
+            result = gen.create_share_link(asset_id, title="Test GIF", tags=["test"])
             assert result["short_code"] is not None
 
             # Step 4: Resolve the link
@@ -333,11 +330,11 @@ class TestIntegration:
         content = b"Identical content"
 
         # Create two identical files
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f1:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f1:
             f1.write(content)
             path1 = f1.name
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f2:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f2:
             f2.write(content)
             path2 = f2.name
 
@@ -438,9 +435,7 @@ class TestSecurity:
         """Test handling of unicode characters"""
         gen = ShareLinkGenerator()
         result = gen.create_share_link(
-            "asset_unicode",
-            title="🎉 Cool GIF 你好",
-            tags=["emoji😀", "中文"]
+            "asset_unicode", title="🎉 Cool GIF 你好", tags=["emoji😀", "中文"]
         )
 
         metadata = gen.get_share_metadata(result["short_code"])
@@ -616,18 +611,18 @@ class TestHashFunctionEdgeCases:
 
     def test_binary_gif_header(self):
         """Test hashing actual GIF binary header"""
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb', suffix='.gif') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb", suffix=".gif") as f:
             # Real GIF header (minimal valid GIF)
-            gif_header = b'GIF89a'
-            gif_header += b'\x01\x00\x01\x00'  # Width, height
-            gif_header += b'\x80\x00\x00'      # Global color table
-            gif_header += b'\x00\x00\x00\xFF\xFF\xFF'  # Color table
-            gif_header += b'\x2C'              # Image descriptor
-            gif_header += b'\x00\x00\x00\x00'  # Position
-            gif_header += b'\x01\x00\x01\x00'  # Dimensions
-            gif_header += b'\x00'              # No local color table
-            gif_header += b'\x02\x02\x44\x01\x00'  # Image data
-            gif_header += b'\x3B'              # Trailer
+            gif_header = b"GIF89a"
+            gif_header += b"\x01\x00\x01\x00"  # Width, height
+            gif_header += b"\x80\x00\x00"  # Global color table
+            gif_header += b"\x00\x00\x00\xff\xff\xff"  # Color table
+            gif_header += b"\x2c"  # Image descriptor
+            gif_header += b"\x00\x00\x00\x00"  # Position
+            gif_header += b"\x01\x00\x01\x00"  # Dimensions
+            gif_header += b"\x00"  # No local color table
+            gif_header += b"\x02\x02\x44\x01\x00"  # Image data
+            gif_header += b"\x3b"  # Trailer
             f.write(gif_header)
             temp_path = f.name
 
@@ -644,8 +639,8 @@ class TestHashFunctionEdgeCases:
 
     def test_file_with_null_bytes(self):
         """Test hashing file containing null bytes"""
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
-            f.write(b'\x00' * 100)
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
+            f.write(b"\x00" * 100)
             temp_path = f.name
 
         try:
@@ -656,8 +651,8 @@ class TestHashFunctionEdgeCases:
 
     def test_file_permissions_readable(self):
         """Test that hashing works with different file permissions"""
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
-            f.write(b'test data')
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
+            f.write(b"test data")
             temp_path = f.name
 
         try:
@@ -692,10 +687,10 @@ class TestShortCodeCollisionHandling:
         """Test ALPHABET constant contains expected characters"""
         alphabet = ShareLinkGenerator.ALPHABET
         assert len(alphabet) == 62  # 26 + 26 + 10
-        assert 'a' in alphabet
-        assert 'Z' in alphabet
-        assert '0' in alphabet
-        assert '9' in alphabet
+        assert "a" in alphabet
+        assert "Z" in alphabet
+        assert "0" in alphabet
+        assert "9" in alphabet
 
 
 class TestURLFormation:
@@ -748,9 +743,7 @@ class TestMetadataRetrieval:
         """Test metadata preserves data types correctly"""
         gen = ShareLinkGenerator()
         result = gen.create_share_link(
-            "asset_types",
-            title="Test",
-            tags=["tag1", "tag2"]
+            "asset_types", title="Test", tags=["tag1", "tag2"]
         )
 
         metadata = gen.get_share_metadata(result["short_code"])

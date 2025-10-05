@@ -17,7 +17,7 @@ from direct_upload import (
     UploadMethod,
     UploadStatus,
     SessionStore,
-    ChunkMetadata
+    ChunkMetadata,
 )
 
 from storage_cdn import StorageManager, StorageConfig, StorageBackend
@@ -38,7 +38,7 @@ def storage_manager(temp_dir):
         backend=StorageBackend.LOCAL,
         bucket_name="test-bucket",
         base_path=os.path.join(temp_dir, "storage"),
-        cdn_domain="cdn.test.com"
+        cdn_domain="cdn.test.com",
     )
     return StorageManager(config, signing_secret="test-secret-key")
 
@@ -56,7 +56,7 @@ def upload_manager(storage_manager, session_store):
     return DirectUploadManager(
         storage_manager=storage_manager,
         session_store=session_store,
-        default_chunk_size=1024  # Small chunk size for testing
+        default_chunk_size=1024,  # Small chunk size for testing
     )
 
 
@@ -70,7 +70,7 @@ class TestDirectUpload:
             file_size=500,  # Smaller than chunk size
             mime_type="image/gif",
             user_id="user123",
-            content_hash="abc123"
+            content_hash="abc123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -79,7 +79,7 @@ class TestDirectUpload:
         assert response.session_id
         assert response.upload_url
         assert response.max_file_size > 0
-        assert 'key' in response.fields
+        assert "key" in response.fields
 
     def test_initiate_large_file_upload(self, upload_manager):
         """Test initiating upload for large file (multipart upload)"""
@@ -87,7 +87,7 @@ class TestDirectUpload:
             filename="large.mp4",
             file_size=5000,  # Larger than chunk size (1024)
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -103,7 +103,7 @@ class TestDirectUpload:
             filename="huge.mp4",
             file_size=200 * 1024 * 1024,  # 200MB
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         config = UploadUrlConfig(max_file_size=100 * 1024 * 1024)  # 100MB limit
@@ -117,7 +117,7 @@ class TestDirectUpload:
             filename="doc.pdf",
             file_size=1000,
             mime_type="application/pdf",
-            user_id="user123"
+            user_id="user123",
         )
 
         config = UploadUrlConfig(
@@ -138,7 +138,7 @@ class TestMultipartUpload:
             filename="large.mp4",
             file_size=5000,
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -149,7 +149,7 @@ class TestMultipartUpload:
             session_id=session_id,
             chunk_number=0,
             chunk_size=1024,
-            chunk_hash="chunk0hash"
+            chunk_hash="chunk0hash",
         )
 
         assert chunk_url
@@ -162,7 +162,7 @@ class TestMultipartUpload:
             filename="test.mp4",
             file_size=3000,
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -170,40 +170,34 @@ class TestMultipartUpload:
 
         # Mark chunk 0 as uploaded
         result = upload_manager.mark_chunk_uploaded(
-            session_id=session_id,
-            chunk_number=0,
-            chunk_size=1024,
-            chunk_hash="hash0"
+            session_id=session_id, chunk_number=0, chunk_size=1024, chunk_hash="hash0"
         )
 
-        assert result['uploaded_chunks'] == 1
-        assert result['total_chunks'] == 3
-        assert result['progress_percent'] > 0
-        assert result['status'] == UploadStatus.IN_PROGRESS.value
+        assert result["uploaded_chunks"] == 1
+        assert result["total_chunks"] == 3
+        assert result["progress_percent"] > 0
+        assert result["status"] == UploadStatus.IN_PROGRESS.value
 
         # Mark chunk 1
         result = upload_manager.mark_chunk_uploaded(
-            session_id=session_id,
-            chunk_number=1,
-            chunk_size=1024,
-            chunk_hash="hash1"
+            session_id=session_id, chunk_number=1, chunk_size=1024, chunk_hash="hash1"
         )
 
-        assert result['uploaded_chunks'] == 2
-        assert result['progress_percent'] > 33
+        assert result["uploaded_chunks"] == 2
+        assert result["progress_percent"] > 33
 
         # Mark final chunk
         result = upload_manager.mark_chunk_uploaded(
             session_id=session_id,
             chunk_number=2,
             chunk_size=952,  # Remainder
-            chunk_hash="hash2"
+            chunk_hash="hash2",
         )
 
-        assert result['uploaded_chunks'] == 3
-        assert result['total_chunks'] == 3
-        assert result['status'] == UploadStatus.COMPLETED.value
-        assert result['is_complete'] is True
+        assert result["uploaded_chunks"] == 3
+        assert result["total_chunks"] == 3
+        assert result["status"] == UploadStatus.COMPLETED.value
+        assert result["is_complete"] is True
 
     def test_finalize_multipart_upload(self, upload_manager, storage_manager):
         """Test finalizing multipart upload by assembling chunks"""
@@ -215,18 +209,14 @@ class TestMultipartUpload:
             filename="test.bin",
             file_size=len(test_data),
             mime_type="application/octet-stream",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
         session_id = response.session_id
 
         # Upload chunks to storage
-        chunks = [
-            test_data[0:1024],
-            test_data[1024:2048],
-            test_data[2048:2548]
-        ]
+        chunks = [test_data[0:1024], test_data[1024:2048], test_data[2048:2548]]
 
         for i, chunk in enumerate(chunks):
             # Upload chunk to storage
@@ -239,21 +229,21 @@ class TestMultipartUpload:
                 session_id=session_id,
                 chunk_number=i,
                 chunk_size=len(chunk),
-                chunk_hash=chunk_hash
+                chunk_hash=chunk_hash,
             )
 
         # Finalize upload
         result = upload_manager.finalize_upload(session_id)
 
-        assert result['status'] == 'completed'
-        assert result['file_size'] == len(test_data)
-        assert result['storage_key']
-        assert result['file_hash']
+        assert result["status"] == "completed"
+        assert result["file_size"] == len(test_data)
+        assert result["storage_key"]
+        assert result["file_hash"]
 
         # Verify final file
-        final_data, _ = storage_manager.download(result['storage_key'])
+        final_data, _ = storage_manager.download(result["storage_key"])
         assert final_data == test_data
-        assert hashlib.sha256(final_data).hexdigest() == result['file_hash']
+        assert hashlib.sha256(final_data).hexdigest() == result["file_hash"]
 
     def test_finalize_incomplete_upload(self, upload_manager):
         """Test finalizing upload with missing chunks fails"""
@@ -261,7 +251,7 @@ class TestMultipartUpload:
             filename="test.mp4",
             file_size=3000,
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -269,10 +259,7 @@ class TestMultipartUpload:
 
         # Only upload chunk 0 (missing chunks 1 and 2)
         upload_manager.mark_chunk_uploaded(
-            session_id=session_id,
-            chunk_number=0,
-            chunk_size=1024,
-            chunk_hash="hash0"
+            session_id=session_id, chunk_number=0, chunk_size=1024, chunk_hash="hash0"
         )
 
         # Should fail to finalize
@@ -289,7 +276,7 @@ class TestUploadProgress:
             filename="test.mp4",
             file_size=4096,
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -297,10 +284,10 @@ class TestUploadProgress:
 
         # Initial progress
         progress = upload_manager.get_upload_progress(session_id)
-        assert progress['uploaded_chunks'] == 0
-        assert progress['total_chunks'] == 4
-        assert progress['progress_percent'] == 0
-        assert progress['is_complete'] is False
+        assert progress["uploaded_chunks"] == 0
+        assert progress["total_chunks"] == 4
+        assert progress["progress_percent"] == 0
+        assert progress["is_complete"] is False
 
         # Upload 2 chunks
         for i in range(2):
@@ -308,15 +295,15 @@ class TestUploadProgress:
                 session_id=session_id,
                 chunk_number=i,
                 chunk_size=1024,
-                chunk_hash=f"hash{i}"
+                chunk_hash=f"hash{i}",
             )
 
         progress = upload_manager.get_upload_progress(session_id)
-        assert progress['uploaded_chunks'] == 2
-        assert progress['progress_percent'] == 50.0
-        assert len(progress['missing_chunks']) == 2
-        assert 2 in progress['missing_chunks']
-        assert 3 in progress['missing_chunks']
+        assert progress["uploaded_chunks"] == 2
+        assert progress["progress_percent"] == 50.0
+        assert len(progress["missing_chunks"]) == 2
+        assert 2 in progress["missing_chunks"]
+        assert 3 in progress["missing_chunks"]
 
     def test_resume_upload(self, upload_manager):
         """Test resuming interrupted upload"""
@@ -324,7 +311,7 @@ class TestUploadProgress:
             filename="test.mp4",
             file_size=5000,
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -332,27 +319,21 @@ class TestUploadProgress:
 
         # Upload some chunks
         upload_manager.mark_chunk_uploaded(
-            session_id=session_id,
-            chunk_number=0,
-            chunk_size=1024,
-            chunk_hash="hash0"
+            session_id=session_id, chunk_number=0, chunk_size=1024, chunk_hash="hash0"
         )
 
         upload_manager.mark_chunk_uploaded(
-            session_id=session_id,
-            chunk_number=2,
-            chunk_size=1024,
-            chunk_hash="hash2"
+            session_id=session_id, chunk_number=2, chunk_size=1024, chunk_hash="hash2"
         )
 
         # Resume upload
         resume_info = upload_manager.resume_upload(session_id)
 
-        assert resume_info['can_resume'] is True
-        assert resume_info['uploaded_chunks'] == 2
-        assert resume_info['total_chunks'] == 5
-        assert resume_info['next_chunk'] == 1  # Missing chunk 1
-        assert resume_info['chunk_size'] == 1024
+        assert resume_info["can_resume"] is True
+        assert resume_info["uploaded_chunks"] == 2
+        assert resume_info["total_chunks"] == 5
+        assert resume_info["next_chunk"] == 1  # Missing chunk 1
+        assert resume_info["chunk_size"] == 1024
 
 
 class TestUploadAbort:
@@ -365,7 +346,7 @@ class TestUploadAbort:
             filename="test.mp4",
             file_size=3000,
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -376,10 +357,7 @@ class TestUploadAbort:
         storage_manager.upload(chunk_key, b"test" * 256)
 
         upload_manager.mark_chunk_uploaded(
-            session_id=session_id,
-            chunk_number=0,
-            chunk_size=1024,
-            chunk_hash="hash0"
+            session_id=session_id, chunk_number=0, chunk_size=1024, chunk_hash="hash0"
         )
 
         # Abort with cleanup
@@ -388,7 +366,7 @@ class TestUploadAbort:
 
         # Check session status
         progress = upload_manager.get_upload_progress(session_id)
-        assert progress['status'] == UploadStatus.ABORTED.value
+        assert progress["status"] == UploadStatus.ABORTED.value
 
         # Verify chunk was deleted
         assert not storage_manager.exists(chunk_key)
@@ -408,7 +386,7 @@ class TestSessionStore:
             total_size=1000,
             mime_type="video/mp4",
             chunk_size=100,
-            total_chunks=10
+            total_chunks=10,
         )
 
         session_store.create_session(session)
@@ -430,7 +408,7 @@ class TestSessionStore:
             total_size=1000,
             mime_type="video/mp4",
             chunk_size=100,
-            total_chunks=10
+            total_chunks=10,
         )
 
         session_store.create_session(session)
@@ -453,7 +431,7 @@ class TestSessionStore:
             total_size=1000,
             mime_type="video/mp4",
             chunk_size=100,
-            total_chunks=10
+            total_chunks=10,
         )
 
         session_store.create_session(session)
@@ -475,7 +453,7 @@ class TestSessionStore:
             mime_type="video/mp4",
             chunk_size=100,
             total_chunks=10,
-            expires_at=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+            expires_at=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
         )
 
         # Create valid session
@@ -486,7 +464,7 @@ class TestSessionStore:
             total_size=1000,
             mime_type="video/mp4",
             chunk_size=100,
-            total_chunks=10
+            total_chunks=10,
         )
 
         session_store.create_session(expired_session)
@@ -511,15 +489,15 @@ class TestUploadStats:
                 filename=f"test{i}.mp4",
                 file_size=2000,
                 mime_type="video/mp4",
-                user_id="user123"
+                user_id="user123",
             )
             upload_manager.initiate_upload(request)
 
         stats = upload_manager.get_stats()
 
-        assert stats['total_sessions'] == 3
-        assert UploadStatus.PENDING.value in stats['by_status']
-        assert stats['by_status'][UploadStatus.PENDING.value] == 3
+        assert stats["total_sessions"] == 3
+        assert UploadStatus.PENDING.value in stats["by_status"]
+        assert stats["by_status"][UploadStatus.PENDING.value] == 3
 
 
 class TestEdgeCases:
@@ -539,7 +517,7 @@ class TestEdgeCases:
             filename="test.mp4",
             file_size=3000,
             mime_type="video/mp4",
-            user_id="user123"
+            user_id="user123",
         )
 
         response = upload_manager.initiate_upload(request)
@@ -562,7 +540,7 @@ class TestEdgeCases:
             mime_type="video/mp4",
             chunk_size=1024,
             total_chunks=3,
-            expires_at=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+            expires_at=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
         )
 
         upload_manager.sessions.create_session(expired_session)
@@ -582,7 +560,7 @@ class TestEdgeCases:
             mime_type="video/mp4",
             chunk_size=1024,
             total_chunks=3,
-            status=UploadStatus.COMPLETED
+            status=UploadStatus.COMPLETED,
         )
 
         upload_manager.sessions.create_session(completed_session)
@@ -591,5 +569,5 @@ class TestEdgeCases:
             upload_manager.resume_upload("completed123")
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

@@ -13,7 +13,7 @@ from teams_bot import (
     TeamsIdentity,
     TeamsConversation,
     ActivityType,
-    ConversationType
+    ConversationType,
 )
 
 
@@ -23,9 +23,7 @@ class TestTeamsOAuthManager:
     def test_initialization(self):
         """Test OAuth manager initialization"""
         oauth = TeamsOAuthManager(
-            app_id="test-app-id",
-            app_password="test-password",
-            tenant_id="test-tenant"
+            app_id="test-app-id", app_password="test-password", tenant_id="test-tenant"
         )
 
         assert oauth.app_id == "test-app-id"
@@ -48,8 +46,7 @@ class TestTeamsOAuthManager:
         oauth = TeamsOAuthManager("app-id", "password", "common")
 
         url = oauth.get_user_auth_url(
-            state="test-state",
-            redirect_uri="https://example.com/callback"
+            state="test-state", redirect_uri="https://example.com/callback"
         )
 
         assert "login.microsoftonline.com" in url
@@ -62,14 +59,13 @@ class TestTeamsOAuthManager:
         oauth = TeamsOAuthManager("app-id", "password")
 
         token_data = oauth.exchange_code_for_token(
-            code="auth-code",
-            redirect_uri="https://example.com/callback"
+            code="auth-code", redirect_uri="https://example.com/callback"
         )
 
-        assert 'access_token' in token_data
-        assert 'refresh_token' in token_data
-        assert 'expires_in' in token_data
-        assert token_data['access_token'].startswith("user_token_")
+        assert "access_token" in token_data
+        assert "refresh_token" in token_data
+        assert "expires_in" in token_data
+        assert token_data["access_token"].startswith("user_token_")
 
     def test_get_user_token(self):
         """Test getting cached user token"""
@@ -77,11 +73,11 @@ class TestTeamsOAuthManager:
 
         # Exchange code first
         token_data = oauth.exchange_code_for_token("code", "https://example.com")
-        user_id = token_data['user_id']
+        user_id = token_data["user_id"]
 
         # Get cached token
         token = oauth.get_user_token(user_id)
-        assert token == token_data['access_token']
+        assert token == token_data["access_token"]
 
         # Non-existent user
         assert oauth.get_user_token("nonexistent") is None
@@ -91,7 +87,7 @@ class TestTeamsOAuthManager:
         oauth = TeamsOAuthManager("app-id", "password")
 
         token_data = oauth.exchange_code_for_token("code", "https://example.com")
-        user_id = token_data['user_id']
+        user_id = token_data["user_id"]
 
         # Revoke token
         assert oauth.revoke_user_token(user_id) is True
@@ -106,10 +102,7 @@ class TestTeamsBot:
 
     def test_initialization(self):
         """Test bot initialization"""
-        bot = TeamsBot(
-            app_id="test-app",
-            app_password="test-password"
-        )
+        bot = TeamsBot(app_id="test-app", app_password="test-password")
 
         assert bot.app_id == "test-app"
         assert bot.app_password == "test-password"
@@ -131,64 +124,49 @@ class TestTeamsBot:
         bot = TeamsBot("app-id", "password")
 
         activity_data = {
-            'type': 'message',
-            'id': 'msg123',
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'from': {
-                'id': 'user123',
-                'name': 'Test User'
-            },
-            'conversation': {
-                'id': 'conv123',
-                'conversationType': 'personal'
-            },
-            'text': 'help'
+            "type": "message",
+            "id": "msg123",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "from": {"id": "user123", "name": "Test User"},
+            "conversation": {"id": "conv123", "conversationType": "personal"},
+            "text": "help",
         }
 
         response = bot.handle_activity(activity_data)
 
         assert response is not None
-        assert 'text' in response
-        assert 'Commands' in response['text']
+        assert "text" in response
+        assert "Commands" in response["text"]
 
     def test_handle_conversation_update(self):
         """Test handling conversation update"""
         bot = TeamsBot("app-id", "password")
 
         activity_data = {
-            'type': 'conversationUpdate',
-            'id': 'update123',
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'from': {
-                'id': 'bot123',
-                'name': 'Bot'
-            },
-            'conversation': {
-                'id': 'conv123',
-                'conversationType': 'personal'
-            }
+            "type": "conversationUpdate",
+            "id": "update123",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "from": {"id": "bot123", "name": "Bot"},
+            "conversation": {"id": "conv123", "conversationType": "personal"},
         }
 
         response = bot.handle_activity(activity_data)
 
         assert response is not None
-        assert 'text' in response
-        assert 'Welcome' in response['text']
+        assert "text" in response
+        assert "Welcome" in response["text"]
 
     def test_send_message(self):
         """Test sending message"""
         bot = TeamsBot("app-id", "password")
 
-        result = bot.send_message(
-            conversation_id="conv123",
-            text="Hello, World!"
-        )
+        result = bot.send_message(conversation_id="conv123", text="Hello, World!")
 
         assert result is True
 
         # Check activity log
         analytics = bot.get_analytics()
-        assert analytics['total_activities'] > 0
+        assert analytics["total_activities"] > 0
 
     def test_send_gif_card(self):
         """Test sending GIF card"""
@@ -199,7 +177,7 @@ class TestTeamsBot:
             gif_url="https://example.com/cat.gif",
             title="Cute Cat",
             description="A cat",
-            share_url="https://gifdist.io/s/abc123"
+            share_url="https://gifdist.io/s/abc123",
         )
 
         assert result is True
@@ -212,62 +190,50 @@ class TestTeamsBot:
 
         def custom_handler(activity: TeamsActivity):
             handled.append(activity.text)
-            if activity.text and 'test' in activity.text.lower():
-                return {'type': 'message', 'text': 'Custom response'}
+            if activity.text and "test" in activity.text.lower():
+                return {"type": "message", "text": "Custom response"}
             return None
 
         bot.on_message(custom_handler)
 
         activity_data = {
-            'type': 'message',
-            'id': 'msg123',
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'from': {
-                'id': 'user123',
-                'name': 'Test User'
-            },
-            'conversation': {
-                'id': 'conv123',
-                'conversationType': 'personal'
-            },
-            'text': 'test message'
+            "type": "message",
+            "id": "msg123",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "from": {"id": "user123", "name": "Test User"},
+            "conversation": {"id": "conv123", "conversationType": "personal"},
+            "text": "test message",
         }
 
         response = bot.handle_activity(activity_data)
 
         assert len(handled) == 1
         assert response is not None
-        assert response['text'] == 'Custom response'
+        assert response["text"] == "Custom response"
 
     def test_conversation_state(self):
         """Test conversation state management"""
         bot = TeamsBot("app-id", "password")
 
         activity_data = {
-            'type': 'message',
-            'id': 'msg123',
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'from': {
-                'id': 'user123',
-                'name': 'Test User'
-            },
-            'conversation': {
-                'id': 'conv123',
-                'conversationType': 'personal'
-            },
-            'text': 'hello'
+            "type": "message",
+            "id": "msg123",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "from": {"id": "user123", "name": "Test User"},
+            "conversation": {"id": "conv123", "conversationType": "personal"},
+            "text": "hello",
         }
 
         bot.handle_activity(activity_data)
 
         # Get conversation state
-        state = bot.get_conversation_state('conv123')
+        state = bot.get_conversation_state("conv123")
 
         assert state is not None
-        assert state['id'] == 'conv123'
-        assert state['type'] == 'personal'
-        assert len(state['messages']) == 1
-        assert state['messages'][0]['text'] == 'hello'
+        assert state["id"] == "conv123"
+        assert state["type"] == "personal"
+        assert len(state["messages"]) == 1
+        assert state["messages"][0]["text"] == "hello"
 
     def test_get_analytics(self):
         """Test analytics"""
@@ -279,27 +245,21 @@ class TestTeamsBot:
 
         # Handle some activities
         activity_data = {
-            'type': 'message',
-            'id': 'msg123',
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'from': {
-                'id': 'user1',
-                'name': 'User 1'
-            },
-            'conversation': {
-                'id': 'conv1',
-                'conversationType': 'personal'
-            },
-            'text': 'hello'
+            "type": "message",
+            "id": "msg123",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "from": {"id": "user1", "name": "User 1"},
+            "conversation": {"id": "conv1", "conversationType": "personal"},
+            "text": "hello",
         }
         bot.handle_activity(activity_data)
 
         analytics = bot.get_analytics()
 
-        assert analytics['total_activities'] >= 3
-        assert analytics['total_conversations'] >= 1
-        assert 'activity_types' in analytics
-        assert analytics['active_users'] >= 1
+        assert analytics["total_activities"] >= 3
+        assert analytics["total_conversations"] >= 1
+        assert "activity_types" in analytics
+        assert analytics["active_users"] >= 1
 
     def test_oauth_card_response(self):
         """Test OAuth card creation"""
@@ -307,13 +267,13 @@ class TestTeamsBot:
 
         response = bot._create_oauth_card_response()
 
-        assert 'attachments' in response
-        assert len(response['attachments']) == 1
+        assert "attachments" in response
+        assert len(response["attachments"]) == 1
 
-        card = response['attachments'][0]['content']
-        assert card['type'] == 'AdaptiveCard'
-        assert 'actions' in card
-        assert card['actions'][0]['type'] == 'Action.OpenUrl'
+        card = response["attachments"][0]["content"]
+        assert card["type"] == "AdaptiveCard"
+        assert "actions" in card
+        assert card["actions"][0]["type"] == "Action.OpenUrl"
 
     def test_help_response(self):
         """Test help response"""
@@ -321,9 +281,9 @@ class TestTeamsBot:
 
         response = bot._create_help_response()
 
-        assert 'text' in response
-        assert 'Commands' in response['text']
-        assert 'help' in response['text']
+        assert "text" in response
+        assert "Commands" in response["text"]
+        assert "help" in response["text"]
 
     def test_welcome_response(self):
         """Test welcome response"""
@@ -331,8 +291,8 @@ class TestTeamsBot:
 
         response = bot._create_welcome_response()
 
-        assert 'text' in response
-        assert 'Welcome' in response['text']
+        assert "text" in response
+        assert "Welcome" in response["text"]
 
     def test_conversation_update_handler(self):
         """Test conversation update handler"""
@@ -347,17 +307,11 @@ class TestTeamsBot:
         bot.on_conversation_update(update_handler)
 
         activity_data = {
-            'type': 'conversationUpdate',
-            'id': 'update123',
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'from': {
-                'id': 'bot123',
-                'name': 'Bot'
-            },
-            'conversation': {
-                'id': 'conv123',
-                'conversationType': 'channel'
-            }
+            "type": "conversationUpdate",
+            "id": "update123",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "from": {"id": "bot123", "name": "Bot"},
+            "conversation": {"id": "conv123", "conversationType": "channel"},
         }
 
         bot.handle_activity(activity_data)
@@ -372,29 +326,23 @@ class TestTeamsBot:
         # Create activities for different conversations
         for i in range(3):
             activity_data = {
-                'type': 'message',
-                'id': f'msg{i}',
-                'timestamp': datetime.utcnow().isoformat() + 'Z',
-                'from': {
-                    'id': f'user{i}',
-                    'name': f'User {i}'
-                },
-                'conversation': {
-                    'id': f'conv{i}',
-                    'conversationType': 'personal'
-                },
-                'text': f'message {i}'
+                "type": "message",
+                "id": f"msg{i}",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "from": {"id": f"user{i}", "name": f"User {i}"},
+                "conversation": {"id": f"conv{i}", "conversationType": "personal"},
+                "text": f"message {i}",
             }
             bot.handle_activity(activity_data)
 
         analytics = bot.get_analytics()
-        assert analytics['total_conversations'] == 3
+        assert analytics["total_conversations"] == 3
 
         # Each conversation should have state
         for i in range(3):
-            state = bot.get_conversation_state(f'conv{i}')
+            state = bot.get_conversation_state(f"conv{i}")
             assert state is not None
-            assert state['id'] == f'conv{i}'
+            assert state["id"] == f"conv{i}"
 
 
 if __name__ == "__main__":

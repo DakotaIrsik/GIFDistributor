@@ -27,6 +27,7 @@ import mimetypes
 
 class StorageBackend(str, Enum):
     """Supported storage backends"""
+
     LOCAL = "local"
     S3 = "s3"
     R2 = "r2"  # Cloudflare R2
@@ -36,6 +37,7 @@ class StorageBackend(str, Enum):
 
 class CachePolicy(str, Enum):
     """CDN cache policies"""
+
     NO_CACHE = "no-cache"
     PUBLIC = "public"
     PRIVATE = "private"
@@ -45,6 +47,7 @@ class CachePolicy(str, Enum):
 @dataclass
 class StorageConfig:
     """Storage configuration"""
+
     backend: StorageBackend
     bucket_name: str
     region: Optional[str] = None
@@ -58,6 +61,7 @@ class StorageConfig:
 @dataclass
 class ObjectMetadata:
     """Metadata for stored objects"""
+
     key: str
     size_bytes: int
     content_type: str
@@ -73,6 +77,7 @@ class ObjectMetadata:
 @dataclass
 class SignedUrlConfig:
     """Configuration for signed URLs"""
+
     expires_in_seconds: int = 3600
     allow_methods: List[str] = field(default_factory=lambda: ["GET"])
     max_size_bytes: Optional[int] = None
@@ -95,7 +100,7 @@ class LocalStorageBackend:
     def _get_full_path(self, key: str) -> str:
         """Get full filesystem path for key"""
         # Normalize key to prevent directory traversal
-        safe_key = key.replace('..', '').lstrip('/')
+        safe_key = key.replace("..", "").lstrip("/")
         return os.path.join(self.base_path, safe_key)
 
     def put_object(
@@ -104,7 +109,7 @@ class LocalStorageBackend:
         data: bytes,
         content_type: str = "application/octet-stream",
         metadata: Optional[Dict[str, str]] = None,
-        cache_control: Optional[str] = None
+        cache_control: Optional[str] = None,
     ) -> ObjectMetadata:
         """
         Store object in local filesystem
@@ -123,21 +128,21 @@ class LocalStorageBackend:
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
         # Write data
-        with open(full_path, 'wb') as f:
+        with open(full_path, "wb") as f:
             f.write(data)
 
         # Calculate ETag (MD5 hash)
         etag = hashlib.md5(data).hexdigest()
 
         # Store metadata separately
-        metadata_path = full_path + '.meta'
+        metadata_path = full_path + ".meta"
         meta = {
-            'content_type': content_type,
-            'custom_metadata': metadata or {},
-            'cache_control': cache_control,
-            'etag': etag
+            "content_type": content_type,
+            "custom_metadata": metadata or {},
+            "cache_control": cache_control,
+            "etag": etag,
         }
-        with open(metadata_path, 'w') as f:
+        with open(metadata_path, "w") as f:
             json.dump(meta, f)
 
         return ObjectMetadata(
@@ -147,7 +152,7 @@ class LocalStorageBackend:
             etag=etag,
             last_modified=datetime.now(timezone.utc).isoformat(),
             cache_control=cache_control,
-            custom_metadata=metadata or {}
+            custom_metadata=metadata or {},
         )
 
     def get_object(self, key: str) -> Tuple[bytes, ObjectMetadata]:
@@ -166,26 +171,28 @@ class LocalStorageBackend:
             raise FileNotFoundError(f"Object not found: {key}")
 
         # Read data
-        with open(full_path, 'rb') as f:
+        with open(full_path, "rb") as f:
             data = f.read()
 
         # Read metadata
-        metadata_path = full_path + '.meta'
+        metadata_path = full_path + ".meta"
         if os.path.exists(metadata_path):
-            with open(metadata_path, 'r') as f:
+            with open(metadata_path, "r") as f:
                 meta = json.load(f)
         else:
-            meta = {'content_type': 'application/octet-stream'}
+            meta = {"content_type": "application/octet-stream"}
 
         stat = os.stat(full_path)
         metadata = ObjectMetadata(
             key=key,
             size_bytes=stat.st_size,
-            content_type=meta.get('content_type', 'application/octet-stream'),
-            etag=meta.get('etag', hashlib.md5(data).hexdigest()),
-            last_modified=datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
-            cache_control=meta.get('cache_control'),
-            custom_metadata=meta.get('custom_metadata', {})
+            content_type=meta.get("content_type", "application/octet-stream"),
+            etag=meta.get("etag", hashlib.md5(data).hexdigest()),
+            last_modified=datetime.fromtimestamp(
+                stat.st_mtime, timezone.utc
+            ).isoformat(),
+            cache_control=meta.get("cache_control"),
+            custom_metadata=meta.get("custom_metadata", {}),
         )
 
         return (data, metadata)
@@ -208,13 +215,15 @@ class LocalStorageBackend:
         os.remove(full_path)
 
         # Remove metadata if exists
-        metadata_path = full_path + '.meta'
+        metadata_path = full_path + ".meta"
         if os.path.exists(metadata_path):
             os.remove(metadata_path)
 
         return True
 
-    def list_objects(self, prefix: str = "", max_keys: int = 1000) -> List[ObjectMetadata]:
+    def list_objects(
+        self, prefix: str = "", max_keys: int = 1000
+    ) -> List[ObjectMetadata]:
         """
         List objects with given prefix
 
@@ -232,14 +241,14 @@ class LocalStorageBackend:
                 break
 
             for filename in files:
-                if filename.endswith('.meta'):
+                if filename.endswith(".meta"):
                     continue
 
                 full_path = os.path.join(root, filename)
 
                 # Get relative key
                 rel_path = os.path.relpath(full_path, self.base_path)
-                key = rel_path.replace(os.sep, '/')
+                key = rel_path.replace(os.sep, "/")
 
                 # Filter by prefix using the key (not full path)
                 if prefix and not key.startswith(prefix):
@@ -247,21 +256,27 @@ class LocalStorageBackend:
 
                 # Get metadata
                 stat = os.stat(full_path)
-                metadata_path = full_path + '.meta'
+                metadata_path = full_path + ".meta"
                 if os.path.exists(metadata_path):
-                    with open(metadata_path, 'r') as f:
+                    with open(metadata_path, "r") as f:
                         meta = json.load(f)
                 else:
                     meta = {}
 
-                results.append(ObjectMetadata(
-                    key=key,
-                    size_bytes=stat.st_size,
-                    content_type=meta.get('content_type', 'application/octet-stream'),
-                    etag=meta.get('etag', ''),
-                    last_modified=datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
-                    custom_metadata=meta.get('custom_metadata', {})
-                ))
+                results.append(
+                    ObjectMetadata(
+                        key=key,
+                        size_bytes=stat.st_size,
+                        content_type=meta.get(
+                            "content_type", "application/octet-stream"
+                        ),
+                        etag=meta.get("etag", ""),
+                        last_modified=datetime.fromtimestamp(
+                            stat.st_mtime, timezone.utc
+                        ).isoformat(),
+                        custom_metadata=meta.get("custom_metadata", {}),
+                    )
+                )
 
                 if len(results) >= max_keys:
                     break
@@ -286,13 +301,12 @@ class SignedUrlGenerator:
         Args:
             secret_key: Secret key for signing
         """
-        self.secret_key = secret_key.encode() if isinstance(secret_key, str) else secret_key
+        self.secret_key = (
+            secret_key.encode() if isinstance(secret_key, str) else secret_key
+        )
 
     def generate_signed_url(
-        self,
-        base_url: str,
-        key: str,
-        config: Optional[SignedUrlConfig] = None
+        self, base_url: str, key: str, config: Optional[SignedUrlConfig] = None
     ) -> str:
         """
         Generate signed URL
@@ -312,16 +326,16 @@ class SignedUrlGenerator:
 
         # Build parameters
         params = {
-            'expires': expires_at,
-            'key': key,
+            "expires": expires_at,
+            "key": key,
         }
 
         # Add optional parameters
         if config.content_type:
-            params['content_type'] = config.content_type
+            params["content_type"] = config.content_type
 
         if config.max_size_bytes:
-            params['max_size'] = config.max_size_bytes
+            params["max_size"] = config.max_size_bytes
 
         # Add custom parameters
         params.update(config.custom_params)
@@ -332,26 +346,18 @@ class SignedUrlGenerator:
             payload += f":{config.content_type}"
 
         # Generate signature
-        signature = hmac.new(
-            self.secret_key,
-            payload.encode(),
-            hashlib.sha256
-        ).digest()
+        signature = hmac.new(self.secret_key, payload.encode(), hashlib.sha256).digest()
 
         # Encode signature
-        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip('=')
-        params['signature'] = sig_b64
+        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
+        params["signature"] = sig_b64
 
         # Build URL
         query_string = urlencode(params)
         return f"{base_url}/{quote(key, safe='')}?{query_string}"
 
     def verify_signed_url(
-        self,
-        key: str,
-        signature: str,
-        expires: int,
-        content_type: Optional[str] = None
+        self, key: str, signature: str, expires: int, content_type: Optional[str] = None
     ) -> bool:
         """
         Verify signed URL
@@ -376,12 +382,10 @@ class SignedUrlGenerator:
 
         # Generate expected signature
         expected_sig = hmac.new(
-            self.secret_key,
-            payload.encode(),
-            hashlib.sha256
+            self.secret_key, payload.encode(), hashlib.sha256
         ).digest()
 
-        expected_sig_b64 = base64.urlsafe_b64encode(expected_sig).decode().rstrip('=')
+        expected_sig_b64 = base64.urlsafe_b64encode(expected_sig).decode().rstrip("=")
 
         # Compare signatures (constant time)
         return hmac.compare_digest(signature, expected_sig_b64)
@@ -416,7 +420,7 @@ class CDNManager:
             raise ValueError("CDN domain not configured")
 
         protocol = "https" if use_https else "http"
-        safe_key = quote(key, safe='')
+        safe_key = quote(key, safe="")
         return f"{protocol}://{self.cdn_domain}/{safe_key}"
 
     def get_cache_headers(
@@ -424,7 +428,7 @@ class CDNManager:
         policy: CachePolicy = CachePolicy.PUBLIC,
         max_age: int = 86400,
         stale_while_revalidate: Optional[int] = None,
-        immutable: bool = False
+        immutable: bool = False,
     ) -> Dict[str, str]:
         """
         Generate cache control headers
@@ -452,12 +456,12 @@ class CDNManager:
         if immutable:
             cache_parts.append("immutable")
 
-        headers['Cache-Control'] = ', '.join(cache_parts)
+        headers["Cache-Control"] = ", ".join(cache_parts)
 
         # Add Expires header for older clients
         if policy != CachePolicy.NO_CACHE:
             expires_at = datetime.now(timezone.utc) + timedelta(seconds=max_age)
-            headers['Expires'] = expires_at.strftime('%a, %d %b %Y %H:%M:%S GMT')
+            headers["Expires"] = expires_at.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
         return headers
 
@@ -475,12 +479,12 @@ class CDNManager:
         # In production, this would call the CDN provider's API
         # For now, just return a mock result
         return {
-            'invalidation_id': hashlib.sha256(
+            "invalidation_id": hashlib.sha256(
                 f"{','.join(keys)}:{time.time()}".encode()
             ).hexdigest()[:16],
-            'keys': keys,
-            'status': 'pending',
-            'created_at': datetime.now(timezone.utc).isoformat()
+            "keys": keys,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
 
@@ -489,11 +493,7 @@ class StorageManager:
     High-level storage manager with CDN and signed URL support
     """
 
-    def __init__(
-        self,
-        config: StorageConfig,
-        signing_secret: Optional[str] = None
-    ):
+    def __init__(self, config: StorageConfig, signing_secret: Optional[str] = None):
         """
         Initialize storage manager
 
@@ -513,7 +513,9 @@ class StorageManager:
         self.cdn = CDNManager(config.cdn_domain)
 
         # Initialize signed URL generator
-        self.signing_secret = signing_secret or os.environ.get('STORAGE_SIGNING_SECRET', 'default-secret-key')
+        self.signing_secret = signing_secret or os.environ.get(
+            "STORAGE_SIGNING_SECRET", "default-secret-key"
+        )
         self.url_signer = SignedUrlGenerator(self.signing_secret)
 
     def upload(
@@ -523,7 +525,7 @@ class StorageManager:
         content_type: Optional[str] = None,
         cache_policy: CachePolicy = CachePolicy.PUBLIC,
         max_age: int = 86400,
-        metadata: Optional[Dict[str, str]] = None
+        metadata: Optional[Dict[str, str]] = None,
     ) -> ObjectMetadata:
         """
         Upload object to storage
@@ -541,11 +543,11 @@ class StorageManager:
         """
         # Auto-detect content type
         if not content_type:
-            content_type = mimetypes.guess_type(key)[0] or 'application/octet-stream'
+            content_type = mimetypes.guess_type(key)[0] or "application/octet-stream"
 
         # Get cache headers
         cache_headers = self.cdn.get_cache_headers(cache_policy, max_age)
-        cache_control = cache_headers.get('Cache-Control')
+        cache_control = cache_headers.get("Cache-Control")
 
         # Upload to backend
         obj_metadata = self.backend.put_object(
@@ -553,7 +555,7 @@ class StorageManager:
             data,
             content_type=content_type,
             metadata=metadata,
-            cache_control=cache_control
+            cache_control=cache_control,
         )
 
         # Add CDN URL if configured
@@ -617,10 +619,7 @@ class StorageManager:
         return self.backend.object_exists(key)
 
     def generate_signed_url(
-        self,
-        key: str,
-        expires_in: int = 3600,
-        content_type: Optional[str] = None
+        self, key: str, expires_in: int = 3600, content_type: Optional[str] = None
     ) -> str:
         """
         Generate signed URL for secure access
@@ -633,21 +632,20 @@ class StorageManager:
         Returns:
             Signed URL
         """
-        base_url = f"https://{self.config.cdn_domain}" if self.config.cdn_domain else "http://localhost"
+        base_url = (
+            f"https://{self.config.cdn_domain}"
+            if self.config.cdn_domain
+            else "http://localhost"
+        )
 
         config = SignedUrlConfig(
-            expires_in_seconds=expires_in,
-            content_type=content_type
+            expires_in_seconds=expires_in, content_type=content_type
         )
 
         return self.url_signer.generate_signed_url(base_url, key, config)
 
     def verify_signed_url(
-        self,
-        key: str,
-        signature: str,
-        expires: int,
-        content_type: Optional[str] = None
+        self, key: str, signature: str, expires: int, content_type: Optional[str] = None
     ) -> bool:
         """Verify signed URL"""
         return self.url_signer.verify_signed_url(key, signature, expires, content_type)
@@ -664,21 +662,21 @@ class StorageManager:
         for obj in objects:
             ct = obj.content_type
             if ct not in by_type:
-                by_type[ct] = {'count': 0, 'size_bytes': 0}
-            by_type[ct]['count'] += 1
-            by_type[ct]['size_bytes'] += obj.size_bytes
+                by_type[ct] = {"count": 0, "size_bytes": 0}
+            by_type[ct]["count"] += 1
+            by_type[ct]["size_bytes"] += obj.size_bytes
 
         return {
-            'total_objects': total_count,
-            'total_size_bytes': total_size,
-            'total_size_mb': round(total_size / (1024 * 1024), 2),
-            'by_content_type': by_type,
-            'backend': self.config.backend.value,
-            'cdn_enabled': self.config.cdn_domain is not None
+            "total_objects": total_count,
+            "total_size_bytes": total_size,
+            "total_size_mb": round(total_size / (1024 * 1024), 2),
+            "by_content_type": by_type,
+            "backend": self.config.backend.value,
+            "cdn_enabled": self.config.cdn_domain is not None,
         }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Object Storage + CDN Module")
     print("=" * 60)
 
@@ -687,7 +685,7 @@ if __name__ == '__main__':
         backend=StorageBackend.LOCAL,
         bucket_name="test-bucket",
         base_path="./test_storage",
-        cdn_domain="cdn.example.com"
+        cdn_domain="cdn.example.com",
     )
 
     manager = StorageManager(config, signing_secret="test-secret")

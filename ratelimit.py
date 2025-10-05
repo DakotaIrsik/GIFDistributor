@@ -3,6 +3,7 @@ Rate Limiting Module for GIF Distributor
 Provides rate limiting and abuse protection
 Issue: #22
 """
+
 import time
 from typing import Dict, Optional, Tuple
 from enum import Enum
@@ -12,6 +13,7 @@ from dataclasses import dataclass, field
 
 class RateLimitStrategy(Enum):
     """Rate limiting strategies"""
+
     TOKEN_BUCKET = "token_bucket"
     FIXED_WINDOW = "fixed_window"
     SLIDING_WINDOW = "sliding_window"
@@ -19,12 +21,14 @@ class RateLimitStrategy(Enum):
 
 class RateLimitError(Exception):
     """Exception raised when rate limit is exceeded"""
+
     pass
 
 
 @dataclass
 class RateLimitConfig:
     """Configuration for rate limiting"""
+
     requests_per_window: int
     window_seconds: int
     strategy: RateLimitStrategy = RateLimitStrategy.TOKEN_BUCKET
@@ -33,6 +37,7 @@ class RateLimitConfig:
 @dataclass
 class TokenBucket:
     """Token bucket for rate limiting"""
+
     capacity: int
     refill_rate: float  # tokens per second
     tokens: float = field(init=False)
@@ -91,6 +96,7 @@ class TokenBucket:
 @dataclass
 class FixedWindow:
     """Fixed window rate limiter"""
+
     limit: int
     window_seconds: int
     count: int = 0
@@ -141,6 +147,7 @@ class FixedWindow:
 @dataclass
 class SlidingWindow:
     """Sliding window rate limiter"""
+
     limit: int
     window_seconds: int
     timestamps: deque = field(default_factory=deque)
@@ -198,7 +205,7 @@ class RateLimiter:
         self,
         config: RateLimitConfig,
         enable_per_ip: bool = True,
-        enable_per_user: bool = True
+        enable_per_user: bool = True,
     ):
         """
         Initialize the rate limiter
@@ -221,18 +228,17 @@ class RateLimiter:
         if self.config.strategy == RateLimitStrategy.TOKEN_BUCKET:
             refill_rate = self.config.requests_per_window / self.config.window_seconds
             return TokenBucket(
-                capacity=self.config.requests_per_window,
-                refill_rate=refill_rate
+                capacity=self.config.requests_per_window, refill_rate=refill_rate
             )
         elif self.config.strategy == RateLimitStrategy.FIXED_WINDOW:
             return FixedWindow(
                 limit=self.config.requests_per_window,
-                window_seconds=self.config.window_seconds
+                window_seconds=self.config.window_seconds,
             )
         elif self.config.strategy == RateLimitStrategy.SLIDING_WINDOW:
             return SlidingWindow(
                 limit=self.config.requests_per_window,
-                window_seconds=self.config.window_seconds
+                window_seconds=self.config.window_seconds,
             )
         else:
             raise ValueError(f"Unknown strategy: {self.config.strategy}")
@@ -241,7 +247,7 @@ class RateLimiter:
         self,
         ip_address: Optional[str] = None,
         user_id: Optional[str] = None,
-        count: int = 1
+        count: int = 1,
     ) -> Tuple[bool, Optional[float]]:
         """
         Check if request is allowed under rate limits
@@ -286,7 +292,7 @@ class RateLimiter:
         self,
         ip_address: Optional[str] = None,
         user_id: Optional[str] = None,
-        count: int = 1
+        count: int = 1,
     ) -> None:
         """
         Enforce rate limit, raising exception if exceeded
@@ -307,9 +313,7 @@ class RateLimiter:
             )
 
     def get_remaining_quota(
-        self,
-        ip_address: Optional[str] = None,
-        user_id: Optional[str] = None
+        self, ip_address: Optional[str] = None, user_id: Optional[str] = None
     ) -> Dict[str, int]:
         """
         Get remaining quota for IP and user
@@ -326,41 +330,39 @@ class RateLimiter:
         if self.enable_per_ip and ip_address:
             if ip_address in self._ip_limiters:
                 limiter = self._ip_limiters[ip_address]
-                if hasattr(limiter, 'tokens'):
+                if hasattr(limiter, "tokens"):
                     limiter._refill()
-                    result['ip'] = int(limiter.tokens)
-                elif hasattr(limiter, 'count'):
-                    result['ip'] = max(0, limiter.limit - limiter.count)
-                elif hasattr(limiter, 'timestamps'):
+                    result["ip"] = int(limiter.tokens)
+                elif hasattr(limiter, "count"):
+                    result["ip"] = max(0, limiter.limit - limiter.count)
+                elif hasattr(limiter, "timestamps"):
                     now = time.time()
                     cutoff = now - limiter.window_seconds
                     valid_count = sum(1 for ts in limiter.timestamps if ts >= cutoff)
-                    result['ip'] = max(0, limiter.limit - valid_count)
+                    result["ip"] = max(0, limiter.limit - valid_count)
             else:
-                result['ip'] = self.config.requests_per_window
+                result["ip"] = self.config.requests_per_window
 
         if self.enable_per_user and user_id:
             if user_id in self._user_limiters:
                 limiter = self._user_limiters[user_id]
-                if hasattr(limiter, 'tokens'):
+                if hasattr(limiter, "tokens"):
                     limiter._refill()
-                    result['user'] = int(limiter.tokens)
-                elif hasattr(limiter, 'count'):
-                    result['user'] = max(0, limiter.limit - limiter.count)
-                elif hasattr(limiter, 'timestamps'):
+                    result["user"] = int(limiter.tokens)
+                elif hasattr(limiter, "count"):
+                    result["user"] = max(0, limiter.limit - limiter.count)
+                elif hasattr(limiter, "timestamps"):
                     now = time.time()
                     cutoff = now - limiter.window_seconds
                     valid_count = sum(1 for ts in limiter.timestamps if ts >= cutoff)
-                    result['user'] = max(0, limiter.limit - valid_count)
+                    result["user"] = max(0, limiter.limit - valid_count)
             else:
-                result['user'] = self.config.requests_per_window
+                result["user"] = self.config.requests_per_window
 
         return result
 
     def reset_limits(
-        self,
-        ip_address: Optional[str] = None,
-        user_id: Optional[str] = None
+        self, ip_address: Optional[str] = None, user_id: Optional[str] = None
     ) -> None:
         """
         Reset rate limits for IP and/or user

@@ -3,6 +3,7 @@ Share Links Module for GIF Distributor
 Provides canonical asset URLs and short link generation
 Issue: #40
 """
+
 import hashlib
 import string
 import secrets
@@ -17,12 +18,14 @@ class ShareLinkGenerator:
     SHORT_LINK_LENGTH = 8
 
     def __init__(self, base_url: str = "https://gifdist.io"):
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self._links_db: Dict[str, Dict] = {}
 
     def generate_short_code(self) -> str:
         """Generate a unique short code for URLs"""
-        return ''.join(secrets.choice(self.ALPHABET) for _ in range(self.SHORT_LINK_LENGTH))
+        return "".join(
+            secrets.choice(self.ALPHABET) for _ in range(self.SHORT_LINK_LENGTH)
+        )
 
     def create_canonical_url(self, asset_id: str, asset_type: str = "gif") -> str:
         """
@@ -31,7 +34,9 @@ class ShareLinkGenerator:
         """
         return f"{self.base_url}/a/{asset_id}"
 
-    def create_share_link(self, asset_id: str, title: str = "", tags: list = None) -> Dict[str, str]:
+    def create_share_link(
+        self, asset_id: str, title: str = "", tags: list = None
+    ) -> Dict[str, str]:
         """
         Create a shareable short link for an asset
 
@@ -54,13 +59,13 @@ class ShareLinkGenerator:
             "title": title,
             "tags": list(tags) if tags else [],
             "created_at": datetime.utcnow().isoformat(),
-            "clicks": 0
+            "clicks": 0,
         }
 
         return {
             "short_url": short_url,
             "canonical_url": canonical_url,
-            "short_code": short_code
+            "short_code": short_code,
         }
 
     def resolve_short_link(self, short_code: str) -> Optional[Dict]:
@@ -111,7 +116,7 @@ class ShareLinkGenerator:
             "title": link_data.get("title") or "GIF from GIFDistributor",
             "canonical_url": link_data["canonical_url"],
             "tags": link_data.get("tags", []),
-            "asset_id": link_data["asset_id"]
+            "asset_id": link_data["asset_id"],
         }
 
 

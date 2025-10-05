@@ -2,11 +2,17 @@
 Tests for Pricing Plans & Quotas Module
 Issue: #47
 """
+
 import pytest
 from datetime import datetime, timedelta
 from pricing import (
-    PricingManager, PlanTier, QuotaType, QuotaExceededError,
-    PlanFeatures, UsageStats, PLAN_CONFIGS
+    PricingManager,
+    PlanTier,
+    QuotaType,
+    QuotaExceededError,
+    PlanFeatures,
+    UsageStats,
+    PLAN_CONFIGS,
 )
 
 
@@ -32,7 +38,9 @@ class TestPlanConfigurations:
         assert PlanTier.TEAM in PLAN_CONFIGS
         team_plan = PLAN_CONFIGS[PlanTier.TEAM]
         assert team_plan.name == "Team"
-        assert team_plan.price_monthly_usd > PLAN_CONFIGS[PlanTier.PRO].price_monthly_usd
+        assert (
+            team_plan.price_monthly_usd > PLAN_CONFIGS[PlanTier.PRO].price_monthly_usd
+        )
 
     def test_plan_tier_progression(self):
         """Plans should have increasing limits"""
@@ -41,16 +49,28 @@ class TestPlanConfigurations:
         team = PLAN_CONFIGS[PlanTier.TEAM]
 
         # Uploads
-        assert free.max_uploads_per_month < pro.max_uploads_per_month < team.max_uploads_per_month
+        assert (
+            free.max_uploads_per_month
+            < pro.max_uploads_per_month
+            < team.max_uploads_per_month
+        )
 
         # Storage
         assert free.max_storage_gb < pro.max_storage_gb < team.max_storage_gb
 
         # Bandwidth
-        assert free.max_bandwidth_gb_per_month < pro.max_bandwidth_gb_per_month < team.max_bandwidth_gb_per_month
+        assert (
+            free.max_bandwidth_gb_per_month
+            < pro.max_bandwidth_gb_per_month
+            < team.max_bandwidth_gb_per_month
+        )
 
         # API requests
-        assert free.api_requests_per_day < pro.api_requests_per_day < team.api_requests_per_day
+        assert (
+            free.api_requests_per_day
+            < pro.api_requests_per_day
+            < team.api_requests_per_day
+        )
 
     def test_free_plan_limitations(self):
         """Free plan should have basic features"""
@@ -111,7 +131,9 @@ class TestPricingManager:
         usage = manager.get_usage("user1")
 
         # Set usage to last month
-        usage.month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=32)
+        usage.month_start = datetime.now().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=32)
         usage.uploads_this_month = 50
         usage.bandwidth_used_gb_this_month = 10.0
 
@@ -126,7 +148,9 @@ class TestPricingManager:
         usage = manager.get_usage("user1")
 
         # Set usage to yesterday
-        usage.day_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        usage.day_start = datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=1)
         usage.api_requests_today = 100
 
         # Get usage again - should reset

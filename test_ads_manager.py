@@ -12,7 +12,7 @@ from ads_manager import (
     UserTier,
     get_watermark_policy,
     validate_media_watermark_request,
-    WATERMARK_POLICY
+    WATERMARK_POLICY,
 )
 
 
@@ -33,7 +33,7 @@ class TestAdsManager:
             show_ads_to_free_users=True,
             show_ads_to_pro_users=False,
             max_ads_per_page=5,
-            respect_do_not_track=True
+            respect_do_not_track=True,
         )
         manager = AdsManager(policy)
         assert manager.policy.max_ads_per_page == 5
@@ -47,7 +47,7 @@ class TestAdsManager:
             placement=AdPlacement.HEADER_BANNER,
             network=AdNetwork.GOOGLE_ADSENSE,
             slot_id="1234567890",
-            dimensions=(728, 90)
+            dimensions=(728, 90),
         )
         manager.register_ad_unit(ad_unit)
 
@@ -79,20 +79,24 @@ class TestAdsManager:
         manager = AdsManager()
 
         # Register multiple ad units
-        manager.register_ad_unit(AdUnit(
-            id="header-1",
-            placement=AdPlacement.HEADER_BANNER,
-            network=AdNetwork.GOOGLE_ADSENSE,
-            slot_id="1234567890",
-            dimensions=(728, 90)
-        ))
-        manager.register_ad_unit(AdUnit(
-            id="sidebar-1",
-            placement=AdPlacement.SIDEBAR_RIGHT,
-            network=AdNetwork.GOOGLE_ADSENSE,
-            slot_id="0987654321",
-            dimensions=(300, 250)
-        ))
+        manager.register_ad_unit(
+            AdUnit(
+                id="header-1",
+                placement=AdPlacement.HEADER_BANNER,
+                network=AdNetwork.GOOGLE_ADSENSE,
+                slot_id="1234567890",
+                dimensions=(728, 90),
+            )
+        )
+        manager.register_ad_unit(
+            AdUnit(
+                id="sidebar-1",
+                placement=AdPlacement.SIDEBAR_RIGHT,
+                network=AdNetwork.GOOGLE_ADSENSE,
+                slot_id="0987654321",
+                dimensions=(300, 250),
+            )
+        )
 
         placements = [AdPlacement.HEADER_BANNER, AdPlacement.SIDEBAR_RIGHT]
         ads = manager.get_ads_for_page(UserTier.FREE, placements)
@@ -108,13 +112,15 @@ class TestAdsManager:
 
         # Register 3 ad units
         for i in range(3):
-            manager.register_ad_unit(AdUnit(
-                id=f"ad-{i}",
-                placement=AdPlacement.INLINE_FEED,
-                network=AdNetwork.GOOGLE_ADSENSE,
-                slot_id=f"slot-{i}",
-                dimensions=(300, 250)
-            ))
+            manager.register_ad_unit(
+                AdUnit(
+                    id=f"ad-{i}",
+                    placement=AdPlacement.INLINE_FEED,
+                    network=AdNetwork.GOOGLE_ADSENSE,
+                    slot_id=f"slot-{i}",
+                    dimensions=(300, 250),
+                )
+            )
 
         ads = manager.get_ads_for_page(UserTier.FREE, [AdPlacement.INLINE_FEED])
         assert len(ads) == 2  # Only 2 ads due to max_ads_per_page
@@ -122,13 +128,15 @@ class TestAdsManager:
     def test_get_ads_for_page_pro_tier_no_ads(self):
         """Test pro tier users get no ads"""
         manager = AdsManager()
-        manager.register_ad_unit(AdUnit(
-            id="header-1",
-            placement=AdPlacement.HEADER_BANNER,
-            network=AdNetwork.GOOGLE_ADSENSE,
-            slot_id="1234567890",
-            dimensions=(728, 90)
-        ))
+        manager.register_ad_unit(
+            AdUnit(
+                id="header-1",
+                placement=AdPlacement.HEADER_BANNER,
+                network=AdNetwork.GOOGLE_ADSENSE,
+                slot_id="1234567890",
+                dimensions=(728, 90),
+            )
+        )
 
         ads = manager.get_ads_for_page(UserTier.PRO, [AdPlacement.HEADER_BANNER])
         assert len(ads) == 0
@@ -136,17 +144,18 @@ class TestAdsManager:
     def test_get_ad_config_for_client(self):
         """Test generating client-side ad config"""
         manager = AdsManager()
-        manager.register_ad_unit(AdUnit(
-            id="header-1",
-            placement=AdPlacement.HEADER_BANNER,
-            network=AdNetwork.GOOGLE_ADSENSE,
-            slot_id="1234567890",
-            dimensions=(728, 90)
-        ))
+        manager.register_ad_unit(
+            AdUnit(
+                id="header-1",
+                placement=AdPlacement.HEADER_BANNER,
+                network=AdNetwork.GOOGLE_ADSENSE,
+                slot_id="1234567890",
+                dimensions=(728, 90),
+            )
+        )
 
         config = manager.get_ad_config_for_client(
-            UserTier.FREE,
-            [AdPlacement.HEADER_BANNER]
+            UserTier.FREE, [AdPlacement.HEADER_BANNER]
         )
 
         assert config["show_ads"] is True
@@ -159,8 +168,7 @@ class TestAdsManager:
         """Test ad config when no ads should show"""
         manager = AdsManager()
         config = manager.get_ad_config_for_client(
-            UserTier.PRO,
-            [AdPlacement.HEADER_BANNER]
+            UserTier.PRO, [AdPlacement.HEADER_BANNER]
         )
 
         assert config["show_ads"] is False
@@ -192,14 +200,16 @@ class TestAdsManager:
     def test_disabled_ad_units_not_shown(self):
         """Test that disabled ad units are not shown"""
         manager = AdsManager()
-        manager.register_ad_unit(AdUnit(
-            id="disabled-1",
-            placement=AdPlacement.HEADER_BANNER,
-            network=AdNetwork.GOOGLE_ADSENSE,
-            slot_id="1234567890",
-            dimensions=(728, 90),
-            enabled=False
-        ))
+        manager.register_ad_unit(
+            AdUnit(
+                id="disabled-1",
+                placement=AdPlacement.HEADER_BANNER,
+                network=AdNetwork.GOOGLE_ADSENSE,
+                slot_id="1234567890",
+                dimensions=(728, 90),
+                enabled=False,
+            )
+        )
 
         ads = manager.get_ads_for_page(UserTier.FREE, [AdPlacement.HEADER_BANNER])
         assert len(ads) == 0
@@ -235,9 +245,18 @@ class TestWatermarkPolicy:
     def test_watermark_policy_user_control(self):
         """Test user control policy in watermark config"""
         policy = get_watermark_policy()
-        assert policy["user_control"]["free_tier"] == "Sees ads on website, media files remain clean"
-        assert policy["user_control"]["pro_tier"] == "No ads on website, media files remain clean"
-        assert policy["user_control"]["team_tier"] == "No ads on website, media files remain clean"
+        assert (
+            policy["user_control"]["free_tier"]
+            == "Sees ads on website, media files remain clean"
+        )
+        assert (
+            policy["user_control"]["pro_tier"]
+            == "No ads on website, media files remain clean"
+        )
+        assert (
+            policy["user_control"]["team_tier"]
+            == "No ads on website, media files remain clean"
+        )
 
 
 class TestAdPlacementEnum:

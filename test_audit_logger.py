@@ -2,16 +2,12 @@
 Tests for moderation audit logger
 Issue: #2
 """
+
 import pytest
 import time
 import os
 from datetime import datetime, timezone, timedelta
-from audit_logger import (
-    AuditLogger,
-    AuditEventType,
-    RetentionPolicy,
-    AuditLoggerError
-)
+from audit_logger import AuditLogger, AuditEventType, RetentionPolicy, AuditLoggerError
 
 
 @pytest.fixture
@@ -30,7 +26,7 @@ def logger(temp_db):
     return AuditLogger(
         db_path=temp_db,
         default_retention=RetentionPolicy.MEDIUM,
-        auto_cleanup=False  # Disable auto-cleanup for testing
+        auto_cleanup=False,  # Disable auto-cleanup for testing
     )
 
 
@@ -50,7 +46,7 @@ def test_log_moderation_event(logger):
         category="safe",
         confidence=0.98,
         reasons=["No policy violations detected"],
-        metadata={"scan_type": "automated"}
+        metadata={"scan_type": "automated"},
     )
 
     assert log_id is not None
@@ -82,7 +78,7 @@ def test_log_manual_review(logger):
         reasons=["Violates content policy"],
         metadata={"review_notes": "Explicit content detected"},
         ip_address="192.168.1.1",
-        user_agent="Mozilla/5.0"
+        user_agent="Mozilla/5.0",
     )
 
     log = logger.get_log_by_id(log_id)
@@ -99,14 +95,14 @@ def test_query_logs_by_asset(logger):
         logger.log_event(
             event_type=AuditEventType.MODERATION_SCAN,
             asset_id="asset_abc",
-            decision="approved"
+            decision="approved",
         )
 
     # Create log for different asset
     logger.log_event(
         event_type=AuditEventType.MODERATION_SCAN,
         asset_id="asset_xyz",
-        decision="rejected"
+        decision="rejected",
     )
 
     # Query by asset ID
@@ -120,13 +116,13 @@ def test_query_logs_by_user(logger):
     logger.log_event(
         event_type=AuditEventType.CONTENT_APPROVED,
         asset_id="asset1",
-        user_id="user_alice"
+        user_id="user_alice",
     )
 
     logger.log_event(
         event_type=AuditEventType.CONTENT_REJECTED,
         asset_id="asset2",
-        user_id="user_bob"
+        user_id="user_bob",
     )
 
     logs = logger.get_logs(user_id="user_alice")
@@ -136,43 +132,30 @@ def test_query_logs_by_user(logger):
 
 def test_query_logs_by_event_type(logger):
     """Test querying logs by event type"""
-    logger.log_event(
-        event_type=AuditEventType.MODERATION_SCAN,
-        asset_id="asset1"
-    )
+    logger.log_event(event_type=AuditEventType.MODERATION_SCAN, asset_id="asset1")
 
-    logger.log_event(
-        event_type=AuditEventType.MANUAL_REVIEW,
-        asset_id="asset2"
-    )
+    logger.log_event(event_type=AuditEventType.MANUAL_REVIEW, asset_id="asset2")
 
-    logger.log_event(
-        event_type=AuditEventType.MODERATION_SCAN,
-        asset_id="asset3"
-    )
+    logger.log_event(event_type=AuditEventType.MODERATION_SCAN, asset_id="asset3")
 
     logs = logger.get_logs(event_type=AuditEventType.MODERATION_SCAN)
     assert len(logs) == 2
-    assert all(log["event_type"] == AuditEventType.MODERATION_SCAN.value for log in logs)
+    assert all(
+        log["event_type"] == AuditEventType.MODERATION_SCAN.value for log in logs
+    )
 
 
 def test_query_logs_by_time_range(logger):
     """Test querying logs by time range"""
     # Log event in the past
     past_time = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
-    logger.log_event(
-        event_type=AuditEventType.MODERATION_SCAN,
-        asset_id="asset_old"
-    )
+    logger.log_event(event_type=AuditEventType.MODERATION_SCAN, asset_id="asset_old")
 
     time.sleep(0.1)  # Small delay
 
     # Log recent event
     recent_time = datetime.now(timezone.utc).isoformat()
-    logger.log_event(
-        event_type=AuditEventType.MODERATION_SCAN,
-        asset_id="asset_new"
-    )
+    logger.log_event(event_type=AuditEventType.MODERATION_SCAN, asset_id="asset_new")
 
     # Query recent logs
     logs = logger.get_logs(start_time=recent_time)
@@ -185,8 +168,7 @@ def test_query_logs_pagination(logger):
     # Create 10 logs
     for i in range(10):
         logger.log_event(
-            event_type=AuditEventType.MODERATION_SCAN,
-            asset_id=f"asset_{i}"
+            event_type=AuditEventType.MODERATION_SCAN, asset_id=f"asset_{i}"
         )
 
     # Get first page
@@ -209,21 +191,21 @@ def test_retention_policies(logger):
     log_id_short = logger.log_event(
         event_type=AuditEventType.MODERATION_SCAN,
         asset_id="asset_short",
-        retention_policy=RetentionPolicy.SHORT
+        retention_policy=RetentionPolicy.SHORT,
     )
 
     # Long retention (365 days)
     log_id_long = logger.log_event(
         event_type=AuditEventType.MODERATION_SCAN,
         asset_id="asset_long",
-        retention_policy=RetentionPolicy.LONG
+        retention_policy=RetentionPolicy.LONG,
     )
 
     # Compliance retention (7 years)
     log_id_compliance = logger.log_event(
         event_type=AuditEventType.POLICY_VIOLATION,
         asset_id="asset_compliance",
-        retention_policy=RetentionPolicy.COMPLIANCE
+        retention_policy=RetentionPolicy.COMPLIANCE,
     )
 
     # Check retention days are set correctly
@@ -241,7 +223,7 @@ def test_indefinite_retention(logger):
     log_id = logger.log_event(
         event_type=AuditEventType.ACCOUNT_ACTION,
         asset_id="asset_permanent",
-        retention_policy=RetentionPolicy.INDEFINITE
+        retention_policy=RetentionPolicy.INDEFINITE,
     )
 
     log = logger.get_log_by_id(log_id)
@@ -263,19 +245,25 @@ def test_cleanup_expired_logs(logger):
 
     # Insert expired log
     expired_time = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO audit_logs (
             log_id, event_type, timestamp, retention_days, expires_at, reasons, metadata
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, ("expired_log", "moderation_scan", expired_time, 1, expired_time, "[]", "{}"))
+    """,
+        ("expired_log", "moderation_scan", expired_time, 1, expired_time, "[]", "{}"),
+    )
 
     # Insert valid log
     future_time = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO audit_logs (
             log_id, event_type, timestamp, retention_days, expires_at, reasons, metadata
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, ("valid_log", "moderation_scan", future_time, 30, future_time, "[]", "{}"))
+    """,
+        ("valid_log", "moderation_scan", future_time, 30, future_time, "[]", "{}"),
+    )
 
     conn.commit()
     conn.close()
@@ -298,28 +286,16 @@ def test_compliance_report(logger):
     start_date = datetime.now(timezone.utc).isoformat()
 
     # Log various events
-    logger.log_event(
-        event_type=AuditEventType.MODERATION_SCAN,
-        decision="approved"
-    )
+    logger.log_event(event_type=AuditEventType.MODERATION_SCAN, decision="approved")
 
-    logger.log_event(
-        event_type=AuditEventType.CONTENT_REJECTED,
-        decision="rejected"
-    )
+    logger.log_event(event_type=AuditEventType.CONTENT_REJECTED, decision="rejected")
 
-    logger.log_event(
-        event_type=AuditEventType.MANUAL_REVIEW,
-        decision="approved"
-    )
+    logger.log_event(event_type=AuditEventType.MANUAL_REVIEW, decision="approved")
 
     end_date = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
 
     # Generate report
-    report = logger.export_compliance_report(
-        start_date=start_date,
-        end_date=end_date
-    )
+    report = logger.export_compliance_report(start_date=start_date, end_date=end_date)
 
     assert "period" in report
     assert "summary" in report
@@ -336,15 +312,11 @@ def test_statistics(logger):
     # Log some events
     for i in range(5):
         logger.log_event(
-            event_type=AuditEventType.MODERATION_SCAN,
-            asset_id=f"asset_{i}"
+            event_type=AuditEventType.MODERATION_SCAN, asset_id=f"asset_{i}"
         )
 
     for i in range(3):
-        logger.log_event(
-            event_type=AuditEventType.MANUAL_REVIEW,
-            asset_id=f"asset_{i}"
-        )
+        logger.log_event(event_type=AuditEventType.MANUAL_REVIEW, asset_id=f"asset_{i}")
 
     stats = logger.get_statistics()
 
@@ -367,13 +339,12 @@ def test_all_event_types(logger):
         AuditEventType.APPEAL_SUBMITTED,
         AuditEventType.APPEAL_RESOLVED,
         AuditEventType.POLICY_VIOLATION,
-        AuditEventType.ACCOUNT_ACTION
+        AuditEventType.ACCOUNT_ACTION,
     ]
 
     for event_type in event_types:
         log_id = logger.log_event(
-            event_type=event_type,
-            asset_id=f"asset_{event_type.value}"
+            event_type=event_type, asset_id=f"asset_{event_type.value}"
         )
         assert log_id is not None
 
@@ -386,7 +357,7 @@ def test_concurrent_logging(logger):
         for i in range(count):
             logger.log_event(
                 event_type=AuditEventType.MODERATION_SCAN,
-                asset_id=f"asset_{threading.current_thread().name}_{i}"
+                asset_id=f"asset_{threading.current_thread().name}_{i}",
             )
 
     threads = []
@@ -405,10 +376,7 @@ def test_concurrent_logging(logger):
 
 def test_logger_close(logger):
     """Test logger cleanup on close"""
-    logger.log_event(
-        event_type=AuditEventType.MODERATION_SCAN,
-        asset_id="asset_final"
-    )
+    logger.log_event(event_type=AuditEventType.MODERATION_SCAN, asset_id="asset_final")
 
     logger.close()
 

@@ -23,6 +23,7 @@ from enum import Enum
 
 class UploadStatus(str, Enum):
     """Upload status states"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -33,6 +34,7 @@ class UploadStatus(str, Enum):
 @dataclass
 class FileMetadata:
     """Metadata for uploaded files"""
+
     file_hash: str
     filename: str
     size_bytes: int
@@ -48,14 +50,19 @@ class FileMetadata:
 @dataclass
 class UploadSession:
     """Represents an upload session"""
+
     session_id: str
     file_hash: str
     filename: str
     total_size: int
     uploaded_bytes: int = 0
     status: UploadStatus = UploadStatus.PENDING
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     chunks_received: List[int] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -77,7 +84,7 @@ class FileHasher:
         """
         sha256 = hashlib.sha256()
 
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             while True:
                 chunk = f.read(chunk_size)
                 if not chunk:
@@ -140,7 +147,7 @@ class FileHasher:
         # Include file size in hash
         sha256.update(str(file_size).encode())
 
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             # Hash header
             header = f.read(min(sample_size, file_size))
             sha256.update(header)
@@ -173,17 +180,17 @@ class DeduplicationStore:
     def _load_db(self) -> None:
         """Load database from disk"""
         if os.path.exists(self.db_path):
-            with open(self.db_path, 'r') as f:
+            with open(self.db_path, "r") as f:
                 self.db = json.load(f)
         else:
             self.db = {
-                'files': {},  # hash -> FileMetadata
-                'uploads': {},  # session_id -> UploadSession
+                "files": {},  # hash -> FileMetadata
+                "uploads": {},  # session_id -> UploadSession
             }
 
     def _save_db(self) -> None:
         """Save database to disk"""
-        with open(self.db_path, 'w') as f:
+        with open(self.db_path, "w") as f:
             json.dump(self.db, f, indent=2)
 
     def is_duplicate(self, file_hash: str) -> bool:
@@ -196,7 +203,7 @@ class DeduplicationStore:
         Returns:
             True if duplicate exists
         """
-        return file_hash in self.db['files']
+        return file_hash in self.db["files"]
 
     def get_file_metadata(self, file_hash: str) -> Optional[FileMetadata]:
         """
@@ -208,8 +215,8 @@ class DeduplicationStore:
         Returns:
             FileMetadata if exists, None otherwise
         """
-        if file_hash in self.db['files']:
-            return FileMetadata(**self.db['files'][file_hash])
+        if file_hash in self.db["files"]:
+            return FileMetadata(**self.db["files"][file_hash])
         return None
 
     def add_file(self, metadata: FileMetadata) -> None:
@@ -219,7 +226,7 @@ class DeduplicationStore:
         Args:
             metadata: File metadata to store
         """
-        self.db['files'][metadata.file_hash] = asdict(metadata)
+        self.db["files"][metadata.file_hash] = asdict(metadata)
         self._save_db()
 
     def remove_file(self, file_hash: str) -> bool:
@@ -232,38 +239,42 @@ class DeduplicationStore:
         Returns:
             True if file was removed, False if not found
         """
-        if file_hash in self.db['files']:
-            del self.db['files'][file_hash]
+        if file_hash in self.db["files"]:
+            del self.db["files"][file_hash]
             self._save_db()
             return True
         return False
 
     def get_all_files(self) -> List[FileMetadata]:
         """Get all file metadata"""
-        return [FileMetadata(**data) for data in self.db['files'].values()]
+        return [FileMetadata(**data) for data in self.db["files"].values()]
 
     def get_user_files(self, user_id: str) -> List[FileMetadata]:
         """Get all files for a specific user"""
         return [
             FileMetadata(**data)
-            for data in self.db['files'].values()
-            if data.get('user_id') == user_id
+            for data in self.db["files"].values()
+            if data.get("user_id") == user_id
         ]
 
     def get_stats(self) -> Dict[str, Any]:
         """Get deduplication statistics"""
-        files = list(self.db['files'].values())
-        total_size = sum(f['size_bytes'] for f in files)
+        files = list(self.db["files"].values())
+        total_size = sum(f["size_bytes"] for f in files)
         total_files = len(files)
 
-        users = set(f.get('user_id') for f in files if f.get('user_id'))
+        users = set(f.get("user_id") for f in files if f.get("user_id"))
 
         return {
-            'total_files': total_files,
-            'total_size_bytes': total_size,
-            'total_size_mb': round(total_size / (1024 * 1024), 2),
-            'unique_users': len(users),
-            'avg_file_size_mb': round(total_size / total_files / (1024 * 1024), 2) if total_files > 0 else 0
+            "total_files": total_files,
+            "total_size_bytes": total_size,
+            "total_size_mb": round(total_size / (1024 * 1024), 2),
+            "unique_users": len(users),
+            "avg_file_size_mb": (
+                round(total_size / total_files / (1024 * 1024), 2)
+                if total_files > 0
+                else 0
+            ),
         }
 
 
@@ -272,7 +283,11 @@ class UploadManager:
     Manages file uploads with deduplication
     """
 
-    def __init__(self, storage_dir: str = "uploads", dedupe_store: Optional[DeduplicationStore] = None):
+    def __init__(
+        self,
+        storage_dir: str = "uploads",
+        dedupe_store: Optional[DeduplicationStore] = None,
+    ):
         """
         Initialize upload manager
 
@@ -310,7 +325,7 @@ class UploadManager:
         title: Optional[str] = None,
         tags: Optional[List[str]] = None,
         description: Optional[str] = None,
-        skip_duplicate_check: bool = False
+        skip_duplicate_check: bool = False,
     ) -> Tuple[bool, str, Optional[FileMetadata]]:
         """
         Upload a file with deduplication
@@ -345,15 +360,18 @@ class UploadManager:
                 return (
                     False,
                     f"Duplicate file detected. Original uploaded at {existing.upload_time}",
-                    existing
+                    existing,
                 )
 
         # Copy to storage (in production, use object storage like S3)
-        storage_path = os.path.join(self.storage_dir, file_hash[:2], file_hash[2:4], file_hash)
+        storage_path = os.path.join(
+            self.storage_dir, file_hash[:2], file_hash[2:4], file_hash
+        )
         os.makedirs(os.path.dirname(storage_path), exist_ok=True)
 
         # Copy file
         import shutil
+
         shutil.copy2(file_path, storage_path)
 
         # Create metadata
@@ -367,7 +385,7 @@ class UploadManager:
             title=title or filename,
             tags=tags or [],
             description=description,
-            storage_path=storage_path
+            storage_path=storage_path,
         )
 
         # Store metadata
@@ -422,12 +440,15 @@ class UploadManager:
 
 # Convenience functions
 
+
 def hash_file(file_path: str) -> str:
     """Quick helper to hash a file"""
     return FileHasher.hash_file(file_path)
 
 
-def check_duplicate(file_path: str, dedupe_store: Optional[DeduplicationStore] = None) -> Tuple[bool, Optional[str]]:
+def check_duplicate(
+    file_path: str, dedupe_store: Optional[DeduplicationStore] = None
+) -> Tuple[bool, Optional[str]]:
     """
     Quick helper to check if file is duplicate
 
@@ -444,7 +465,7 @@ def check_duplicate(file_path: str, dedupe_store: Optional[DeduplicationStore] =
     return (is_dup, file_hash if is_dup else None)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     print("Upload Module - File Deduplication System")
     print("=" * 60)

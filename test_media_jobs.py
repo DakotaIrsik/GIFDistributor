@@ -14,7 +14,7 @@ from media_jobs import (
     JobPriority,
     MediaJob,
     create_transcode_job,
-    create_thumbnail_job
+    create_thumbnail_job,
 )
 
 
@@ -23,7 +23,7 @@ class TestFFmpegRuntime:
 
     def test_ffmpeg_runtime_initialization(self):
         """Test FFmpegRuntime initialization with valid binaries"""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
             runtime = FFmpegRuntime()
             assert runtime.ffmpeg_path == "ffmpeg"
@@ -32,67 +32,78 @@ class TestFFmpegRuntime:
 
     def test_ffmpeg_runtime_invalid_binary(self):
         """Test FFmpegRuntime with invalid binary path"""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = FileNotFoundError("ffmpeg not found")
             with pytest.raises(RuntimeError, match="ffmpeg/ffprobe not found"):
                 FFmpegRuntime(ffmpeg_path="/invalid/path/ffmpeg")
 
     def test_execute_ffmpeg_success(self):
         """Test successful ffmpeg execution"""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             # Mock validation calls
             mock_run.side_effect = [
                 MagicMock(returncode=0),  # ffmpeg validation
                 MagicMock(returncode=0),  # ffprobe validation
-                MagicMock(returncode=0, stdout="output", stderr="")  # actual execution
+                MagicMock(returncode=0, stdout="output", stderr=""),  # actual execution
             ]
 
             runtime = FFmpegRuntime()
-            returncode, stdout, stderr = runtime.execute_ffmpeg(["-i", "input.mp4", "output.mp4"])
+            returncode, stdout, stderr = runtime.execute_ffmpeg(
+                ["-i", "input.mp4", "output.mp4"]
+            )
 
             assert returncode == 0
             assert stdout == "output"
 
     def test_execute_ffmpeg_failure(self):
         """Test ffmpeg execution failure"""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             # Mock validation calls
             mock_run.side_effect = [
                 MagicMock(returncode=0),  # ffmpeg validation
                 MagicMock(returncode=0),  # ffprobe validation
-                MagicMock(returncode=1, stdout="", stderr="error message")  # actual execution
+                MagicMock(
+                    returncode=1, stdout="", stderr="error message"
+                ),  # actual execution
             ]
 
             runtime = FFmpegRuntime()
-            returncode, stdout, stderr = runtime.execute_ffmpeg(["-i", "input.mp4", "output.mp4"])
+            returncode, stdout, stderr = runtime.execute_ffmpeg(
+                ["-i", "input.mp4", "output.mp4"]
+            )
 
             assert returncode == 1
             assert stderr == "error message"
 
     def test_execute_ffmpeg_timeout(self):
         """Test ffmpeg execution timeout"""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             import subprocess
+
             # Mock validation calls
             mock_run.side_effect = [
                 MagicMock(returncode=0),  # ffmpeg validation
                 MagicMock(returncode=0),  # ffprobe validation
-                subprocess.TimeoutExpired("ffmpeg", 5)  # timeout
+                subprocess.TimeoutExpired("ffmpeg", 5),  # timeout
             ]
 
             runtime = FFmpegRuntime()
             with pytest.raises(TimeoutError, match="timed out"):
-                runtime.execute_ffmpeg(["-i", "input.mp4", "output.mp4"], timeout_seconds=5)
+                runtime.execute_ffmpeg(
+                    ["-i", "input.mp4", "output.mp4"], timeout_seconds=5
+                )
 
     def test_probe_media_success(self):
         """Test successful media probing"""
-        with patch('subprocess.run') as mock_run:
-            mock_json = '{"format": {"duration": "10.0"}, "streams": [{"codec_type": "video"}]}'
+        with patch("subprocess.run") as mock_run:
+            mock_json = (
+                '{"format": {"duration": "10.0"}, "streams": [{"codec_type": "video"}]}'
+            )
             # Mock validation calls
             mock_run.side_effect = [
                 MagicMock(returncode=0),  # ffmpeg validation
                 MagicMock(returncode=0),  # ffprobe validation
-                MagicMock(returncode=0, stdout=mock_json, stderr="")  # probe
+                MagicMock(returncode=0, stdout=mock_json, stderr=""),  # probe
             ]
 
             runtime = FFmpegRuntime()
@@ -103,13 +114,14 @@ class TestFFmpegRuntime:
 
     def test_probe_media_failure(self):
         """Test media probing failure"""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             import subprocess
+
             # Mock validation calls
             mock_run.side_effect = [
                 MagicMock(returncode=0),  # ffmpeg validation
                 MagicMock(returncode=0),  # ffprobe validation
-                subprocess.CalledProcessError(1, "ffprobe")  # probe failure
+                subprocess.CalledProcessError(1, "ffprobe"),  # probe failure
             ]
 
             runtime = FFmpegRuntime()
@@ -123,7 +135,7 @@ class TestMediaJobQueue:
     @pytest.fixture
     def mock_runtime(self):
         """Mock FFmpegRuntime for testing"""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             yield
 
@@ -144,7 +156,7 @@ class TestMediaJobQueue:
             input_path="input.mp4",
             output_path="output.mp4",
             ffmpeg_args=["-i", "input.mp4", "output.mp4"],
-            priority=JobPriority.HIGH
+            priority=JobPriority.HIGH,
         )
 
         assert job_id is not None
@@ -157,7 +169,7 @@ class TestMediaJobQueue:
 
     def test_job_processing(self, mock_runtime):
         """Test job processing with mocked ffmpeg"""
-        with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+        with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
             mock_exec.return_value = (0, "success", "")
 
             queue = MediaJobQueue(min_workers=1, max_workers=2)
@@ -166,7 +178,7 @@ class TestMediaJobQueue:
                 job_type="transcode",
                 input_path="input.mp4",
                 output_path="output.mp4",
-                ffmpeg_args=["-i", "input.mp4", "output.mp4"]
+                ffmpeg_args=["-i", "input.mp4", "output.mp4"],
             )
 
             # Wait for job to complete
@@ -179,7 +191,7 @@ class TestMediaJobQueue:
 
     def test_job_failure(self, mock_runtime):
         """Test job failure handling"""
-        with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+        with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
             mock_exec.return_value = (1, "", "ffmpeg error")
 
             queue = MediaJobQueue(min_workers=1, max_workers=2)
@@ -188,7 +200,7 @@ class TestMediaJobQueue:
                 job_type="transcode",
                 input_path="input.mp4",
                 output_path="output.mp4",
-                ffmpeg_args=["-i", "input.mp4", "output.mp4"]
+                ffmpeg_args=["-i", "input.mp4", "output.mp4"],
             )
 
             # Wait for job to fail
@@ -202,7 +214,7 @@ class TestMediaJobQueue:
 
     def test_job_priority(self, mock_runtime):
         """Test job priority handling"""
-        with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+        with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
             mock_exec.return_value = (0, "success", "")
 
             queue = MediaJobQueue(min_workers=1, max_workers=1)
@@ -213,7 +225,7 @@ class TestMediaJobQueue:
                 input_path="low.mp4",
                 output_path="low_out.mp4",
                 ffmpeg_args=["-i", "low.mp4", "low_out.mp4"],
-                priority=JobPriority.LOW
+                priority=JobPriority.LOW,
             )
 
             # Submit high priority job
@@ -222,7 +234,7 @@ class TestMediaJobQueue:
                 input_path="high.mp4",
                 output_path="high_out.mp4",
                 ffmpeg_args=["-i", "high.mp4", "high_out.mp4"],
-                priority=JobPriority.CRITICAL
+                priority=JobPriority.CRITICAL,
             )
 
             time.sleep(1)
@@ -233,7 +245,11 @@ class TestMediaJobQueue:
 
             # At least verify both completed
             assert high_job.status in [JobStatus.COMPLETED, JobStatus.RUNNING]
-            assert low_job.status in [JobStatus.COMPLETED, JobStatus.PENDING, JobStatus.RUNNING]
+            assert low_job.status in [
+                JobStatus.COMPLETED,
+                JobStatus.PENDING,
+                JobStatus.RUNNING,
+            ]
 
             queue.shutdown(wait=True)
 
@@ -245,7 +261,7 @@ class TestMediaJobQueue:
             job_type="transcode",
             input_path="input.mp4",
             output_path="output.mp4",
-            ffmpeg_args=["-i", "input.mp4", "output.mp4"]
+            ffmpeg_args=["-i", "input.mp4", "output.mp4"],
         )
 
         # Try to cancel immediately
@@ -260,7 +276,7 @@ class TestMediaJobQueue:
 
     def test_autoscaling_up(self, mock_runtime):
         """Test worker autoscaling up"""
-        with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+        with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
             # Make jobs take some time
             def slow_exec(*args, **kwargs):
                 time.sleep(0.3)
@@ -271,7 +287,7 @@ class TestMediaJobQueue:
             queue = MediaJobQueue(
                 min_workers=2,
                 max_workers=5,
-                scale_up_threshold=2  # Lower threshold for easier testing
+                scale_up_threshold=2,  # Lower threshold for easier testing
             )
 
             # Submit many jobs to trigger scaling
@@ -281,7 +297,7 @@ class TestMediaJobQueue:
                     job_type="transcode",
                     input_path=f"input{i}.mp4",
                     output_path=f"output{i}.mp4",
-                    ffmpeg_args=["-i", f"input{i}.mp4", f"output{i}.mp4"]
+                    ffmpeg_args=["-i", f"input{i}.mp4", f"output{i}.mp4"],
                 )
                 job_ids.append(job_id)
 
@@ -295,7 +311,7 @@ class TestMediaJobQueue:
 
     def test_get_metrics(self, mock_runtime):
         """Test metrics collection"""
-        with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+        with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
             mock_exec.return_value = (0, "success", "")
 
             queue = MediaJobQueue(min_workers=2, max_workers=5)
@@ -306,7 +322,7 @@ class TestMediaJobQueue:
                     job_type="transcode",
                     input_path=f"input{i}.mp4",
                     output_path=f"output{i}.mp4",
-                    ffmpeg_args=["-i", f"input{i}.mp4", f"output{i}.mp4"]
+                    ffmpeg_args=["-i", f"input{i}.mp4", f"output{i}.mp4"],
                 )
 
             time.sleep(0.5)
@@ -319,7 +335,7 @@ class TestMediaJobQueue:
 
     def test_job_timeout(self, mock_runtime):
         """Test job timeout handling"""
-        with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+        with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
             mock_exec.side_effect = TimeoutError("Command timed out")
 
             queue = MediaJobQueue(min_workers=1, max_workers=2)
@@ -329,7 +345,7 @@ class TestMediaJobQueue:
                 input_path="input.mp4",
                 output_path="output.mp4",
                 ffmpeg_args=["-i", "input.mp4", "output.mp4"],
-                timeout_seconds=5
+                timeout_seconds=5,
             )
 
             time.sleep(0.5)
@@ -342,7 +358,7 @@ class TestMediaJobQueue:
 
     def test_shutdown_graceful(self, mock_runtime):
         """Test graceful shutdown"""
-        with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+        with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
             mock_exec.return_value = (0, "success", "")
 
             queue = MediaJobQueue(min_workers=2, max_workers=2)
@@ -352,7 +368,7 @@ class TestMediaJobQueue:
                 job_type="transcode",
                 input_path="input.mp4",
                 output_path="output.mp4",
-                ffmpeg_args=["-i", "input.mp4", "output.mp4"]
+                ffmpeg_args=["-i", "input.mp4", "output.mp4"],
             )
 
             # Shutdown and wait
@@ -369,7 +385,7 @@ class TestConvenienceFunctions:
     @pytest.fixture
     def mock_queue(self):
         """Mock MediaJobQueue"""
-        with patch('subprocess.run'):
+        with patch("subprocess.run"):
             queue = MediaJobQueue(min_workers=1, max_workers=2)
             yield queue
             queue.shutdown(wait=False)
@@ -383,7 +399,7 @@ class TestConvenienceFunctions:
             video_codec="libx264",
             audio_codec="aac",
             bitrate="2M",
-            priority=JobPriority.HIGH
+            priority=JobPriority.HIGH,
         )
 
         job = mock_queue.get_job_status(job_id)
@@ -401,7 +417,7 @@ class TestConvenienceFunctions:
             output_path="thumb.jpg",
             timestamp="00:00:05",
             width=640,
-            priority=JobPriority.NORMAL
+            priority=JobPriority.NORMAL,
         )
 
         job = mock_queue.get_job_status(job_id)
@@ -431,10 +447,10 @@ class TestIntegration:
         """Test end-to-end job processing"""
         input_file, output_file = temp_files
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
 
-            with patch.object(FFmpegRuntime, 'execute_ffmpeg') as mock_exec:
+            with patch.object(FFmpegRuntime, "execute_ffmpeg") as mock_exec:
                 # Simulate successful processing
                 def exec_side_effect(args, timeout_seconds):
                     # Create output file
@@ -450,7 +466,7 @@ class TestIntegration:
                     job_type="test",
                     input_path=input_file,
                     output_path=output_file,
-                    ffmpeg_args=["-i", input_file, output_file]
+                    ffmpeg_args=["-i", input_file, output_file],
                 )
 
                 # Wait for completion

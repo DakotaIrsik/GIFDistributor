@@ -3,6 +3,7 @@ Tenor Publisher Module for GIF Distributor
 Provides partner flow integration with Tenor API for uploading GIFs with tags
 Issue: #28
 """
+
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 from enum import Enum
@@ -13,6 +14,7 @@ import time
 
 class TenorContentRating(Enum):
     """Content rating levels for Tenor uploads"""
+
     HIGH = "high"  # G-rated, safe for all audiences
     MEDIUM = "medium"  # PG-13, mild content
     LOW = "low"  # R-rated (not supported in SFW-only mode)
@@ -21,6 +23,7 @@ class TenorContentRating(Enum):
 @dataclass
 class TenorUploadMetadata:
     """Metadata for a Tenor upload"""
+
     media_url: str
     title: str
     tags: List[str]
@@ -32,6 +35,7 @@ class TenorUploadMetadata:
 @dataclass
 class TenorUploadResult:
     """Result of a Tenor upload operation"""
+
     success: bool
     tenor_id: Optional[str] = None
     tenor_url: Optional[str] = None
@@ -54,7 +58,7 @@ class TenorPublisher:
         api_key: str,
         partner_id: str,
         base_url: str = "https://tenor.googleapis.com/v2",
-        sfw_only: bool = True
+        sfw_only: bool = True,
     ):
         """
         Initialize Tenor publisher
@@ -67,11 +71,13 @@ class TenorPublisher:
         """
         self.api_key = api_key
         self.partner_id = partner_id
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.sfw_only = sfw_only
         self.app_name = "GIFDistributor"
 
-    def validate_metadata(self, metadata: TenorUploadMetadata) -> tuple[bool, Optional[str]]:
+    def validate_metadata(
+        self, metadata: TenorUploadMetadata
+    ) -> tuple[bool, Optional[str]]:
         """
         Validate upload metadata before submission
 
@@ -161,7 +167,7 @@ class TenorPublisher:
             "tags": self.sanitize_tags(metadata.tags),
             "content_rating": metadata.content_rating.value,
             "key": self.api_key,
-            "partner_id": self.partner_id
+            "partner_id": self.partner_id,
         }
 
         # Add optional fields
@@ -187,8 +193,7 @@ class TenorPublisher:
         is_valid, error_msg = self.validate_metadata(metadata)
         if not is_valid:
             return TenorUploadResult(
-                success=False,
-                error_message=f"Validation failed: {error_msg}"
+                success=False, error_message=f"Validation failed: {error_msg}"
             )
 
         # Build payload
@@ -202,10 +207,7 @@ class TenorPublisher:
         tenor_url = f"https://tenor.com/view/{tenor_id}"
 
         return TenorUploadResult(
-            success=True,
-            tenor_id=tenor_id,
-            tenor_url=tenor_url,
-            status_code=200
+            success=True, tenor_id=tenor_id, tenor_url=tenor_url, status_code=200
         )
 
     def _generate_mock_id(self, media_url: str) -> str:
@@ -219,7 +221,7 @@ class TenorPublisher:
             Mock Tenor ID
         """
         # Create a hash-based ID
-        hash_input = f"{media_url}{time.time()}".encode('utf-8')
+        hash_input = f"{media_url}{time.time()}".encode("utf-8")
         hash_value = hashlib.sha256(hash_input).hexdigest()[:12]
         return f"tenor-{hash_value}"
 
@@ -239,14 +241,10 @@ class TenorPublisher:
             "status": "approved",
             "url": f"https://tenor.com/view/{tenor_id}",
             "views": 0,
-            "shares": 0
+            "shares": 0,
         }
 
-    def generate_tenor_search_url(
-        self,
-        tags: List[str],
-        limit: int = 10
-    ) -> str:
+    def generate_tenor_search_url(self, tags: List[str], limit: int = 10) -> str:
         """
         Generate a Tenor search URL for verification
 
@@ -261,9 +259,7 @@ class TenorPublisher:
         return f"https://tenor.com/search/{search_query.replace(' ', '-')}-gifs"
 
     def format_tags_for_tenor(
-        self,
-        tags: List[str],
-        include_platform_tags: bool = True
+        self, tags: List[str], include_platform_tags: bool = True
     ) -> List[str]:
         """
         Format tags specifically for Tenor's tagging system
@@ -300,12 +296,11 @@ class TenorPublisher:
             "estimated_monthly_searches": total_searches,
             "competition_level": "medium",
             "recommended_tags": ["reaction", "animated", "gif"],
-            "tag_count": len(tags)
+            "tag_count": len(tags),
         }
 
     def batch_upload(
-        self,
-        uploads: List[TenorUploadMetadata]
+        self, uploads: List[TenorUploadMetadata]
     ) -> List[TenorUploadResult]:
         """
         Upload multiple GIFs in batch
@@ -338,5 +333,5 @@ class TenorPublisher:
             "total_views": 0,
             "total_shares": 0,
             "top_tags": [],
-            "upload_limit_remaining": 1000
+            "upload_limit_remaining": 1000,
         }

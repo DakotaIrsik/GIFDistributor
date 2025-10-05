@@ -3,6 +3,7 @@ Slack Share Module for GIF Distributor
 Provides link unfurling and external upload path for Slack
 Issue: #41
 """
+
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 import json
@@ -11,6 +12,7 @@ import json
 @dataclass
 class SlackUnfurlBlock:
     """Represents a Slack unfurl block for rich link previews"""
+
     title: str
     title_link: str
     image_url: str
@@ -24,7 +26,7 @@ class SlackShareHandler:
     """Handles Slack link unfurling and share functionality"""
 
     def __init__(self, base_url: str = "https://gifdist.io"):
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.app_name = "GIFDistributor"
 
     def generate_unfurl_response(
@@ -33,7 +35,7 @@ class SlackShareHandler:
         asset_url: str,
         title: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        file_type: str = "gif"
+        file_type: str = "gif",
     ) -> Dict:
         """
         Generate Slack unfurl response for a shared link
@@ -65,21 +67,17 @@ class SlackShareHandler:
             "image_url": asset_url,
             "text": description,
             "footer": self.app_name,
-            "color": "#FF6B35"  # Brand color
+            "color": "#FF6B35",  # Brand color
         }
 
-        return {
-            "unfurls": {
-                canonical_url: unfurl_data
-            }
-        }
+        return {"unfurls": {canonical_url: unfurl_data}}
 
     def create_message_attachment(
         self,
         asset_url: str,
         title: Optional[str] = None,
         canonical_url: Optional[str] = None,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
     ) -> Dict:
         """
         Create a Slack message attachment for posting GIFs
@@ -96,7 +94,7 @@ class SlackShareHandler:
         attachment = {
             "fallback": title or "GIF from GIFDistributor",
             "image_url": asset_url,
-            "color": "#FF6B35"
+            "color": "#FF6B35",
         }
 
         if title:
@@ -116,7 +114,7 @@ class SlackShareHandler:
         title: Optional[str] = None,
         canonical_url: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        include_text: bool = True
+        include_text: bool = True,
     ) -> Dict:
         """
         Build a complete Slack share message
@@ -137,7 +135,7 @@ class SlackShareHandler:
                     asset_url=asset_url,
                     title=title,
                     canonical_url=canonical_url,
-                    tags=tags
+                    tags=tags,
                 )
             ]
         }
@@ -153,7 +151,7 @@ class SlackShareHandler:
         asset_url: str,
         title: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        file_type: str = "gif"
+        file_type: str = "gif",
     ) -> Dict[str, str]:
         """
         Generate Open Graph metadata for link unfurling
@@ -194,7 +192,7 @@ class SlackShareHandler:
             "twitter:card": "summary_large_image",
             "twitter:title": display_title,
             "twitter:description": description,
-            "twitter:image": asset_url
+            "twitter:image": asset_url,
         }
 
     def handle_external_upload(
@@ -203,7 +201,7 @@ class SlackShareHandler:
         filename: str,
         channel_id: str,
         title: Optional[str] = None,
-        comment: Optional[str] = None
+        comment: Optional[str] = None,
     ) -> Dict:
         """
         Handle external upload path for Slack when link unfurling isn't available
@@ -228,7 +226,7 @@ class SlackShareHandler:
             "filename": filename,
             "channels": channel_id,
             "initial_comment": comment or "",
-            "title": title or filename
+            "title": title or filename,
         }
 
         # Mock response
@@ -241,8 +239,8 @@ class SlackShareHandler:
                 "title": title or filename,
                 "mimetype": "image/gif",
                 "permalink": f"{self.base_url}/external/{filename}",
-                "channels": [channel_id]
-            }
+                "channels": [channel_id],
+            },
         }
 
     def validate_unfurl_event(self, event_data: Dict) -> bool:

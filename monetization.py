@@ -17,6 +17,7 @@ import json
 
 class RevenueSource(Enum):
     """Revenue sources for monetization tracking"""
+
     WEBSITE_ADS = "website_ads"
     PRO_SUBSCRIPTION = "pro_subscription"
     TEAM_SUBSCRIPTION = "team_subscription"
@@ -26,6 +27,7 @@ class RevenueSource(Enum):
 @dataclass
 class RevenueEvent:
     """Represents a revenue-generating event"""
+
     event_id: str
     source: RevenueSource
     amount_usd: float
@@ -37,6 +39,7 @@ class RevenueEvent:
 @dataclass
 class AdRevenueMetrics:
     """Metrics for ad revenue performance"""
+
     impressions: int
     clicks: int
     ctr: float  # Click-through rate
@@ -61,7 +64,7 @@ class MonetizationTracker:
         user_id: str,
         impressions: int,
         clicks: int,
-        revenue_usd: float
+        revenue_usd: float,
     ) -> RevenueEvent:
         """
         Track revenue from website ads
@@ -86,8 +89,8 @@ class MonetizationTracker:
                 "ad_id": ad_id,
                 "impressions": impressions,
                 "clicks": clicks,
-                "ctr": (clicks / impressions * 100) if impressions > 0 else 0.0
-            }
+                "ctr": (clicks / impressions * 100) if impressions > 0 else 0.0,
+            },
         )
         self.revenue_events.append(event)
         self._invalidate_cache()
@@ -98,7 +101,7 @@ class MonetizationTracker:
         user_id: str,
         tier: str,
         amount_usd: float,
-        billing_period: str = "monthly"
+        billing_period: str = "monthly",
     ) -> RevenueEvent:
         """
         Track revenue from Pro/Team subscriptions
@@ -113,7 +116,8 @@ class MonetizationTracker:
             Created revenue event
         """
         source = (
-            RevenueSource.PRO_SUBSCRIPTION if tier.lower() == "pro"
+            RevenueSource.PRO_SUBSCRIPTION
+            if tier.lower() == "pro"
             else RevenueSource.TEAM_SUBSCRIPTION
         )
 
@@ -123,10 +127,7 @@ class MonetizationTracker:
             amount_usd=amount_usd,
             user_id=user_id,
             timestamp=datetime.utcnow(),
-            metadata={
-                "tier": tier,
-                "billing_period": billing_period
-            }
+            metadata={"tier": tier, "billing_period": billing_period},
         )
         self.revenue_events.append(event)
         self._invalidate_cache()
@@ -136,7 +137,7 @@ class MonetizationTracker:
         self,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        source: Optional[RevenueSource] = None
+        source: Optional[RevenueSource] = None,
     ) -> float:
         """
         Get total revenue for a time period and/or source
@@ -153,9 +154,7 @@ class MonetizationTracker:
         return sum(event.amount_usd for event in filtered_events)
 
     def get_ad_revenue_metrics(
-        self,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None
     ) -> AdRevenueMetrics:
         """
         Get aggregated ad revenue metrics
@@ -167,9 +166,7 @@ class MonetizationTracker:
         Returns:
             Ad revenue metrics
         """
-        ad_events = self._filter_events(
-            start_date, end_date, RevenueSource.WEBSITE_ADS
-        )
+        ad_events = self._filter_events(start_date, end_date, RevenueSource.WEBSITE_ADS)
 
         if not ad_events:
             return AdRevenueMetrics(
@@ -178,19 +175,19 @@ class MonetizationTracker:
                 ctr=0.0,
                 revenue_usd=0.0,
                 ecpm=0.0,
-                fill_rate=0.0
+                fill_rate=0.0,
             )
 
         total_impressions = sum(
             event.metadata.get("impressions", 0) for event in ad_events
         )
-        total_clicks = sum(
-            event.metadata.get("clicks", 0) for event in ad_events
-        )
+        total_clicks = sum(event.metadata.get("clicks", 0) for event in ad_events)
         total_revenue = sum(event.amount_usd for event in ad_events)
 
         ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0.0
-        ecpm = (total_revenue / total_impressions * 1000) if total_impressions > 0 else 0.0
+        ecpm = (
+            (total_revenue / total_impressions * 1000) if total_impressions > 0 else 0.0
+        )
 
         # Assume 95% fill rate (would come from actual ad server in production)
         fill_rate = 95.0
@@ -201,13 +198,11 @@ class MonetizationTracker:
             ctr=round(ctr, 2),
             revenue_usd=round(total_revenue, 2),
             ecpm=round(ecpm, 2),
-            fill_rate=fill_rate
+            fill_rate=fill_rate,
         )
 
     def get_revenue_by_source(
-        self,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None
     ) -> Dict[str, float]:
         """
         Get revenue breakdown by source
@@ -243,7 +238,7 @@ class MonetizationTracker:
 
         subscription_sources = [
             RevenueSource.PRO_SUBSCRIPTION,
-            RevenueSource.TEAM_SUBSCRIPTION
+            RevenueSource.TEAM_SUBSCRIPTION,
         ]
 
         mrr = 0.0
@@ -266,7 +261,7 @@ class MonetizationTracker:
         self,
         total_users: int,
         start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        end_date: Optional[datetime] = None,
     ) -> float:
         """
         Calculate Average Revenue Per User (ARPU)
@@ -305,7 +300,7 @@ class MonetizationTracker:
             "period": {
                 "start": start_date.isoformat(),
                 "end": end_date.isoformat(),
-                "days": 30
+                "days": 30,
             },
             "total_revenue_usd": round(total_revenue, 2),
             "revenue_by_source": revenue_by_source,
@@ -316,23 +311,23 @@ class MonetizationTracker:
                 "ctr": ad_metrics.ctr,
                 "revenue_usd": ad_metrics.revenue_usd,
                 "ecpm": ad_metrics.ecpm,
-                "fill_rate": ad_metrics.fill_rate
+                "fill_rate": ad_metrics.fill_rate,
             },
             "subscription_metrics": {
                 "pro_revenue": revenue_by_source.get("pro_subscription", 0.0),
                 "team_revenue": revenue_by_source.get("team_subscription", 0.0),
                 "total_subscription_revenue": (
-                    revenue_by_source.get("pro_subscription", 0.0) +
-                    revenue_by_source.get("team_subscription", 0.0)
-                )
-            }
+                    revenue_by_source.get("pro_subscription", 0.0)
+                    + revenue_by_source.get("team_subscription", 0.0)
+                ),
+            },
         }
 
     def export_revenue_report(
         self,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        format: str = "json"
+        format: str = "json",
     ) -> str:
         """
         Export revenue report
@@ -359,7 +354,7 @@ class MonetizationTracker:
                 f"subscription_revenue,{summary['subscription_metrics']['total_subscription_revenue']}",
                 f"ad_impressions,{summary['ad_metrics']['impressions']}",
                 f"ad_clicks,{summary['ad_metrics']['clicks']}",
-                f"ad_ctr,{summary['ad_metrics']['ctr']}"
+                f"ad_ctr,{summary['ad_metrics']['ctr']}",
             ]
             return "\n".join(lines)
         else:
@@ -369,7 +364,7 @@ class MonetizationTracker:
         self,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        source: Optional[RevenueSource] = None
+        source: Optional[RevenueSource] = None,
     ) -> List[RevenueEvent]:
         """Filter revenue events by criteria"""
         events = self.revenue_events
@@ -397,6 +392,6 @@ WATERMARK_POLICY_REFERENCE = {
         "free_tier": "Display ads on website UI only",
         "pro_tier": "Ad-free website, subscription revenue",
         "team_tier": "Ad-free website, subscription revenue",
-        "media_files": "Always clean, no watermarks, 100% shareable"
-    }
+        "media_files": "Always clean, no watermarks, 100% shareable",
+    },
 }

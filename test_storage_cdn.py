@@ -25,7 +25,7 @@ from storage_cdn import (
     LocalStorageBackend,
     SignedUrlGenerator,
     CDNManager,
-    StorageManager
+    StorageManager,
 )
 
 
@@ -38,7 +38,7 @@ class TestLocalStorageBackend:
         config = StorageConfig(
             backend=StorageBackend.LOCAL,
             bucket_name="test-bucket",
-            base_path=str(tmp_path / "storage")
+            base_path=str(tmp_path / "storage"),
         )
         return LocalStorageBackend(config)
 
@@ -50,7 +50,7 @@ class TestLocalStorageBackend:
             data,
             content_type="text/plain",
             metadata={"user": "test"},
-            cache_control="public, max-age=3600"
+            cache_control="public, max-age=3600",
         )
 
         assert metadata.key == "test/file.txt"
@@ -129,7 +129,7 @@ class TestLocalStorageBackend:
             b"data",
             content_type="text/plain",
             metadata={"foo": "bar"},
-            cache_control="public, max-age=3600"
+            cache_control="public, max-age=3600",
         )
 
         data, metadata = backend.get_object("meta-test.txt")
@@ -163,7 +163,7 @@ class TestSignedUrlGenerator:
         url = generator.generate_signed_url(
             "https://cdn.example.com",
             "test/file.jpg",
-            SignedUrlConfig(expires_in_seconds=3600)
+            SignedUrlConfig(expires_in_seconds=3600),
         )
 
         assert "https://cdn.example.com/test%2Ffile.jpg" in url
@@ -178,11 +178,9 @@ class TestSignedUrlGenerator:
         # Generate signature manually
         payload = f"{key}:{expires}"
         signature = hmac.new(
-            b"test-secret-key",
-            payload.encode(),
-            hashlib.sha256
+            b"test-secret-key", payload.encode(), hashlib.sha256
         ).digest()
-        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip('=')
+        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
 
         # Verify
         is_valid = generator.verify_signed_url(key, sig_b64, expires)
@@ -195,11 +193,9 @@ class TestSignedUrlGenerator:
 
         payload = f"{key}:{expires}"
         signature = hmac.new(
-            b"test-secret-key",
-            payload.encode(),
-            hashlib.sha256
+            b"test-secret-key", payload.encode(), hashlib.sha256
         ).digest()
-        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip('=')
+        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
 
         is_valid = generator.verify_signed_url(key, sig_b64, expires)
         assert not is_valid
@@ -218,10 +214,7 @@ class TestSignedUrlGenerator:
         url = generator.generate_signed_url(
             "https://cdn.example.com",
             "test.jpg",
-            SignedUrlConfig(
-                expires_in_seconds=3600,
-                content_type="image/jpeg"
-            )
+            SignedUrlConfig(expires_in_seconds=3600, content_type="image/jpeg"),
         )
 
         assert "content_type=image%2Fjpeg" in url
@@ -233,8 +226,8 @@ class TestSignedUrlGenerator:
             "file.txt",
             SignedUrlConfig(
                 expires_in_seconds=3600,
-                custom_params={"download": "true", "filename": "myfile.txt"}
-            )
+                custom_params={"download": "true", "filename": "myfile.txt"},
+            ),
         )
 
         assert "download=true" in url
@@ -267,10 +260,7 @@ class TestCDNManager:
 
     def test_get_cache_headers_public(self, cdn):
         """Test cache headers for public policy"""
-        headers = cdn.get_cache_headers(
-            policy=CachePolicy.PUBLIC,
-            max_age=3600
-        )
+        headers = cdn.get_cache_headers(policy=CachePolicy.PUBLIC, max_age=3600)
 
         assert "Cache-Control" in headers
         assert "public" in headers["Cache-Control"]
@@ -279,10 +269,7 @@ class TestCDNManager:
 
     def test_get_cache_headers_private(self, cdn):
         """Test cache headers for private policy"""
-        headers = cdn.get_cache_headers(
-            policy=CachePolicy.PRIVATE,
-            max_age=1800
-        )
+        headers = cdn.get_cache_headers(policy=CachePolicy.PRIVATE, max_age=1800)
 
         assert "private" in headers["Cache-Control"]
         assert "max-age=1800" in headers["Cache-Control"]
@@ -297,9 +284,7 @@ class TestCDNManager:
     def test_get_cache_headers_immutable(self, cdn):
         """Test cache headers with immutable flag"""
         headers = cdn.get_cache_headers(
-            policy=CachePolicy.IMMUTABLE,
-            max_age=31536000,
-            immutable=True
+            policy=CachePolicy.IMMUTABLE, max_age=31536000, immutable=True
         )
 
         assert "immutable" in headers["Cache-Control"]
@@ -307,9 +292,7 @@ class TestCDNManager:
     def test_get_cache_headers_stale_while_revalidate(self, cdn):
         """Test cache headers with stale-while-revalidate"""
         headers = cdn.get_cache_headers(
-            policy=CachePolicy.PUBLIC,
-            max_age=3600,
-            stale_while_revalidate=86400
+            policy=CachePolicy.PUBLIC, max_age=3600, stale_while_revalidate=86400
         )
 
         assert "stale-while-revalidate=86400" in headers["Cache-Control"]
@@ -333,7 +316,7 @@ class TestStorageManager:
             backend=StorageBackend.LOCAL,
             bucket_name="test-bucket",
             base_path=str(tmp_path / "storage"),
-            cdn_domain="cdn.example.com"
+            cdn_domain="cdn.example.com",
         )
         return StorageManager(config, signing_secret="test-secret")
 
@@ -345,7 +328,7 @@ class TestStorageManager:
             data,
             content_type="text/plain",
             cache_policy=CachePolicy.PUBLIC,
-            max_age=3600
+            max_age=3600,
         )
 
         assert metadata.key == "test.txt"
@@ -357,7 +340,7 @@ class TestStorageManager:
 
     def test_upload_with_auto_content_type(self, manager):
         """Test uploading with auto content type detection"""
-        metadata = manager.upload("image.jpg", b"\xFF\xD8\xFF\xE0")
+        metadata = manager.upload("image.jpg", b"\xff\xd8\xff\xe0")
 
         assert metadata.content_type == "image/jpeg"
 
@@ -399,9 +382,7 @@ class TestStorageManager:
     def test_generate_signed_url(self, manager):
         """Test generating signed URL"""
         url = manager.generate_signed_url(
-            "test.jpg",
-            expires_in=3600,
-            content_type="image/jpeg"
+            "test.jpg", expires_in=3600, content_type="image/jpeg"
         )
 
         assert "https://cdn.example.com/test.jpg" in url
@@ -419,12 +400,8 @@ class TestStorageManager:
 
         # Create correct signature
         payload = f"test.jpg:{expires}"
-        signature = hmac.new(
-            b"test-secret",
-            payload.encode(),
-            hashlib.sha256
-        ).digest()
-        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip('=')
+        signature = hmac.new(b"test-secret", payload.encode(), hashlib.sha256).digest()
+        sig_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
 
         # Verify
         is_valid = manager.verify_signed_url("test.jpg", sig_b64, expires)
@@ -435,7 +412,9 @@ class TestStorageManager:
         # Upload some files
         manager.upload("file1.txt", b"data1", content_type="text/plain")
         manager.upload("file2.txt", b"data2", content_type="text/plain")
-        manager.upload("image.jpg", b"\xFF\xD8\xFF\xE0" * 100, content_type="image/jpeg")
+        manager.upload(
+            "image.jpg", b"\xff\xd8\xff\xe0" * 100, content_type="image/jpeg"
+        )
 
         stats = manager.get_stats()
 
@@ -450,11 +429,7 @@ class TestStorageManager:
         """Test uploading with custom metadata"""
         metadata_dict = {"user_id": "123", "category": "images"}
 
-        obj_meta = manager.upload(
-            "meta-test.jpg",
-            b"data",
-            metadata=metadata_dict
-        )
+        obj_meta = manager.upload("meta-test.jpg", b"data", metadata=metadata_dict)
 
         assert obj_meta.custom_metadata == metadata_dict
 
@@ -475,7 +450,7 @@ class TestStorageConfig:
             access_key="key",
             secret_key="secret",
             endpoint_url="https://s3.amazonaws.com",
-            cdn_domain="cdn.example.com"
+            cdn_domain="cdn.example.com",
         )
 
         assert config.backend == StorageBackend.S3
@@ -488,7 +463,7 @@ class TestStorageConfig:
         config = StorageConfig(
             backend=StorageBackend.LOCAL,
             bucket_name="local-bucket",
-            base_path="/tmp/storage"
+            base_path="/tmp/storage",
         )
 
         assert config.backend == StorageBackend.LOCAL
@@ -504,7 +479,7 @@ class TestIntegration:
             backend=StorageBackend.LOCAL,
             bucket_name="test",
             base_path=str(tmp_path / "storage"),
-            cdn_domain="cdn.test.com"
+            cdn_domain="cdn.test.com",
         )
 
         manager = StorageManager(config, signing_secret="integration-test")
@@ -517,7 +492,7 @@ class TestIntegration:
             content_type="text/plain",
             cache_policy=CachePolicy.PUBLIC,
             max_age=7200,
-            metadata={"test": "integration"}
+            metadata={"test": "integration"},
         )
 
         assert upload_meta.cdn_url == "https://cdn.test.com/integration%2Ftest.txt"
@@ -528,7 +503,9 @@ class TestIntegration:
         assert download_meta.custom_metadata == {"test": "integration"}
 
         # Generate signed URL
-        signed_url = manager.generate_signed_url("integration/test.txt", expires_in=1800)
+        signed_url = manager.generate_signed_url(
+            "integration/test.txt", expires_in=1800
+        )
         assert "expires=" in signed_url
         assert "signature=" in signed_url
 
@@ -547,7 +524,7 @@ class TestIntegration:
         config = StorageConfig(
             backend=StorageBackend.LOCAL,
             bucket_name="multi",
-            base_path=str(tmp_path / "multi_storage")
+            base_path=str(tmp_path / "multi_storage"),
         )
 
         manager = StorageManager(config)
@@ -557,7 +534,7 @@ class TestIntegration:
             ("images/pic1.jpg", b"image1", "image/jpeg"),
             ("images/pic2.jpg", b"image2", "image/jpeg"),
             ("docs/file.txt", b"text", "text/plain"),
-            ("videos/clip.mp4", b"video", "video/mp4")
+            ("videos/clip.mp4", b"video", "video/mp4"),
         ]
 
         for key, data, content_type in files:
@@ -584,35 +561,27 @@ class TestIntegration:
             backend=StorageBackend.LOCAL,
             bucket_name="cache-test",
             base_path=str(tmp_path / "cache_storage"),
-            cdn_domain="cache.cdn.test"
+            cdn_domain="cache.cdn.test",
         )
 
         manager = StorageManager(config)
 
         # Public cache
         meta1 = manager.upload(
-            "public.jpg",
-            b"data",
-            cache_policy=CachePolicy.PUBLIC,
-            max_age=3600
+            "public.jpg", b"data", cache_policy=CachePolicy.PUBLIC, max_age=3600
         )
         assert "public" in meta1.cache_control
         assert "max-age=3600" in meta1.cache_control
 
         # Private cache
         meta2 = manager.upload(
-            "private.jpg",
-            b"data",
-            cache_policy=CachePolicy.PRIVATE,
-            max_age=1800
+            "private.jpg", b"data", cache_policy=CachePolicy.PRIVATE, max_age=1800
         )
         assert "private" in meta2.cache_control
 
         # No cache
         meta3 = manager.upload(
-            "no-cache.jpg",
-            b"data",
-            cache_policy=CachePolicy.NO_CACHE
+            "no-cache.jpg", b"data", cache_policy=CachePolicy.NO_CACHE
         )
         assert "no-cache" in meta3.cache_control
 
@@ -625,7 +594,7 @@ class TestEdgeCases:
         config = StorageConfig(
             backend=StorageBackend.LOCAL,
             bucket_name="edge",
-            base_path=str(tmp_path / "edge_storage")
+            base_path=str(tmp_path / "edge_storage"),
         )
 
         manager = StorageManager(config)
@@ -638,7 +607,7 @@ class TestEdgeCases:
         config = StorageConfig(
             backend=StorageBackend.LOCAL,
             bucket_name="edge",
-            base_path=str(tmp_path / "edge_storage")
+            base_path=str(tmp_path / "edge_storage"),
         )
 
         manager = StorageManager(config)
@@ -655,7 +624,7 @@ class TestEdgeCases:
         config = StorageConfig(
             backend=StorageBackend.LOCAL,
             bucket_name="special",
-            base_path=str(tmp_path / "special_storage")
+            base_path=str(tmp_path / "special_storage"),
         )
 
         manager = StorageManager(config)
@@ -669,6 +638,6 @@ class TestEdgeCases:
         assert data == b"data"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Run tests
-    pytest.main([__file__, '-v', '-s'])
+    pytest.main([__file__, "-v", "-s"])

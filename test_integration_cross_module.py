@@ -2,6 +2,7 @@
 Cross-module integration tests
 Tests interactions between Analytics, ShareLinks, and CDN modules
 """
+
 import pytest
 import tempfile
 import os
@@ -24,12 +25,15 @@ class TestAnalyticsWithShareLinks:
         link = gen.create_share_link("asset123", title="Test Asset")
 
         # Track various events through the link
-        tracker.track_event("asset123", EventType.VIEW,
-                          Platform.SLACK, short_code=link["short_code"])
-        tracker.track_event("asset123", EventType.PLAY,
-                          Platform.SLACK, short_code=link["short_code"])
-        tracker.track_event("asset123", EventType.CLICK,
-                          Platform.SLACK, short_code=link["short_code"])
+        tracker.track_event(
+            "asset123", EventType.VIEW, Platform.SLACK, short_code=link["short_code"]
+        )
+        tracker.track_event(
+            "asset123", EventType.PLAY, Platform.SLACK, short_code=link["short_code"]
+        )
+        tracker.track_event(
+            "asset123", EventType.CLICK, Platform.SLACK, short_code=link["short_code"]
+        )
 
         # Verify analytics
         metrics = tracker.get_short_link_metrics(link["short_code"])
@@ -57,26 +61,30 @@ class TestAnalyticsWithShareLinks:
         # Track events through different links
         # Link 1: 10 views, 5 clicks
         for _ in range(10):
-            tracker.track_event(asset_id, EventType.VIEW,
-                              short_code=link1["short_code"])
+            tracker.track_event(
+                asset_id, EventType.VIEW, short_code=link1["short_code"]
+            )
         for _ in range(5):
-            tracker.track_event(asset_id, EventType.CLICK,
-                              short_code=link1["short_code"])
+            tracker.track_event(
+                asset_id, EventType.CLICK, short_code=link1["short_code"]
+            )
 
         # Link 2: 20 views, 10 clicks
         for _ in range(20):
-            tracker.track_event(asset_id, EventType.VIEW,
-                              short_code=link2["short_code"])
+            tracker.track_event(
+                asset_id, EventType.VIEW, short_code=link2["short_code"]
+            )
         for _ in range(10):
-            tracker.track_event(asset_id, EventType.CLICK,
-                              short_code=link2["short_code"])
+            tracker.track_event(
+                asset_id, EventType.CLICK, short_code=link2["short_code"]
+            )
 
         # Link 3: 5 views, 1 click
         for _ in range(5):
-            tracker.track_event(asset_id, EventType.VIEW,
-                              short_code=link3["short_code"])
-        tracker.track_event(asset_id, EventType.CLICK,
-                          short_code=link3["short_code"])
+            tracker.track_event(
+                asset_id, EventType.VIEW, short_code=link3["short_code"]
+            )
+        tracker.track_event(asset_id, EventType.CLICK, short_code=link3["short_code"])
 
         # Verify individual link metrics
         metrics1 = tracker.get_short_link_metrics(link1["short_code"])
@@ -101,14 +109,18 @@ class TestAnalyticsWithShareLinks:
         link = gen.create_share_link(asset_id)
 
         # Share on different platforms
-        tracker.track_event(asset_id, EventType.VIEW, Platform.SLACK,
-                          short_code=link["short_code"])
-        tracker.track_event(asset_id, EventType.VIEW, Platform.DISCORD,
-                          short_code=link["short_code"])
-        tracker.track_event(asset_id, EventType.VIEW, Platform.TWITTER,
-                          short_code=link["short_code"])
-        tracker.track_event(asset_id, EventType.CLICK, Platform.SLACK,
-                          short_code=link["short_code"])
+        tracker.track_event(
+            asset_id, EventType.VIEW, Platform.SLACK, short_code=link["short_code"]
+        )
+        tracker.track_event(
+            asset_id, EventType.VIEW, Platform.DISCORD, short_code=link["short_code"]
+        )
+        tracker.track_event(
+            asset_id, EventType.VIEW, Platform.TWITTER, short_code=link["short_code"]
+        )
+        tracker.track_event(
+            asset_id, EventType.CLICK, Platform.SLACK, short_code=link["short_code"]
+        )
 
         # Check platform breakdown
         platform_metrics = tracker.get_platform_metrics(asset_id)
@@ -149,7 +161,7 @@ class TestCDNWithShareLinks:
             content_type="image/gif",
             content_length=2048576,  # ~2MB
             is_immutable=False,
-            cache_duration=CachePolicy.LONG_CACHE
+            cache_duration=CachePolicy.LONG_CACHE,
         )
 
         assert status == 200
@@ -177,17 +189,17 @@ class TestCDNWithShareLinks:
             headers, range_spec, status = cdn.get_asset_headers(
                 content_type="video/mp4",
                 content_length=content_length,
-                range_header=f"bytes={start}-{end}"
+                range_header=f"bytes={start}-{end}",
             )
 
             assert status == 206
 
             # Track as a view or play event
             if i == 0:
-                tracker.track_event(asset_id, EventType.VIEW,
-                                  short_code=link["short_code"])
-            tracker.track_event(asset_id, EventType.PLAY,
-                              short_code=link["short_code"])
+                tracker.track_event(
+                    asset_id, EventType.VIEW, short_code=link["short_code"]
+                )
+            tracker.track_event(asset_id, EventType.PLAY, short_code=link["short_code"])
 
         # Verify analytics
         metrics = tracker.get_short_link_metrics(link["short_code"])
@@ -201,7 +213,7 @@ class TestFullWorkflowIntegration:
     def test_complete_asset_lifecycle(self):
         """Test complete lifecycle: upload -> hash -> link -> CDN -> analytics"""
         # Step 1: Create and hash asset file
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
             f.write(b"GIF89a" + b"\x00" * 1000)  # Mock GIF data
             temp_path = f.name
 
@@ -222,8 +234,7 @@ class TestFullWorkflowIntegration:
             # Step 5: Create signed CDN URL
             cdn = CDNHelper(secret_key="production-secret")
             signed_url = cdn.create_signed_asset_url(
-                link["canonical_url"],
-                expiration_seconds=3600
+                link["canonical_url"], expiration_seconds=3600
             )
 
             # Step 6: Validate signed URL
@@ -235,18 +246,21 @@ class TestFullWorkflowIntegration:
                 content_type="image/gif",
                 content_length=1006,
                 is_immutable=True,
-                cache_duration=CachePolicy.IMMUTABLE_CACHE
+                cache_duration=CachePolicy.IMMUTABLE_CACHE,
             )
             assert "immutable" in headers["Cache-Control"]
 
             # Step 8: Track analytics events
             tracker = AnalyticsTracker()
-            tracker.track_event(asset_id, EventType.VIEW, Platform.SLACK,
-                              short_code=link["short_code"])
-            tracker.track_event(asset_id, EventType.PLAY, Platform.SLACK,
-                              short_code=link["short_code"])
-            tracker.track_event(asset_id, EventType.CLICK, Platform.SLACK,
-                              short_code=link["short_code"])
+            tracker.track_event(
+                asset_id, EventType.VIEW, Platform.SLACK, short_code=link["short_code"]
+            )
+            tracker.track_event(
+                asset_id, EventType.PLAY, Platform.SLACK, short_code=link["short_code"]
+            )
+            tracker.track_event(
+                asset_id, EventType.CLICK, Platform.SLACK, short_code=link["short_code"]
+            )
 
             # Step 9: Verify complete analytics
             metrics = tracker.get_asset_metrics(asset_id)
@@ -274,8 +288,8 @@ class TestFullWorkflowIntegration:
         cdn = CDNHelper(secret_key="viral-key")
 
         # Upload viral GIF
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f:
-            f.write(b"GIF89a" + b"\xFF" * 5000)
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f:
+            f.write(b"GIF89a" + b"\xff" * 5000)
             temp_path = f.name
 
         try:
@@ -301,12 +315,14 @@ class TestFullWorkflowIntegration:
 
             for platform, short_code, view_count in platforms_events:
                 for _ in range(view_count):
-                    tracker.track_event(asset_id, EventType.VIEW, platform,
-                                      short_code=short_code)
+                    tracker.track_event(
+                        asset_id, EventType.VIEW, platform, short_code=short_code
+                    )
                 # 10% click through rate
                 for _ in range(view_count // 10):
-                    tracker.track_event(asset_id, EventType.CLICK, platform,
-                                      short_code=short_code)
+                    tracker.track_event(
+                        asset_id, EventType.CLICK, platform, short_code=short_code
+                    )
 
             # Analyze viral performance
             asset_metrics = tracker.get_asset_metrics(asset_id)
@@ -331,13 +347,13 @@ class TestFullWorkflowIntegration:
         gen = ShareLinkGenerator()
 
         # Create two identical files
-        content = b"GIF89a" + b"\xAB" * 2000
+        content = b"GIF89a" + b"\xab" * 2000
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f1:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f1:
             f1.write(content)
             path1 = f1.name
 
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as f2:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wb") as f2:
             f2.write(content)
             path2 = f2.name
 
@@ -385,8 +401,7 @@ class TestConcurrentAccessPatterns:
         # Simulate interleaved operations
         for i in range(100):
             # Track event
-            tracker.track_event(asset_id, EventType.VIEW,
-                              short_code=link["short_code"])
+            tracker.track_event(asset_id, EventType.VIEW, short_code=link["short_code"])
 
             # Resolve link (increments click counter)
             resolved = gen.resolve_short_link(link["short_code"])
@@ -412,10 +427,10 @@ class TestConcurrentAccessPatterns:
 
         # Simulate multiple clients requesting different ranges
         ranges = [
-            "bytes=0-1048575",      # Client 1: first MB
-            "bytes=1048576-2097151", # Client 2: second MB
-            "bytes=0-1048575",       # Client 3: first MB again
-            "bytes=10485760-11534335", # Client 4: chunk from middle
+            "bytes=0-1048575",  # Client 1: first MB
+            "bytes=1048576-2097151",  # Client 2: second MB
+            "bytes=0-1048575",  # Client 3: first MB again
+            "bytes=10485760-11534335",  # Client 4: chunk from middle
         ]
 
         results = []
@@ -424,7 +439,7 @@ class TestConcurrentAccessPatterns:
                 content_type="video/mp4",
                 content_length=content_length,
                 range_header=range_header,
-                cache_duration=CachePolicy.LONG_CACHE
+                cache_duration=CachePolicy.LONG_CACHE,
             )
             results.append((status, range_spec))
 
@@ -441,8 +456,7 @@ class TestErrorHandlingAcrossModules:
         tracker = AnalyticsTracker()
 
         # Track event with non-existent short code (analytics doesn't validate codes)
-        event = tracker.track_event("asset1", EventType.VIEW,
-                                   short_code="nonexistent")
+        event = tracker.track_event("asset1", EventType.VIEW, short_code="nonexistent")
         assert event["short_code"] == "nonexistent"
 
         # Get metrics for the short code we just created
@@ -502,12 +516,12 @@ class TestPerformanceIntegration:
             signed = cdn.create_signed_asset_url(link["canonical_url"])
 
             # Track some events
-            tracker.track_event(asset_id, EventType.VIEW,
-                              short_code=link["short_code"])
+            tracker.track_event(asset_id, EventType.VIEW, short_code=link["short_code"])
 
             if i % 10 == 0:
-                tracker.track_event(asset_id, EventType.CLICK,
-                                  short_code=link["short_code"])
+                tracker.track_event(
+                    asset_id, EventType.CLICK, short_code=link["short_code"]
+                )
 
         # Verify all processed
         assert len(gen._links_db) == 100

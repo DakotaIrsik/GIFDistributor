@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 class Platform(str, Enum):
     """Target platforms with specific requirements"""
+
     DISCORD = "discord"
     SLACK = "slack"
     TEAMS = "teams"
@@ -21,6 +22,7 @@ class Platform(str, Enum):
 @dataclass
 class RenditionSpec:
     """Specification for a platform-specific rendition"""
+
     platform: Platform
     max_width: Optional[int] = None
     max_height: Optional[int] = None
@@ -50,7 +52,7 @@ class PlatformRenditions:
             max_file_size_mb=8,
             video_bitrate="800k",
             quality="medium",
-            description="Discord standard (free tier compatible)"
+            description="Discord standard (free tier compatible)",
         )
 
     @staticmethod
@@ -66,7 +68,7 @@ class PlatformRenditions:
             max_height=1080,
             video_bitrate="2M",
             quality="high",
-            description="Slack standard HD"
+            description="Slack standard HD",
         )
 
     @staticmethod
@@ -83,7 +85,7 @@ class PlatformRenditions:
             max_file_size_mb=250,
             video_bitrate="2M",
             quality="high",
-            description="Microsoft Teams HD"
+            description="Microsoft Teams HD",
         )
 
     @staticmethod
@@ -100,7 +102,7 @@ class PlatformRenditions:
             max_file_size_mb=512,
             video_bitrate="5M",
             quality="high",
-            description="Twitter video standard"
+            description="Twitter video standard",
         )
 
     @staticmethod
@@ -112,7 +114,7 @@ class PlatformRenditions:
             max_height=1080,
             video_bitrate="3M",
             quality="high",
-            description="Web 1080p HD"
+            description="Web 1080p HD",
         )
 
     @staticmethod
@@ -124,7 +126,7 @@ class PlatformRenditions:
             max_height=720,
             video_bitrate="1.5M",
             quality="medium",
-            description="Web 720p"
+            description="Web 720p",
         )
 
     @staticmethod
@@ -146,6 +148,7 @@ class PlatformRenditions:
 
 # Utility functions
 
+
 def get_platform_constraints(platform: Platform) -> Dict:
     """
     Get platform constraints as a simple dictionary
@@ -163,11 +166,11 @@ def get_platform_constraints(platform: Platform) -> Dict:
         "max_file_size_mb": spec.max_file_size_mb,
         "video_bitrate": spec.video_bitrate,
         "quality": spec.quality,
-        "description": spec.description
+        "description": spec.description,
     }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Platform Renditions - Specifications")
     print("=" * 60)
 

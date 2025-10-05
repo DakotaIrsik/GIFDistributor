@@ -1,6 +1,7 @@
 """
 Tests for observability module
 """
+
 import pytest
 import time
 from observability import (
@@ -9,7 +10,7 @@ from observability import (
     Tracer,
     ObservabilityStack,
     LogLevel,
-    MetricType
+    MetricType,
 )
 
 

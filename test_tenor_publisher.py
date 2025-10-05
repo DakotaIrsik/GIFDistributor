@@ -3,12 +3,13 @@ Unit tests for Tenor Publisher Module
 Tests partner flow, upload validation, and tag management
 Issue: #28
 """
+
 import pytest
 from tenor_publisher import (
     TenorPublisher,
     TenorUploadMetadata,
     TenorContentRating,
-    TenorUploadResult
+    TenorUploadResult,
 )
 
 
@@ -19,9 +20,7 @@ class TestTenorPublisher:
     def publisher(self):
         """Create a test publisher instance"""
         return TenorPublisher(
-            api_key="test_api_key_123",
-            partner_id="partner_456",
-            sfw_only=True
+            api_key="test_api_key_123", partner_id="partner_456", sfw_only=True
         )
 
     @pytest.fixture
@@ -32,15 +31,12 @@ class TestTenorPublisher:
             title="Test GIF",
             tags=["funny", "reaction", "test"],
             content_rating=TenorContentRating.HIGH,
-            source_id="asset_123"
+            source_id="asset_123",
         )
 
     def test_publisher_initialization(self):
         """Test publisher is initialized correctly"""
-        publisher = TenorPublisher(
-            api_key="key123",
-            partner_id="partner456"
-        )
+        publisher = TenorPublisher(api_key="key123", partner_id="partner456")
 
         assert publisher.api_key == "key123"
         assert publisher.partner_id == "partner456"
@@ -50,9 +46,7 @@ class TestTenorPublisher:
     def test_publisher_custom_base_url(self):
         """Test publisher with custom base URL"""
         publisher = TenorPublisher(
-            api_key="key",
-            partner_id="partner",
-            base_url="https://custom.api.com/v1/"
+            api_key="key", partner_id="partner", base_url="https://custom.api.com/v1/"
         )
 
         assert publisher.base_url == "https://custom.api.com/v1"
@@ -67,9 +61,7 @@ class TestTenorPublisher:
     def test_validate_metadata_invalid_url(self, publisher):
         """Test validation fails with invalid URL"""
         metadata = TenorUploadMetadata(
-            media_url="not_a_url",
-            title="Test",
-            tags=["tag1"]
+            media_url="not_a_url", title="Test", tags=["tag1"]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -80,9 +72,7 @@ class TestTenorPublisher:
     def test_validate_metadata_empty_title(self, publisher):
         """Test validation fails with empty title"""
         metadata = TenorUploadMetadata(
-            media_url="https://example.com/test.gif",
-            title="",
-            tags=["tag1"]
+            media_url="https://example.com/test.gif", title="", tags=["tag1"]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -93,9 +83,7 @@ class TestTenorPublisher:
     def test_validate_metadata_title_too_long(self, publisher):
         """Test validation fails with title exceeding 100 characters"""
         metadata = TenorUploadMetadata(
-            media_url="https://example.com/test.gif",
-            title="a" * 101,
-            tags=["tag1"]
+            media_url="https://example.com/test.gif", title="a" * 101, tags=["tag1"]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -106,9 +94,7 @@ class TestTenorPublisher:
     def test_validate_metadata_no_tags(self, publisher):
         """Test validation fails with no tags"""
         metadata = TenorUploadMetadata(
-            media_url="https://example.com/test.gif",
-            title="Test",
-            tags=[]
+            media_url="https://example.com/test.gif", title="Test", tags=[]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -121,7 +107,7 @@ class TestTenorPublisher:
         metadata = TenorUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test",
-            tags=[f"tag{i}" for i in range(21)]
+            tags=[f"tag{i}" for i in range(21)],
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -134,7 +120,7 @@ class TestTenorPublisher:
         metadata = TenorUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test",
-            tags=["valid", "", "another"]
+            tags=["valid", "", "another"],
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -148,7 +134,7 @@ class TestTenorPublisher:
         metadata = TenorUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test",
-            tags=["valid", long_tag]
+            tags=["valid", long_tag],
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -162,7 +148,7 @@ class TestTenorPublisher:
             media_url="https://example.com/test.gif",
             title="Test",
             tags=["test"],
-            content_rating=TenorContentRating.MEDIUM
+            content_rating=TenorContentRating.MEDIUM,
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -172,17 +158,13 @@ class TestTenorPublisher:
 
     def test_validate_metadata_nsfw_allowed(self):
         """Test validation allows non-HIGH rating when SFW mode disabled"""
-        publisher = TenorPublisher(
-            api_key="key",
-            partner_id="partner",
-            sfw_only=False
-        )
+        publisher = TenorPublisher(api_key="key", partner_id="partner", sfw_only=False)
 
         metadata = TenorUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test",
             tags=["test"],
-            content_rating=TenorContentRating.MEDIUM
+            content_rating=TenorContentRating.MEDIUM,
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -234,7 +216,7 @@ class TestTenorPublisher:
         metadata = TenorUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test",
-            tags=["  test  ", "FUNNY", "funny", ""]
+            tags=["  test  ", "FUNNY", "funny", ""],
         )
 
         payload = publisher.build_upload_payload(metadata)
@@ -255,9 +237,7 @@ class TestTenorPublisher:
     def test_upload_validation_failure(self, publisher):
         """Test upload fails with invalid metadata"""
         metadata = TenorUploadMetadata(
-            media_url="invalid_url",
-            title="Test",
-            tags=["test"]
+            media_url="invalid_url", title="Test", tags=["test"]
         )
 
         result = publisher.upload(metadata)
@@ -319,7 +299,7 @@ class TestTenorPublisher:
             TenorUploadMetadata(
                 media_url=f"https://example.com/test{i}.gif",
                 title=f"Test {i}",
-                tags=[f"tag{i}"]
+                tags=[f"tag{i}"],
             )
             for i in range(3)
         ]
@@ -334,15 +314,11 @@ class TestTenorPublisher:
         """Test batch upload handles individual failures"""
         uploads = [
             TenorUploadMetadata(
-                media_url="https://example.com/valid.gif",
-                title="Valid",
-                tags=["test"]
+                media_url="https://example.com/valid.gif", title="Valid", tags=["test"]
             ),
             TenorUploadMetadata(
-                media_url="invalid_url",
-                title="Invalid",
-                tags=["test"]
-            )
+                media_url="invalid_url", title="Invalid", tags=["test"]
+            ),
         ]
 
         results = publisher.batch_upload(uploads)
@@ -381,7 +357,7 @@ class TestTenorUploadMetadata:
         metadata = TenorUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test GIF",
-            tags=["funny", "test"]
+            tags=["funny", "test"],
         )
 
         assert metadata.media_url == "https://example.com/test.gif"
@@ -396,7 +372,7 @@ class TestTenorUploadMetadata:
             title="Test",
             tags=["test"],
             source_id="asset_123",
-            source_url="https://source.com/original"
+            source_url="https://source.com/original",
         )
 
         assert metadata.source_id == "asset_123"
@@ -408,10 +384,7 @@ class TestTenorIntegrationScenarios:
 
     @pytest.fixture
     def publisher(self):
-        return TenorPublisher(
-            api_key="test_key",
-            partner_id="test_partner"
-        )
+        return TenorPublisher(api_key="test_key", partner_id="test_partner")
 
     def test_complete_upload_workflow(self, publisher):
         """Test complete upload workflow from validation to result"""
@@ -419,7 +392,7 @@ class TestTenorIntegrationScenarios:
             media_url="https://cdn.example.com/funny-cat.gif",
             title="Funny Cat Reaction",
             tags=["cat", "funny", "reaction", "animal"],
-            source_id="asset_abc123"
+            source_id="asset_abc123",
         )
 
         # Validate
@@ -442,7 +415,7 @@ class TestTenorIntegrationScenarios:
         metadata = TenorUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test GIF",
-            tags=original_tags
+            tags=original_tags,
         )
 
         # Format tags
@@ -462,7 +435,7 @@ class TestTenorIntegrationScenarios:
             media_url="https://example.com/test.gif",
             title="Test",
             tags=["test"],
-            content_rating=TenorContentRating.MEDIUM
+            content_rating=TenorContentRating.MEDIUM,
         )
 
         # Should fail validation in SFW mode

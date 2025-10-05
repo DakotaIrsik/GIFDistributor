@@ -1,6 +1,7 @@
 """
 Tests for SFW-only Moderation Pipeline & Audit
 """
+
 import pytest
 import time
 from moderation import (
@@ -10,7 +11,7 @@ from moderation import (
     ContentCategory,
     ModerationResult,
     AuditEntry,
-    ModerationError
+    ModerationError,
 )
 
 
@@ -29,7 +30,7 @@ class TestContentScanner:
         category, confidence, reasons = scanner.scan_metadata(
             title="Cute Cat GIF",
             tags=["cat", "funny", "cute"],
-            description="A funny cat playing with yarn"
+            description="A funny cat playing with yarn",
         )
         assert category == ContentCategory.SAFE
         assert confidence > 0.9
@@ -39,9 +40,7 @@ class TestContentScanner:
         """Test NSFW keyword detection in metadata"""
         scanner = ContentScanner()
         category, confidence, reasons = scanner.scan_metadata(
-            title="Adult Content",
-            tags=["nsfw"],
-            description="Explicit material"
+            title="Adult Content", tags=["nsfw"], description="Explicit material"
         )
         assert category == ContentCategory.NSFW
         assert confidence > 0.9
@@ -51,8 +50,7 @@ class TestContentScanner:
         """Test violence keyword detection"""
         scanner = ContentScanner()
         category, confidence, reasons = scanner.scan_metadata(
-            title="Graphic Violence",
-            tags=["gore", "brutal"]
+            title="Graphic Violence", tags=["gore", "brutal"]
         )
         assert category == ContentCategory.GRAPHIC_VIOLENCE
         assert confidence > 0.8
@@ -61,8 +59,7 @@ class TestContentScanner:
         """Test hate speech keyword detection"""
         scanner = ContentScanner()
         category, confidence, reasons = scanner.scan_metadata(
-            title="Hate Speech Example",
-            tags=["hate"]
+            title="Hate Speech Example", tags=["hate"]
         )
         assert category == ContentCategory.HATE_SPEECH
         assert confidence > 0.9
@@ -79,9 +76,13 @@ class TestContentScanner:
         scanner = ContentScanner()
         category, confidence, reasons = scanner.scan_visual_content(
             file_path="/path/to/safe.gif",
-            file_hash="a" * 64  # Hash that results in safe content
+            file_hash="a" * 64,  # Hash that results in safe content
         )
-        assert category in [ContentCategory.SAFE, ContentCategory.NSFW, ContentCategory.UNKNOWN]
+        assert category in [
+            ContentCategory.SAFE,
+            ContentCategory.NSFW,
+            ContentCategory.UNKNOWN,
+        ]
         assert 0.0 <= confidence <= 1.0
         assert len(reasons) > 0
 
@@ -92,9 +93,7 @@ class TestModerationPipeline:
     def test_pipeline_init(self):
         """Test pipeline initialization"""
         pipeline = ModerationPipeline(
-            strict_mode=True,
-            auto_approve_threshold=0.95,
-            auto_reject_threshold=0.80
+            strict_mode=True, auto_approve_threshold=0.95, auto_reject_threshold=0.80
         )
         assert pipeline.strict_mode is True
         assert pipeline.auto_approve_threshold == 0.95
@@ -109,12 +108,12 @@ class TestModerationPipeline:
             file_hash="a" * 64,
             title="Cute Cat",
             tags=["cat", "funny"],
-            description="A cute cat GIF"
+            description="A cute cat GIF",
         )
         assert isinstance(result, ModerationResult)
         assert result.decision in [
             ModerationDecision.APPROVED,
-            ModerationDecision.FLAGGED
+            ModerationDecision.FLAGGED,
         ]
         assert result.scan_id
         assert result.timestamp
@@ -127,7 +126,7 @@ class TestModerationPipeline:
             file_path="/path/to/content.gif",
             file_hash="b" * 64,
             title="NSFW Content",
-            tags=["adult", "explicit"]
+            tags=["adult", "explicit"],
         )
         assert result.decision == ModerationDecision.REJECTED
         assert result.category == ContentCategory.NSFW
@@ -140,7 +139,7 @@ class TestModerationPipeline:
             asset_id="asset789",
             file_path="/path/to/test.gif",
             file_hash="c" * 64,
-            title="Test Content"
+            title="Test Content",
         )
         audit_trail = pipeline.get_audit_trail()
         assert len(audit_trail) > 0
@@ -153,7 +152,7 @@ class TestModerationPipeline:
             asset_id="asset999",
             file_path="/path/to/test.gif",
             file_hash="d" * 64,
-            title="Test Content"
+            title="Test Content",
         )
         audit_trail = pipeline.get_audit_trail()
         assert len(audit_trail) == 0
@@ -167,7 +166,7 @@ class TestModerationPipeline:
             asset_id="asset321",
             file_path="/path/to/flagged.gif",
             file_hash="e" * 64,
-            title="Borderline Content"
+            title="Borderline Content",
         )
 
         # Then manually review
@@ -176,7 +175,7 @@ class TestModerationPipeline:
             scan_id=result.scan_id,
             decision=ModerationDecision.APPROVED,
             reviewer_id="moderator123",
-            notes="Reviewed and approved by human moderator"
+            notes="Reviewed and approved by human moderator",
         )
 
         assert isinstance(manual_entry, AuditEntry)
@@ -192,14 +191,14 @@ class TestModerationPipeline:
             asset_id="asset_a",
             file_path="/path/to/a.gif",
             file_hash="f" * 64,
-            title="Content A"
+            title="Content A",
         )
 
         pipeline.moderate_content(
             asset_id="asset_b",
             file_path="/path/to/b.gif",
             file_hash="g" * 64,
-            title="Content B"
+            title="Content B",
         )
 
         trail_a = pipeline.get_audit_trail(asset_id="asset_a")
@@ -215,7 +214,7 @@ class TestModerationPipeline:
             asset_id="safe_asset",
             file_path="/path/to/safe.gif",
             file_hash="h" * 64,
-            title="Safe Content"
+            title="Safe Content",
         )
 
         # Moderate NSFW content
@@ -224,7 +223,7 @@ class TestModerationPipeline:
             file_path="/path/to/nsfw.gif",
             file_hash="i" * 64,
             title="NSFW Content",
-            tags=["adult"]
+            tags=["adult"],
         )
 
         rejected = pipeline.get_audit_trail(decision=ModerationDecision.REJECTED)
@@ -239,8 +238,8 @@ class TestModerationPipeline:
             pipeline.moderate_content(
                 asset_id=f"asset_{i}",
                 file_path=f"/path/to/{i}.gif",
-                file_hash=chr(ord('a') + i) * 64,
-                title=f"Content {i}"
+                file_hash=chr(ord("a") + i) * 64,
+                title=f"Content {i}",
             )
 
         stats = pipeline.get_statistics()
@@ -258,7 +257,7 @@ class TestModerationPipeline:
             asset_id="temp_asset",
             file_path="/path/to/temp.gif",
             file_hash="j" * 64,
-            title="Temp Content"
+            title="Temp Content",
         )
 
         assert len(pipeline.get_audit_trail()) > 0
@@ -274,14 +273,14 @@ class TestModerationPipeline:
             asset_id="keep_asset",
             file_path="/path/to/keep.gif",
             file_hash="k" * 64,
-            title="Keep This"
+            title="Keep This",
         )
 
         pipeline.moderate_content(
             asset_id="delete_asset",
             file_path="/path/to/delete.gif",
             file_hash="l" * 64,
-            title="Delete This"
+            title="Delete This",
         )
 
         pipeline.clear_audit_trail(asset_id="delete_asset")
@@ -298,7 +297,7 @@ class TestModerationPipeline:
             asset_id="export_test",
             file_path="/path/to/export.gif",
             file_hash="m" * 64,
-            title="Export Test"
+            title="Export Test",
         )
 
         exported = pipeline.export_audit_trail()
@@ -317,7 +316,7 @@ class TestModerationPipeline:
             asset_id="asset1",
             file_path="/path/to/1.gif",
             file_hash="n" * 64,
-            title="Content 1"
+            title="Content 1",
         )
 
         time.sleep(0.01)  # Ensure different timestamp
@@ -326,7 +325,7 @@ class TestModerationPipeline:
             asset_id="asset2",
             file_path="/path/to/2.gif",
             file_hash="o" * 64,
-            title="Content 2"
+            title="Content 2",
         )
 
         assert result1.scan_id != result2.scan_id
@@ -343,13 +342,13 @@ class TestModerationDecisions:
             asset_id="high_conf_safe",
             file_path="/path/to/safe.gif",
             file_hash="a" * 64,  # Hash that results in high confidence safe
-            title="Safe Content"
+            title="Safe Content",
         )
 
         # Should be approved or flagged (depends on hash simulation)
         assert result.decision in [
             ModerationDecision.APPROVED,
-            ModerationDecision.FLAGGED
+            ModerationDecision.FLAGGED,
         ]
 
     def test_flag_low_confidence(self):
@@ -361,13 +360,13 @@ class TestModerationDecisions:
             asset_id="medium_conf",
             file_path="/path/to/medium.gif",
             file_hash="f" * 8 + "97" + "0" * 54,  # Hash engineered for flagging
-            title="Medium Confidence Content"
+            title="Medium Confidence Content",
         )
 
         # Should be flagged for manual review or approved with lower threshold
         assert result.decision in [
             ModerationDecision.APPROVED,
-            ModerationDecision.FLAGGED
+            ModerationDecision.FLAGGED,
         ]
 
     def test_auto_reject_high_confidence_nsfw(self):
@@ -379,7 +378,7 @@ class TestModerationDecisions:
             file_path="/path/to/nsfw.gif",
             file_hash="b" * 64,
             title="Explicit Content",
-            tags=["nsfw", "adult"]
+            tags=["nsfw", "adult"],
         )
 
         assert result.decision == ModerationDecision.REJECTED
@@ -397,7 +396,7 @@ class TestAuditCompliance:
             asset_id="compliance_test",
             file_path="/path/to/test.gif",
             file_hash="p" * 64,
-            title="Compliance Test"
+            title="Compliance Test",
         )
 
         trail = pipeline.get_audit_trail()
@@ -421,7 +420,7 @@ class TestAuditCompliance:
             asset_id="time_test",
             file_path="/path/to/test.gif",
             file_hash="q" * 64,
-            title="Time Test"
+            title="Time Test",
         )
 
         from datetime import datetime, timedelta, timezone
@@ -450,7 +449,7 @@ class TestEdgeCases:
             file_hash="r" * 64,
             title="",
             tags=[],
-            description=""
+            description="",
         )
 
         assert isinstance(result, ModerationResult)
@@ -465,7 +464,7 @@ class TestEdgeCases:
             file_path="/path/to/content.gif",
             file_hash="s" * 64,
             title="Test",
-            tags=None
+            tags=None,
         )
 
         assert isinstance(result, ModerationResult)
@@ -484,7 +483,7 @@ class TestEdgeCases:
             file_hash="t" * 64,
             title=long_title,
             tags=long_tags,
-            description=long_desc
+            description=long_desc,
         )
 
         assert isinstance(result, ModerationResult)
@@ -499,7 +498,7 @@ class TestEdgeCases:
             file_hash="u" * 64,
             title="Test 中文 🎨 Special",
             tags=["emoji😀", "unicode中文"],
-            description="Special chars: @#$%^&*()"
+            description="Special chars: @#$%^&*()",
         )
 
         assert isinstance(result, ModerationResult)
@@ -513,8 +512,8 @@ class TestEdgeCases:
             pipeline.moderate_content(
                 asset_id=f"limit_test_{i}",
                 file_path=f"/path/to/{i}.gif",
-                file_hash=chr(ord('a') + (i % 26)) * 64,
-                title=f"Content {i}"
+                file_hash=chr(ord("a") + (i % 26)) * 64,
+                title=f"Content {i}",
             )
 
         # Get only last 5

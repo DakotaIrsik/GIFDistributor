@@ -1,6 +1,7 @@
 """
 Tests for Rate Limiting Module
 """
+
 import pytest
 import time
 from ratelimit import (
@@ -10,7 +11,7 @@ from ratelimit import (
     RateLimitError,
     TokenBucket,
     FixedWindow,
-    SlidingWindow
+    SlidingWindow,
 )
 
 
@@ -154,7 +155,7 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=100,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
         assert limiter.config == config
@@ -164,7 +165,7 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -184,7 +185,7 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -202,7 +203,7 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -219,7 +220,7 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -231,7 +232,7 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=5,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -248,20 +249,20 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
         limiter.check_rate_limit(ip_address="192.168.1.1", count=3)
         quota = limiter.get_remaining_quota(ip_address="192.168.1.1")
-        assert quota['ip'] == 7
+        assert quota["ip"] == 7
 
     def test_reset_limits(self):
         """Test resetting rate limits"""
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -281,7 +282,7 @@ class TestRateLimiterTokenBucket:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -302,7 +303,7 @@ class TestRateLimiterFixedWindow:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=1,
-            strategy=RateLimitStrategy.FIXED_WINDOW
+            strategy=RateLimitStrategy.FIXED_WINDOW,
         )
         limiter = RateLimiter(config)
 
@@ -331,7 +332,7 @@ class TestRateLimiterSlidingWindow:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=1,
-            strategy=RateLimitStrategy.SLIDING_WINDOW
+            strategy=RateLimitStrategy.SLIDING_WINDOW,
         )
         limiter = RateLimiter(config)
 
@@ -360,7 +361,7 @@ class TestRateLimiterEdgeCases:
         config = RateLimitConfig(
             requests_per_window=5,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -377,7 +378,7 @@ class TestRateLimiterEdgeCases:
         config = RateLimitConfig(
             requests_per_window=5,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -394,7 +395,7 @@ class TestRateLimiterEdgeCases:
         config = RateLimitConfig(
             requests_per_window=5,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config, enable_per_ip=False)
 
@@ -408,7 +409,7 @@ class TestRateLimiterEdgeCases:
         config = RateLimitConfig(
             requests_per_window=5,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config, enable_per_user=False)
 
@@ -422,7 +423,7 @@ class TestRateLimiterEdgeCases:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -431,14 +432,14 @@ class TestRateLimiterEdgeCases:
         assert allowed is True
 
         quota = limiter.get_remaining_quota(ip_address="192.168.1.1")
-        assert quota['ip'] == 5
+        assert quota["ip"] == 5
 
     def test_both_ip_and_user_limits(self):
         """Test both IP and user limits enforced"""
         config = RateLimitConfig(
             requests_per_window=5,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -447,7 +448,9 @@ class TestRateLimiterEdgeCases:
             limiter.check_rate_limit(ip_address="192.168.1.1", user_id="user123")
 
         # Both IP and user should be blocked
-        allowed, _ = limiter.check_rate_limit(ip_address="192.168.1.1", user_id="user456")
+        allowed, _ = limiter.check_rate_limit(
+            ip_address="192.168.1.1", user_id="user456"
+        )
         assert allowed is False
 
 
@@ -459,7 +462,7 @@ class TestRateLimitConfig:
         config = RateLimitConfig(
             requests_per_window=100,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         assert config.requests_per_window == 100
         assert config.window_seconds == 60
@@ -467,10 +470,7 @@ class TestRateLimitConfig:
 
     def test_config_default_strategy(self):
         """Test default strategy is token bucket"""
-        config = RateLimitConfig(
-            requests_per_window=100,
-            window_seconds=60
-        )
+        config = RateLimitConfig(requests_per_window=100, window_seconds=60)
         assert config.strategy == RateLimitStrategy.TOKEN_BUCKET
 
 
@@ -483,31 +483,25 @@ class TestIntegration:
         config = RateLimitConfig(
             requests_per_window=100,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
         # Simulate 50 API calls
         for i in range(50):
-            limiter.enforce_rate_limit(
-                ip_address="192.168.1.1",
-                user_id="user123"
-            )
+            limiter.enforce_rate_limit(ip_address="192.168.1.1", user_id="user123")
 
         # Check remaining quota
-        quota = limiter.get_remaining_quota(
-            ip_address="192.168.1.1",
-            user_id="user123"
-        )
-        assert quota['ip'] == 50
-        assert quota['user'] == 50
+        quota = limiter.get_remaining_quota(ip_address="192.168.1.1", user_id="user123")
+        assert quota["ip"] == 50
+        assert quota["user"] == 50
 
     def test_burst_protection(self):
         """Test protection against burst traffic"""
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=60,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 
@@ -526,7 +520,7 @@ class TestIntegration:
         config = RateLimitConfig(
             requests_per_window=10,
             window_seconds=1,
-            strategy=RateLimitStrategy.TOKEN_BUCKET
+            strategy=RateLimitStrategy.TOKEN_BUCKET,
         )
         limiter = RateLimiter(config)
 

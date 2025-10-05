@@ -28,6 +28,7 @@ import json
 
 class JobStatus(Enum):
     """Job execution status"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -37,6 +38,7 @@ class JobStatus(Enum):
 
 class JobPriority(Enum):
     """Job priority levels (lower number = higher priority)"""
+
     CRITICAL = 1
     HIGH = 2
     NORMAL = 3
@@ -46,6 +48,7 @@ class JobPriority(Enum):
 @dataclass
 class MediaJob:
     """Media processing job"""
+
     job_id: str
     job_type: str  # 'transcode', 'frame_sample', 'thumbnail', etc.
     input_path: str
@@ -70,6 +73,7 @@ class MediaJob:
 @dataclass
 class WorkerMetrics:
     """Worker pool metrics"""
+
     active_workers: int = 0
     idle_workers: int = 0
     total_jobs_processed: int = 0
@@ -94,21 +98,23 @@ class FFmpegRuntime:
                 [self.ffmpeg_path, "-version"],
                 capture_output=True,
                 check=True,
-                timeout=5
+                timeout=5,
             )
             subprocess.run(
                 [self.ffprobe_path, "-version"],
                 capture_output=True,
                 check=True,
-                timeout=5
+                timeout=5,
             )
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ) as e:
             raise RuntimeError(f"ffmpeg/ffprobe not found or invalid: {e}")
 
     def execute_ffmpeg(
-        self,
-        args: List[str],
-        timeout_seconds: int = 300
+        self, args: List[str], timeout_seconds: int = 300
     ) -> tuple[int, str, str]:
         """
         Execute ffmpeg command with timeout
@@ -128,7 +134,7 @@ class FFmpegRuntime:
                 capture_output=True,
                 text=True,
                 timeout=timeout_seconds,
-                check=False
+                check=False,
             )
             return result.returncode, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
@@ -146,20 +152,18 @@ class FFmpegRuntime:
         """
         cmd = [
             self.ffprobe_path,
-            "-v", "quiet",
-            "-print_format", "json",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
             "-show_format",
             "-show_streams",
-            file_path
+            file_path,
         ]
 
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30,
-                check=True
+                cmd, capture_output=True, text=True, timeout=30, check=True
             )
             return json.loads(result.stdout)
         except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
@@ -176,7 +180,7 @@ class MediaJobWorker(threading.Thread):
         runtime: FFmpegRuntime,
         jobs_dict: Dict[str, MediaJob],
         lock: threading.Lock,
-        stop_event: threading.Event
+        stop_event: threading.Event,
     ):
         super().__init__(daemon=True)
         self.worker_id = worker_id
@@ -239,8 +243,7 @@ class MediaJobWorker(threading.Thread):
         """
         try:
             returncode, stdout, stderr = self.runtime.execute_ffmpeg(
-                job.ffmpeg_args,
-                timeout_seconds=job.timeout_seconds
+                job.ffmpeg_args, timeout_seconds=job.timeout_seconds
             )
 
             if returncode != 0:
@@ -275,7 +278,7 @@ class MediaJobQueue:
         min_workers: int = 2,
         max_workers: int = 10,
         scale_up_threshold: int = 5,
-        scale_down_threshold: int = 2
+        scale_down_threshold: int = 2,
     ):
         """
         Initialize media job queue
@@ -306,8 +309,7 @@ class MediaJobQueue:
 
         # Start autoscaler thread
         self.autoscaler_thread = threading.Thread(
-            target=self._autoscaler_loop,
-            daemon=True
+            target=self._autoscaler_loop, daemon=True
         )
         self.autoscaler_thread.start()
 
@@ -319,7 +321,7 @@ class MediaJobQueue:
         ffmpeg_args: List[str],
         priority: JobPriority = JobPriority.NORMAL,
         timeout_seconds: int = 300,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Submit a media processing job
@@ -346,7 +348,7 @@ class MediaJobQueue:
             ffmpeg_args=ffmpeg_args,
             priority=priority,
             timeout_seconds=timeout_seconds,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         with self.lock:
@@ -391,7 +393,8 @@ class MediaJobQueue:
 
             # Calculate average job duration
             completed_jobs = [
-                j for j in self.jobs.values()
+                j
+                for j in self.jobs.values()
                 if j.status == JobStatus.COMPLETED and j.started_at and j.completed_at
             ]
             if completed_jobs:
@@ -426,7 +429,7 @@ class MediaJobQueue:
                     runtime=self.runtime,
                     jobs_dict=self.jobs,
                     lock=self.lock,
-                    stop_event=self.stop_event
+                    stop_event=self.stop_event,
                 )
                 worker.start()
                 self.workers.append(worker)
@@ -445,13 +448,19 @@ class MediaJobQueue:
             current_workers = len(self.workers)
 
             # Scale up if queue is growing
-            if queue_size > self.scale_up_threshold and current_workers < self.max_workers:
+            if (
+                queue_size > self.scale_up_threshold
+                and current_workers < self.max_workers
+            ):
                 new_count = min(current_workers + 2, self.max_workers)
                 with self.lock:
                     self._scale_workers(new_count)
 
             # Scale down if queue is small
-            elif queue_size < self.scale_down_threshold and current_workers > self.min_workers:
+            elif (
+                queue_size < self.scale_down_threshold
+                and current_workers > self.min_workers
+            ):
                 new_count = max(current_workers - 1, self.min_workers)
                 with self.lock:
                     self._scale_workers(new_count)
@@ -476,6 +485,7 @@ class MediaJobQueue:
 
 # Convenience functions for common media operations
 
+
 def create_transcode_job(
     queue: MediaJobQueue,
     input_path: str,
@@ -483,16 +493,20 @@ def create_transcode_job(
     video_codec: str = "libx264",
     audio_codec: str = "aac",
     bitrate: str = "1M",
-    priority: JobPriority = JobPriority.NORMAL
+    priority: JobPriority = JobPriority.NORMAL,
 ) -> str:
     """Create a video transcoding job"""
     ffmpeg_args = [
-        "-i", input_path,
-        "-c:v", video_codec,
-        "-c:a", audio_codec,
-        "-b:v", bitrate,
+        "-i",
+        input_path,
+        "-c:v",
+        video_codec,
+        "-c:a",
+        audio_codec,
+        "-b:v",
+        bitrate,
         "-y",  # Overwrite output
-        output_path
+        output_path,
     ]
 
     return queue.submit_job(
@@ -501,7 +515,11 @@ def create_transcode_job(
         output_path=output_path,
         ffmpeg_args=ffmpeg_args,
         priority=priority,
-        metadata={"video_codec": video_codec, "audio_codec": audio_codec, "bitrate": bitrate}
+        metadata={
+            "video_codec": video_codec,
+            "audio_codec": audio_codec,
+            "bitrate": bitrate,
+        },
     )
 
 
@@ -511,16 +529,20 @@ def create_thumbnail_job(
     output_path: str,
     timestamp: str = "00:00:01",
     width: int = 320,
-    priority: JobPriority = JobPriority.NORMAL
+    priority: JobPriority = JobPriority.NORMAL,
 ) -> str:
     """Create a thumbnail extraction job"""
     ffmpeg_args = [
-        "-i", input_path,
-        "-ss", timestamp,
-        "-vframes", "1",
-        "-vf", f"scale={width}:-1",
+        "-i",
+        input_path,
+        "-ss",
+        timestamp,
+        "-vframes",
+        "1",
+        "-vf",
+        f"scale={width}:-1",
         "-y",
-        output_path
+        output_path,
     ]
 
     return queue.submit_job(
@@ -529,5 +551,5 @@ def create_thumbnail_job(
         output_path=output_path,
         ffmpeg_args=ffmpeg_args,
         priority=priority,
-        metadata={"timestamp": timestamp, "width": width}
+        metadata={"timestamp": timestamp, "width": width},
     )

@@ -3,6 +3,7 @@ Analytics Module for GIF Distributor
 Tracks views, plays, CTR by platform
 Issue: #33
 """
+
 from typing import Dict, List, Optional
 from datetime import datetime
 from collections import defaultdict
@@ -11,6 +12,7 @@ from enum import Enum
 
 class EventType(Enum):
     """Types of analytics events"""
+
     VIEW = "view"  # Link was viewed (page loaded)
     PLAY = "play"  # Media was played
     CLICK = "click"  # Link was clicked through
@@ -18,6 +20,7 @@ class EventType(Enum):
 
 class Platform(Enum):
     """Platforms where content can be shared"""
+
     WEB = "web"
     SLACK = "slack"
     DISCORD = "discord"
@@ -40,7 +43,7 @@ class AnalyticsTracker:
         event_type: EventType,
         platform: Platform = Platform.WEB,
         short_code: Optional[str] = None,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Dict:
         """
         Track an analytics event
@@ -61,7 +64,7 @@ class AnalyticsTracker:
             "platform": platform.value,
             "short_code": short_code,
             "timestamp": datetime.utcnow().isoformat(),
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
         self._events.append(event)
 
@@ -89,7 +92,9 @@ class AnalyticsTracker:
 
         views = sum(1 for e in asset_events if e["event_type"] == EventType.VIEW.value)
         plays = sum(1 for e in asset_events if e["event_type"] == EventType.PLAY.value)
-        clicks = sum(1 for e in asset_events if e["event_type"] == EventType.CLICK.value)
+        clicks = sum(
+            1 for e in asset_events if e["event_type"] == EventType.CLICK.value
+        )
 
         # Calculate CTR (Click-Through Rate): clicks / views
         ctr = (clicks / views * 100) if views > 0 else 0.0
@@ -104,7 +109,7 @@ class AnalyticsTracker:
             "clicks": clicks,
             "ctr": round(ctr, 2),
             "play_rate": round(play_rate, 2),
-            "total_events": len(asset_events)
+            "total_events": len(asset_events),
         }
 
         # Cache the result
@@ -148,7 +153,7 @@ class AnalyticsTracker:
                 "plays": plays,
                 "clicks": clicks,
                 "ctr": round((clicks / views * 100) if views > 0 else 0.0, 2),
-                "play_rate": round((plays / views * 100) if views > 0 else 0.0, 2)
+                "play_rate": round((plays / views * 100) if views > 0 else 0.0, 2),
             }
 
         return result
@@ -172,7 +177,7 @@ class AnalyticsTracker:
                 "plays": 0,
                 "clicks": 0,
                 "ctr": 0.0,
-                "play_rate": 0.0
+                "play_rate": 0.0,
             }
 
         views = sum(1 for e in link_events if e["event_type"] == EventType.VIEW.value)
@@ -186,7 +191,7 @@ class AnalyticsTracker:
             "plays": plays,
             "clicks": clicks,
             "ctr": round((clicks / views * 100) if views > 0 else 0.0, 2),
-            "play_rate": round((plays / views * 100) if views > 0 else 0.0, 2)
+            "play_rate": round((plays / views * 100) if views > 0 else 0.0, 2),
         }
 
     def get_top_assets(self, metric: str = "views", limit: int = 10) -> List[Dict]:
@@ -208,9 +213,7 @@ class AnalyticsTracker:
 
         # Sort by the specified metric
         sorted_assets = sorted(
-            asset_metrics,
-            key=lambda x: x.get(metric, 0),
-            reverse=True
+            asset_metrics, key=lambda x: x.get(metric, 0), reverse=True
         )
 
         return sorted_assets[:limit]
@@ -219,7 +222,7 @@ class AnalyticsTracker:
         self,
         asset_id: str,
         start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        end_time: Optional[datetime] = None,
     ) -> List[Dict]:
         """
         Get events for an asset within a timeframe
@@ -236,13 +239,15 @@ class AnalyticsTracker:
 
         if start_time:
             asset_events = [
-                e for e in asset_events
+                e
+                for e in asset_events
                 if datetime.fromisoformat(e["timestamp"]) >= start_time
             ]
 
         if end_time:
             asset_events = [
-                e for e in asset_events
+                e
+                for e in asset_events
                 if datetime.fromisoformat(e["timestamp"]) <= end_time
             ]
 

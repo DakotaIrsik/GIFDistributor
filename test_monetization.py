@@ -10,7 +10,7 @@ from monetization import (
     RevenueSource,
     RevenueEvent,
     AdRevenueMetrics,
-    WATERMARK_POLICY_REFERENCE
+    WATERMARK_POLICY_REFERENCE,
 )
 
 
@@ -30,7 +30,7 @@ class TestAdRevenueTracking:
             user_id="user_123",
             impressions=1000,
             clicks=25,
-            revenue_usd=5.50
+            revenue_usd=5.50,
         )
 
         assert event.source == RevenueSource.WEBSITE_ADS
@@ -78,10 +78,7 @@ class TestSubscriptionRevenue:
     def test_track_pro_subscription(self, tracker):
         """Test tracking Pro tier subscription"""
         event = tracker.track_subscription_revenue(
-            user_id="user_123",
-            tier="pro",
-            amount_usd=9.99,
-            billing_period="monthly"
+            user_id="user_123", tier="pro", amount_usd=9.99, billing_period="monthly"
         )
 
         assert event.source == RevenueSource.PRO_SUBSCRIPTION
@@ -92,10 +89,7 @@ class TestSubscriptionRevenue:
     def test_track_team_subscription(self, tracker):
         """Test tracking Team tier subscription"""
         event = tracker.track_subscription_revenue(
-            user_id="team_001",
-            tier="team",
-            amount_usd=49.99,
-            billing_period="monthly"
+            user_id="team_001", tier="team", amount_usd=49.99, billing_period="monthly"
         )
 
         assert event.source == RevenueSource.TEAM_SUBSCRIPTION
@@ -104,10 +98,7 @@ class TestSubscriptionRevenue:
     def test_annual_subscription(self, tracker):
         """Test tracking annual subscription"""
         event = tracker.track_subscription_revenue(
-            user_id="user_456",
-            tier="pro",
-            amount_usd=99.99,
-            billing_period="annual"
+            user_id="user_456", tier="pro", amount_usd=99.99, billing_period="annual"
         )
 
         assert event.metadata["billing_period"] == "annual"
@@ -296,7 +287,10 @@ class TestWatermarkPolicy:
         assert policy["policy"] == "NO watermarks on media files"
         assert policy["module"] == "ads_manager"
         assert "monetization_strategy" in policy
-        assert policy["monetization_strategy"]["media_files"] == "Always clean, no watermarks, 100% shareable"
+        assert (
+            policy["monetization_strategy"]["media_files"]
+            == "Always clean, no watermarks, 100% shareable"
+        )
 
 
 class TestEdgeCases:
@@ -305,11 +299,7 @@ class TestEdgeCases:
     def test_zero_impressions_ctr(self, tracker):
         """Test CTR calculation with zero impressions"""
         event = tracker.track_ad_revenue(
-            ad_id="ad_001",
-            user_id="user_123",
-            impressions=0,
-            clicks=0,
-            revenue_usd=0.0
+            ad_id="ad_001", user_id="user_123", impressions=0, clicks=0, revenue_usd=0.0
         )
 
         assert event.metadata["ctr"] == 0.0

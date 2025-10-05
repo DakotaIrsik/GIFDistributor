@@ -7,7 +7,7 @@ from platform_renditions import (
     Platform,
     RenditionSpec,
     PlatformRenditions,
-    get_platform_constraints
+    get_platform_constraints,
 )
 
 
@@ -149,7 +149,7 @@ def test_rendition_spec_dataclass():
         max_file_size_mb=100,
         video_bitrate="2M",
         quality="high",
-        description="Custom spec"
+        description="Custom spec",
     )
 
     assert spec.platform == Platform.GENERIC
@@ -203,11 +203,15 @@ def test_bitrate_scaling():
     twitter_spec = PlatformRenditions.get_twitter_spec()
 
     # Discord (720p, medium) should have lower bitrate than Twitter (1200p, high)
-    discord_bitrate = int(discord_spec.video_bitrate.replace("k", "").replace("M", "000"))
-    twitter_bitrate = int(twitter_spec.video_bitrate.replace("M", "000").replace("k", ""))
+    discord_bitrate = int(
+        discord_spec.video_bitrate.replace("k", "").replace("M", "000")
+    )
+    twitter_bitrate = int(
+        twitter_spec.video_bitrate.replace("M", "000").replace("k", "")
+    )
 
     assert discord_bitrate < twitter_bitrate
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

@@ -3,6 +3,7 @@ Unit tests for GIPHY Publisher Module
 Tests channel management, upload validation, and programmatic upload
 Issue: #12
 """
+
 import pytest
 from giphy_publisher import (
     GiphyPublisher,
@@ -10,7 +11,7 @@ from giphy_publisher import (
     GiphyContentRating,
     GiphyUploadResult,
     GiphyChannel,
-    GiphyChannelType
+    GiphyChannelType,
 )
 
 
@@ -21,9 +22,7 @@ class TestGiphyPublisher:
     def publisher(self):
         """Create a test publisher instance"""
         return GiphyPublisher(
-            api_key="test_api_key_123",
-            username="testuser",
-            sfw_only=True
+            api_key="test_api_key_123", username="testuser", sfw_only=True
         )
 
     @pytest.fixture
@@ -34,7 +33,7 @@ class TestGiphyPublisher:
             title="Test GIF",
             tags=["funny", "reaction", "test"],
             content_rating=GiphyContentRating.G,
-            source_url="https://example.com/source"
+            source_url="https://example.com/source",
         )
 
     @pytest.fixture
@@ -46,15 +45,12 @@ class TestGiphyPublisher:
             channel_type=GiphyChannelType.BRAND,
             slug="test-channel",
             description="A test channel",
-            is_verified=False
+            is_verified=False,
         )
 
     def test_publisher_initialization(self):
         """Test publisher is initialized correctly"""
-        publisher = GiphyPublisher(
-            api_key="key123",
-            username="testuser"
-        )
+        publisher = GiphyPublisher(api_key="key123", username="testuser")
 
         assert publisher.api_key == "key123"
         assert publisher.username == "testuser"
@@ -64,9 +60,7 @@ class TestGiphyPublisher:
     def test_publisher_custom_base_url(self):
         """Test publisher with custom base URL"""
         publisher = GiphyPublisher(
-            api_key="key",
-            username="user",
-            base_url="https://custom.api.com/v2/"
+            api_key="key", username="user", base_url="https://custom.api.com/v2/"
         )
 
         assert publisher.base_url == "https://custom.api.com/v2"
@@ -81,9 +75,7 @@ class TestGiphyPublisher:
     def test_validate_metadata_invalid_url(self, publisher):
         """Test validation fails with invalid URL"""
         metadata = GiphyUploadMetadata(
-            media_url="not_a_url",
-            title="Test",
-            tags=["tag1"]
+            media_url="not_a_url", title="Test", tags=["tag1"]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -94,9 +86,7 @@ class TestGiphyPublisher:
     def test_validate_metadata_empty_title(self, publisher):
         """Test validation fails with empty title"""
         metadata = GiphyUploadMetadata(
-            media_url="https://example.com/test.gif",
-            title="",
-            tags=["tag1"]
+            media_url="https://example.com/test.gif", title="", tags=["tag1"]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -107,9 +97,7 @@ class TestGiphyPublisher:
     def test_validate_metadata_title_too_long(self, publisher):
         """Test validation fails with title exceeding 140 characters"""
         metadata = GiphyUploadMetadata(
-            media_url="https://example.com/test.gif",
-            title="a" * 141,
-            tags=["tag1"]
+            media_url="https://example.com/test.gif", title="a" * 141, tags=["tag1"]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -120,9 +108,7 @@ class TestGiphyPublisher:
     def test_validate_metadata_no_tags(self, publisher):
         """Test validation fails with no tags"""
         metadata = GiphyUploadMetadata(
-            media_url="https://example.com/test.gif",
-            title="Test",
-            tags=[]
+            media_url="https://example.com/test.gif", title="Test", tags=[]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -135,7 +121,7 @@ class TestGiphyPublisher:
         metadata = GiphyUploadMetadata(
             media_url="https://example.com/test.gif",
             title="Test",
-            tags=[f"tag{i}" for i in range(26)]
+            tags=[f"tag{i}" for i in range(26)],
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -146,9 +132,7 @@ class TestGiphyPublisher:
     def test_validate_metadata_tag_too_long(self, publisher):
         """Test validation fails with tag exceeding 50 characters"""
         metadata = GiphyUploadMetadata(
-            media_url="https://example.com/test.gif",
-            title="Test",
-            tags=["a" * 51]
+            media_url="https://example.com/test.gif", title="Test", tags=["a" * 51]
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -162,7 +146,7 @@ class TestGiphyPublisher:
             media_url="https://example.com/test.gif",
             title="Test",
             tags=["tag1"],
-            content_rating=GiphyContentRating.R
+            content_rating=GiphyContentRating.R,
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -176,7 +160,7 @@ class TestGiphyPublisher:
             media_url="https://example.com/test.gif",
             title="Test",
             tags=["tag1"],
-            content_rating=GiphyContentRating.PG
+            content_rating=GiphyContentRating.PG,
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -190,7 +174,7 @@ class TestGiphyPublisher:
             media_url="https://example.com/test.gif",
             title="Test",
             tags=["tag1"],
-            channel_id="nonexistent_channel"
+            channel_id="nonexistent_channel",
         )
 
         is_valid, error = publisher.validate_metadata(metadata)
@@ -244,7 +228,7 @@ class TestGiphyPublisher:
             channel_id="",
             display_name="",
             channel_type=GiphyChannelType.BRAND,
-            slug="test"
+            slug="test",
         )
 
         result = publisher.create_channel(channel)
@@ -272,7 +256,7 @@ class TestGiphyPublisher:
             channel_id="channel_456",
             display_name="Second Channel",
             channel_type=GiphyChannelType.ARTIST,
-            slug="second-channel"
+            slug="second-channel",
         )
 
         publisher.create_channel(test_channel)
@@ -295,7 +279,9 @@ class TestGiphyPublisher:
         assert payload["username"] == publisher.username
         assert "tags" in payload
 
-    def test_build_upload_payload_with_channel(self, publisher, valid_metadata, test_channel):
+    def test_build_upload_payload_with_channel(
+        self, publisher, valid_metadata, test_channel
+    ):
         """Test building upload payload with channel"""
         publisher.create_channel(test_channel)
         valid_metadata.channel_id = test_channel.channel_id
@@ -327,11 +313,7 @@ class TestGiphyPublisher:
 
     def test_upload_validation_failure(self, publisher):
         """Test upload fails with invalid metadata"""
-        metadata = GiphyUploadMetadata(
-            media_url="invalid",
-            title="Test",
-            tags=["tag1"]
-        )
+        metadata = GiphyUploadMetadata(media_url="invalid", title="Test", tags=["tag1"])
 
         result = publisher.upload(metadata)
 
@@ -394,7 +376,7 @@ class TestGiphyPublisher:
             GiphyUploadMetadata(
                 media_url=f"https://example.com/test{i}.gif",
                 title=f"Test {i}",
-                tags=["test", f"batch{i}"]
+                tags=["test", f"batch{i}"],
             )
             for i in range(3)
         ]
@@ -409,20 +391,16 @@ class TestGiphyPublisher:
         """Test batch upload with some invalid items"""
         uploads = [
             GiphyUploadMetadata(
-                media_url="https://example.com/test1.gif",
-                title="Valid",
-                tags=["test"]
+                media_url="https://example.com/test1.gif", title="Valid", tags=["test"]
             ),
             GiphyUploadMetadata(
-                media_url="invalid_url",
-                title="Invalid",
-                tags=["test"]
+                media_url="invalid_url", title="Invalid", tags=["test"]
             ),
             GiphyUploadMetadata(
                 media_url="https://example.com/test2.gif",
                 title="Valid 2",
-                tags=["test"]
-            )
+                tags=["test"],
+            ),
         ]
 
         results = publisher.batch_upload(uploads)
@@ -462,9 +440,7 @@ class TestGiphyPublisher:
     def test_update_gif_metadata_success(self, publisher):
         """Test updating GIF metadata"""
         result = publisher.update_gif_metadata(
-            "test_id_123",
-            title="New Title",
-            tags=["new", "tags"]
+            "test_id_123", title="New Title", tags=["new", "tags"]
         )
 
         assert result is True
@@ -514,19 +490,19 @@ class TestGiphyPublisher:
             channel_id="brand_1",
             display_name="Brand Channel",
             channel_type=GiphyChannelType.BRAND,
-            slug="brand"
+            slug="brand",
         )
         artist_channel = GiphyChannel(
             channel_id="artist_1",
             display_name="Artist Channel",
             channel_type=GiphyChannelType.ARTIST,
-            slug="artist"
+            slug="artist",
         )
         community_channel = GiphyChannel(
             channel_id="community_1",
             display_name="Community Channel",
             channel_type=GiphyChannelType.COMMUNITY,
-            slug="community"
+            slug="community",
         )
 
         assert publisher.create_channel(brand_channel)
@@ -559,7 +535,7 @@ class TestGiphyPublisher:
             content_rating=GiphyContentRating.PG,
             channel_id=test_channel.channel_id,
             is_hidden=True,
-            is_private=True
+            is_private=True,
         )
 
         result = publisher.upload(metadata)
@@ -574,17 +550,14 @@ class TestGiphyPublisherIntegration:
     def test_full_upload_workflow(self):
         """Test complete upload workflow"""
         # Initialize publisher
-        publisher = GiphyPublisher(
-            api_key="integration_test_key",
-            username="testuser"
-        )
+        publisher = GiphyPublisher(api_key="integration_test_key", username="testuser")
 
         # Create a channel
         channel = GiphyChannel(
             channel_id="test_channel",
             display_name="Integration Test Channel",
             channel_type=GiphyChannelType.BRAND,
-            slug="integration-test"
+            slug="integration-test",
         )
         publisher.create_channel(channel)
 
@@ -593,7 +566,7 @@ class TestGiphyPublisherIntegration:
             media_url="https://example.com/integration.gif",
             title="Integration Test GIF",
             tags=["integration", "test", "automation"],
-            channel_id=channel.channel_id
+            channel_id=channel.channel_id,
         )
 
         # Upload
@@ -613,10 +586,7 @@ class TestGiphyPublisherIntegration:
 
     def test_workflow_with_tag_optimization(self):
         """Test workflow with tag formatting and reach estimation"""
-        publisher = GiphyPublisher(
-            api_key="test_key",
-            username="testuser"
-        )
+        publisher = GiphyPublisher(api_key="test_key", username="testuser")
 
         # Analyze tags
         original_tags = ["Funny Cat", "REACTION", "Cute Animals"]
@@ -627,7 +597,7 @@ class TestGiphyPublisherIntegration:
         metadata = GiphyUploadMetadata(
             media_url="https://example.com/optimized.gif",
             title="Tag Optimized GIF",
-            tags=formatted_tags
+            tags=formatted_tags,
         )
 
         result = publisher.upload(metadata)

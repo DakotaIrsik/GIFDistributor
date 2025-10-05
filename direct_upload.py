@@ -28,6 +28,7 @@ from pathlib import Path
 
 class UploadMethod(str, Enum):
     """Upload method types"""
+
     DIRECT = "direct"  # Direct single upload
     MULTIPART = "multipart"  # Chunked multipart upload
     RESUMABLE = "resumable"  # Resumable chunked upload
@@ -35,6 +36,7 @@ class UploadMethod(str, Enum):
 
 class UploadStatus(str, Enum):
     """Upload session status"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -45,6 +47,7 @@ class UploadStatus(str, Enum):
 @dataclass
 class ChunkMetadata:
     """Metadata for upload chunks"""
+
     chunk_number: int
     chunk_size: int
     chunk_hash: str  # SHA-256 of chunk
@@ -55,6 +58,7 @@ class ChunkMetadata:
 @dataclass
 class UploadSession:
     """Represents a resumable upload session"""
+
     session_id: str
     user_id: str
     filename: str
@@ -63,9 +67,17 @@ class UploadSession:
     chunk_size: int
     total_chunks: int
     status: UploadStatus = UploadStatus.PENDING
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    expires_at: str = field(default_factory=lambda: (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat())
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    expires_at: str = field(
+        default_factory=lambda: (
+            datetime.now(timezone.utc) + timedelta(hours=24)
+        ).isoformat()
+    )
     uploaded_chunks: List[ChunkMetadata] = field(default_factory=list)
     final_hash: Optional[str] = None
     final_key: Optional[str] = None
@@ -75,6 +87,7 @@ class UploadSession:
 @dataclass
 class UploadUrlConfig:
     """Configuration for upload URL generation"""
+
     max_file_size: int = 100 * 1024 * 1024  # 100MB default
     allowed_mime_types: Optional[List[str]] = None
     expires_in_seconds: int = 3600  # 1 hour
@@ -84,6 +97,7 @@ class UploadUrlConfig:
 @dataclass
 class DirectUploadRequest:
     """Request to initiate direct upload"""
+
     filename: str
     file_size: int
     mime_type: str
@@ -95,12 +109,15 @@ class DirectUploadRequest:
 @dataclass
 class DirectUploadResponse:
     """Response with upload URL and parameters"""
+
     upload_url: str
     upload_method: UploadMethod
     session_id: str
     expires_at: str
     max_file_size: int
-    fields: Dict[str, str] = field(default_factory=dict)  # Additional form fields for POST
+    fields: Dict[str, str] = field(
+        default_factory=dict
+    )  # Additional form fields for POST
     chunk_size: Optional[int] = None  # For multipart uploads
     total_chunks: Optional[int] = None
 
@@ -119,7 +136,7 @@ class SessionStore:
     def _load_db(self) -> None:
         """Load sessions from disk"""
         if os.path.exists(self.db_path):
-            with open(self.db_path, 'r') as f:
+            with open(self.db_path, "r") as f:
                 data = json.load(f)
                 self.sessions = {
                     sid: UploadSession(**session_data)
@@ -130,11 +147,8 @@ class SessionStore:
 
     def _save_db(self) -> None:
         """Save sessions to disk"""
-        data = {
-            sid: asdict(session)
-            for sid, session in self.sessions.items()
-        }
-        with open(self.db_path, 'w') as f:
+        data = {sid: asdict(session) for sid, session in self.sessions.items()}
+        with open(self.db_path, "w") as f:
             json.dump(data, f, indent=2)
 
     def create_session(self, session: UploadSession) -> None:
@@ -181,8 +195,7 @@ class SessionStore:
     def get_user_sessions(self, user_id: str) -> List[UploadSession]:
         """Get all sessions for a user"""
         return [
-            session for session in self.sessions.values()
-            if session.user_id == user_id
+            session for session in self.sessions.values() if session.user_id == user_id
         ]
 
 
@@ -198,7 +211,7 @@ class DirectUploadManager:
         self,
         storage_manager,  # Instance of storage_cdn.StorageManager
         session_store: Optional[SessionStore] = None,
-        default_chunk_size: int = DEFAULT_CHUNK_SIZE
+        default_chunk_size: int = DEFAULT_CHUNK_SIZE,
     ):
         """
         Initialize direct upload manager
@@ -218,7 +231,9 @@ class DirectUploadManager:
         data = f"{user_id}:{filename}:{timestamp}"
         return hashlib.sha256(data.encode()).hexdigest()[:32]
 
-    def _generate_storage_key(self, user_id: str, filename: str, session_id: str) -> str:
+    def _generate_storage_key(
+        self, user_id: str, filename: str, session_id: str
+    ) -> str:
         """Generate storage key for uploaded file"""
         # Use session ID to ensure uniqueness
         ext = os.path.splitext(filename)[1]
@@ -234,9 +249,7 @@ class DirectUploadManager:
         return (file_size + chunk_size - 1) // chunk_size
 
     def initiate_upload(
-        self,
-        request: DirectUploadRequest,
-        config: Optional[UploadUrlConfig] = None
+        self, request: DirectUploadRequest, config: Optional[UploadUrlConfig] = None
     ) -> DirectUploadResponse:
         """
         Initiate direct upload and return signed URL
@@ -260,7 +273,10 @@ class DirectUploadManager:
             )
 
         # Validate MIME type
-        if config.allowed_mime_types and request.mime_type not in config.allowed_mime_types:
+        if (
+            config.allowed_mime_types
+            and request.mime_type not in config.allowed_mime_types
+        ):
             raise ValueError(
                 f"MIME type {request.mime_type} not allowed. "
                 f"Allowed types: {config.allowed_mime_types}"
@@ -268,7 +284,9 @@ class DirectUploadManager:
 
         # Generate session ID and storage key
         session_id = self._generate_session_id(request.user_id, request.filename)
-        storage_key = self._generate_storage_key(request.user_id, request.filename, session_id)
+        storage_key = self._generate_storage_key(
+            request.user_id, request.filename, session_id
+        )
 
         # Determine upload method
         use_multipart = self._should_use_multipart(request.file_size)
@@ -276,7 +294,9 @@ class DirectUploadManager:
 
         if use_multipart:
             # Create resumable upload session
-            total_chunks = self._calculate_chunks(request.file_size, self.default_chunk_size)
+            total_chunks = self._calculate_chunks(
+                request.file_size, self.default_chunk_size
+            )
 
             session = UploadSession(
                 session_id=session_id,
@@ -287,7 +307,7 @@ class DirectUploadManager:
                 chunk_size=self.default_chunk_size,
                 total_chunks=total_chunks,
                 status=UploadStatus.PENDING,
-                metadata=request.metadata
+                metadata=request.metadata,
             )
 
             self.sessions.create_session(session)
@@ -301,7 +321,7 @@ class DirectUploadManager:
                 expires_at=session.expires_at,
                 max_file_size=config.max_file_size,
                 chunk_size=self.default_chunk_size,
-                total_chunks=total_chunks
+                total_chunks=total_chunks,
             )
         else:
             # Direct single upload
@@ -309,7 +329,7 @@ class DirectUploadManager:
             upload_url = self.storage.generate_signed_url(
                 storage_key,
                 expires_in=config.expires_in_seconds,
-                content_type=request.mime_type
+                content_type=request.mime_type,
             )
 
             # Create simple session for tracking
@@ -323,7 +343,7 @@ class DirectUploadManager:
                 total_chunks=1,
                 status=UploadStatus.PENDING,
                 final_key=storage_key,
-                metadata=request.metadata
+                metadata=request.metadata,
             )
 
             self.sessions.create_session(session)
@@ -334,10 +354,7 @@ class DirectUploadManager:
                 session_id=session_id,
                 expires_at=session.expires_at,
                 max_file_size=config.max_file_size,
-                fields={
-                    'key': storage_key,
-                    'Content-Type': request.mime_type
-                }
+                fields={"key": storage_key, "Content-Type": request.mime_type},
             )
 
     def get_chunk_upload_url(
@@ -345,7 +362,7 @@ class DirectUploadManager:
         session_id: str,
         chunk_number: int,
         chunk_size: int,
-        chunk_hash: Optional[str] = None
+        chunk_hash: Optional[str] = None,
     ) -> str:
         """
         Get signed URL for uploading a specific chunk
@@ -378,17 +395,13 @@ class DirectUploadManager:
         upload_url = self.storage.generate_signed_url(
             chunk_key,
             expires_in=3600,  # 1 hour
-            content_type="application/octet-stream"
+            content_type="application/octet-stream",
         )
 
         return upload_url
 
     def mark_chunk_uploaded(
-        self,
-        session_id: str,
-        chunk_number: int,
-        chunk_size: int,
-        chunk_hash: str
+        self, session_id: str, chunk_number: int, chunk_size: int, chunk_hash: str
     ) -> Dict[str, Any]:
         """
         Mark a chunk as successfully uploaded
@@ -412,7 +425,7 @@ class DirectUploadManager:
             chunk_size=chunk_size,
             chunk_hash=chunk_hash,
             uploaded_at=datetime.now(timezone.utc).isoformat(),
-            storage_key=f"uploads/chunks/{session_id}/chunk_{chunk_number:04d}"
+            storage_key=f"uploads/chunks/{session_id}/chunk_{chunk_number:04d}",
         )
 
         # Add to uploaded chunks if not already present
@@ -431,14 +444,14 @@ class DirectUploadManager:
         progress = (uploaded_bytes / session.total_size) * 100
 
         return {
-            'session_id': session_id,
-            'uploaded_chunks': len(session.uploaded_chunks),
-            'total_chunks': session.total_chunks,
-            'uploaded_bytes': uploaded_bytes,
-            'total_bytes': session.total_size,
-            'progress_percent': round(progress, 2),
-            'status': session.status.value,
-            'is_complete': session.status == UploadStatus.COMPLETED
+            "session_id": session_id,
+            "uploaded_chunks": len(session.uploaded_chunks),
+            "total_chunks": session.total_chunks,
+            "uploaded_bytes": uploaded_bytes,
+            "total_bytes": session.total_size,
+            "progress_percent": round(progress, 2),
+            "status": session.status.value,
+            "is_complete": session.status == UploadStatus.COMPLETED,
         }
 
     def finalize_upload(self, session_id: str) -> Dict[str, Any]:
@@ -467,7 +480,9 @@ class DirectUploadManager:
         session.uploaded_chunks.sort(key=lambda c: c.chunk_number)
 
         # Assemble chunks into final file
-        final_key = self._generate_storage_key(session.user_id, session.filename, session_id)
+        final_key = self._generate_storage_key(
+            session.user_id, session.filename, session_id
+        )
         assembled_data = bytearray()
 
         for chunk_meta in session.uploaded_chunks:
@@ -483,7 +498,7 @@ class DirectUploadManager:
             final_key,
             bytes(assembled_data),
             content_type=session.mime_type,
-            metadata={'original_filename': session.filename, **session.metadata}
+            metadata={"original_filename": session.filename, **session.metadata},
         )
 
         # Clean up chunks
@@ -497,12 +512,12 @@ class DirectUploadManager:
         self.sessions.update_session(session)
 
         return {
-            'session_id': session_id,
-            'storage_key': final_key,
-            'file_hash': final_hash,
-            'file_size': session.total_size,
-            'cdn_url': metadata.cdn_url,
-            'status': 'completed'
+            "session_id": session_id,
+            "storage_key": final_key,
+            "file_hash": final_hash,
+            "file_size": session.total_size,
+            "cdn_url": metadata.cdn_url,
+            "status": "completed",
         }
 
     def get_upload_progress(self, session_id: str) -> Dict[str, Any]:
@@ -520,28 +535,29 @@ class DirectUploadManager:
             raise ValueError(f"Session not found: {session_id}")
 
         uploaded_bytes = sum(c.chunk_size for c in session.uploaded_chunks)
-        progress = (uploaded_bytes / session.total_size) * 100 if session.total_size > 0 else 0
+        progress = (
+            (uploaded_bytes / session.total_size) * 100 if session.total_size > 0 else 0
+        )
 
         # Get missing chunks
         uploaded_chunk_numbers = {c.chunk_number for c in session.uploaded_chunks}
         missing_chunks = [
-            i for i in range(session.total_chunks)
-            if i not in uploaded_chunk_numbers
+            i for i in range(session.total_chunks) if i not in uploaded_chunk_numbers
         ]
 
         return {
-            'session_id': session_id,
-            'status': session.status.value,
-            'uploaded_chunks': len(session.uploaded_chunks),
-            'total_chunks': session.total_chunks,
-            'uploaded_bytes': uploaded_bytes,
-            'total_bytes': session.total_size,
-            'progress_percent': round(progress, 2),
-            'missing_chunks': missing_chunks[:10],  # Return first 10 missing
-            'is_complete': session.status == UploadStatus.COMPLETED,
-            'created_at': session.created_at,
-            'updated_at': session.updated_at,
-            'expires_at': session.expires_at
+            "session_id": session_id,
+            "status": session.status.value,
+            "uploaded_chunks": len(session.uploaded_chunks),
+            "total_chunks": session.total_chunks,
+            "uploaded_bytes": uploaded_bytes,
+            "total_bytes": session.total_size,
+            "progress_percent": round(progress, 2),
+            "missing_chunks": missing_chunks[:10],  # Return first 10 missing
+            "is_complete": session.status == UploadStatus.COMPLETED,
+            "created_at": session.created_at,
+            "updated_at": session.updated_at,
+            "expires_at": session.expires_at,
         }
 
     def abort_upload(self, session_id: str, cleanup: bool = True) -> bool:
@@ -602,9 +618,11 @@ class DirectUploadManager:
 
         return {
             **progress,
-            'can_resume': True,
-            'chunk_size': session.chunk_size,
-            'next_chunk': min(progress['missing_chunks']) if progress['missing_chunks'] else None
+            "can_resume": True,
+            "chunk_size": session.chunk_size,
+            "next_chunk": (
+                min(progress["missing_chunks"]) if progress["missing_chunks"] else None
+            ),
         }
 
     def get_stats(self) -> Dict[str, Any]:
@@ -623,15 +641,15 @@ class DirectUploadManager:
                 total_bytes_uploaded += session.total_size
 
         return {
-            'total_sessions': total_sessions,
-            'by_status': by_status,
-            'total_bytes_uploaded': total_bytes_uploaded,
-            'total_mb_uploaded': round(total_bytes_uploaded / (1024 * 1024), 2),
-            'active_sessions': by_status.get(UploadStatus.IN_PROGRESS.value, 0)
+            "total_sessions": total_sessions,
+            "by_status": by_status,
+            "total_bytes_uploaded": total_bytes_uploaded,
+            "total_mb_uploaded": round(total_bytes_uploaded / (1024 * 1024), 2),
+            "active_sessions": by_status.get(UploadStatus.IN_PROGRESS.value, 0),
         }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Direct Browser Upload + Resumable Module")
     print("=" * 60)
 

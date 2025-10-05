@@ -21,6 +21,7 @@ import time
 
 class AdPlacement(Enum):
     """Ad placement positions on the site"""
+
     HEADER_BANNER = "header_banner"
     SIDEBAR_RIGHT = "sidebar_right"
     SIDEBAR_LEFT = "sidebar_left"
@@ -31,6 +32,7 @@ class AdPlacement(Enum):
 
 class AdNetwork(Enum):
     """Supported ad networks"""
+
     GOOGLE_ADSENSE = "google_adsense"
     CUSTOM_DIRECT = "custom_direct"
     PROGRAMMATIC = "programmatic"
@@ -38,6 +40,7 @@ class AdNetwork(Enum):
 
 class UserTier(Enum):
     """User subscription tiers"""
+
     FREE = "free"
     PRO = "pro"
     TEAM = "team"
@@ -46,6 +49,7 @@ class UserTier(Enum):
 @dataclass
 class AdUnit:
     """Represents a single ad unit configuration"""
+
     id: str
     placement: AdPlacement
     network: AdNetwork
@@ -58,6 +62,7 @@ class AdUnit:
 @dataclass
 class AdPolicy:
     """Site advertising policy configuration"""
+
     show_ads_to_free_users: bool = True
     show_ads_to_pro_users: bool = False
     show_ads_to_team_users: bool = False
@@ -99,7 +104,7 @@ class AdsManager:
         self,
         user_tier: UserTier,
         placements: List[AdPlacement],
-        do_not_track: bool = False
+        do_not_track: bool = False,
     ) -> List[AdUnit]:
         """Get ad units to display on a page"""
         if not self.should_show_ads(user_tier, do_not_track):
@@ -111,13 +116,13 @@ class AdsManager:
                 if ad_unit.enabled and len(ads) < self.policy.max_ads_per_page:
                     ads.append(ad_unit)
 
-        return ads[:self.policy.max_ads_per_page]
+        return ads[: self.policy.max_ads_per_page]
 
     def get_ad_config_for_client(
         self,
         user_tier: UserTier,
         page_placements: List[AdPlacement],
-        do_not_track: bool = False
+        do_not_track: bool = False,
     ) -> Dict[str, Any]:
         """Generate client-side ad configuration"""
         ads = self.get_ads_for_page(user_tier, page_placements, do_not_track)
@@ -132,10 +137,13 @@ class AdsManager:
                     "placement": ad.placement.value,
                     "network": ad.network.value,
                     "slot_id": ad.slot_id,
-                    "dimensions": {"width": ad.dimensions[0], "height": ad.dimensions[1]}
+                    "dimensions": {
+                        "width": ad.dimensions[0],
+                        "height": ad.dimensions[1],
+                    },
                 }
                 for ad in ads
-            ]
+            ],
         }
 
     def track_ad_impression(self, ad_id: str, user_id: str) -> Dict[str, Any]:
@@ -150,10 +158,12 @@ class AdsManager:
             "ad_id": ad_id,
             "user_id": user_id,
             "timestamp": timestamp,
-            "event": "impression"
+            "event": "impression",
         }
 
-    def track_ad_click(self, ad_id: str, user_id: str, target_url: str) -> Dict[str, Any]:
+    def track_ad_click(
+        self, ad_id: str, user_id: str, target_url: str
+    ) -> Dict[str, Any]:
         """Track ad click for analytics"""
         timestamp = int(time.time())
         click_id = hashlib.sha256(
@@ -166,7 +176,7 @@ class AdsManager:
             "user_id": user_id,
             "target_url": target_url,
             "timestamp": timestamp,
-            "event": "click"
+            "event": "click",
         }
 
 
@@ -176,13 +186,13 @@ WATERMARK_POLICY = {
     "reason": "Clean, shareable content - ads only on website UI, never in media files",
     "alternatives": {
         "monetization": "Display ads on website for free tier users",
-        "branding": "Optional branded landing pages with user control"
+        "branding": "Optional branded landing pages with user control",
     },
     "user_control": {
         "free_tier": "Sees ads on website, media files remain clean",
         "pro_tier": "No ads on website, media files remain clean",
-        "team_tier": "No ads on website, media files remain clean"
-    }
+        "team_tier": "No ads on website, media files remain clean",
+    },
 }
 
 

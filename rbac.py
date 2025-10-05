@@ -22,6 +22,7 @@ import json
 
 class UserRole(Enum):
     """User roles in the system"""
+
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     MODERATOR = "moderator"
@@ -32,6 +33,7 @@ class UserRole(Enum):
 
 class Permission(Enum):
     """System permissions"""
+
     # Asset permissions
     ASSET_CREATE = "asset:create"
     ASSET_READ = "asset:read"
@@ -69,6 +71,7 @@ class Permission(Enum):
 
 class ResourceType(Enum):
     """Resource types for access control"""
+
     ASSET = "asset"
     USER = "user"
     CHANNEL = "channel"
@@ -80,6 +83,7 @@ class ResourceType(Enum):
 @dataclass
 class Resource:
     """Represents a resource that can be access-controlled"""
+
     resource_type: ResourceType
     resource_id: str
     owner_id: Optional[str] = None
@@ -89,6 +93,7 @@ class Resource:
 @dataclass
 class AccessControlEntry:
     """Access control entry for a resource"""
+
     user_id: str
     resource: Resource
     permissions: Set[Permission]
@@ -100,6 +105,7 @@ class AccessControlEntry:
 @dataclass
 class AuditLogEntry:
     """Audit log entry for access control decisions"""
+
     timestamp: datetime
     user_id: str
     action: str
@@ -131,7 +137,6 @@ class RBACManager:
         # Define default role permissions
         self._role_permissions: Dict[UserRole, Set[Permission]] = {
             UserRole.SUPER_ADMIN: {perm for perm in Permission},  # All permissions
-
             UserRole.ADMIN: {
                 Permission.ASSET_CREATE,
                 Permission.ASSET_READ,
@@ -149,7 +154,6 @@ class RBACManager:
                 Permission.PUBLISH_SLACK,
                 Permission.PUBLISH_DISCORD,
             },
-
             UserRole.MODERATOR: {
                 Permission.ASSET_READ,
                 Permission.ASSET_UPDATE,
@@ -157,7 +161,6 @@ class RBACManager:
                 Permission.MODERATE_REPORTS,
                 Permission.ANALYTICS_VIEW,
             },
-
             UserRole.CONTENT_CREATOR: {
                 Permission.ASSET_CREATE,
                 Permission.ASSET_READ,
@@ -169,15 +172,13 @@ class RBACManager:
                 Permission.PUBLISH_SLACK,
                 Permission.PUBLISH_DISCORD,
             },
-
             UserRole.USER: {
                 Permission.ASSET_CREATE,
                 Permission.ASSET_READ,
             },
-
             UserRole.GUEST: {
                 Permission.ASSET_READ,
-            }
+            },
         }
 
         # User role assignments: user_id -> role
@@ -209,7 +210,7 @@ class RBACManager:
                 permission=Permission.USER_ASSIGN_ROLE,
                 granted=True,
                 reason=f"Assigned role {role.value}",
-                metadata={"new_role": role.value}
+                metadata={"new_role": role.value},
             )
 
     def get_user_role(self, user_id: str) -> Optional[UserRole]:
@@ -226,16 +227,15 @@ class RBACManager:
             self._role_permissions[role] = set()
         self._role_permissions[role].add(permission)
 
-    def remove_permission_from_role(self, role: UserRole, permission: Permission) -> None:
+    def remove_permission_from_role(
+        self, role: UserRole, permission: Permission
+    ) -> None:
         """Remove permission from a role"""
         if role in self._role_permissions:
             self._role_permissions[role].discard(permission)
 
     def has_permission(
-        self,
-        user_id: str,
-        permission: Permission,
-        resource: Optional[Resource] = None
+        self, user_id: str, permission: Permission, resource: Optional[Resource] = None
     ) -> bool:
         """
         Check if user has permission
@@ -254,11 +254,13 @@ class RBACManager:
             self._log_audit(
                 user_id=user_id,
                 action="check_permission",
-                resource_type=resource.resource_type if resource else ResourceType.SYSTEM,
+                resource_type=(
+                    resource.resource_type if resource else ResourceType.SYSTEM
+                ),
                 resource_id=resource.resource_id if resource else "system",
                 permission=permission,
                 granted=False,
-                reason="No role assigned"
+                reason="No role assigned",
             )
             return False
 
@@ -269,9 +271,7 @@ class RBACManager:
         has_resource_permission = False
         if resource:
             has_resource_permission = self._check_resource_acl(
-                user_id=user_id,
-                resource=resource,
-                permission=permission
+                user_id=user_id, resource=resource, permission=permission
             )
 
             # Also check if user owns the resource
@@ -282,7 +282,9 @@ class RBACManager:
                     Permission.ASSET_UPDATE,
                     Permission.ASSET_DELETE,
                 }
-                has_resource_permission = has_resource_permission or (permission in owner_permissions)
+                has_resource_permission = has_resource_permission or (
+                    permission in owner_permissions
+                )
 
         granted = has_role_permission or has_resource_permission
 
@@ -290,23 +292,28 @@ class RBACManager:
             self._log_audit(
                 user_id=user_id,
                 action="check_permission",
-                resource_type=resource.resource_type if resource else ResourceType.SYSTEM,
+                resource_type=(
+                    resource.resource_type if resource else ResourceType.SYSTEM
+                ),
                 resource_id=resource.resource_id if resource else "system",
                 permission=permission,
                 granted=granted,
-                reason="Role permission" if has_role_permission else (
-                    "Resource ACL" if has_resource_permission else "Permission denied"
+                reason=(
+                    "Role permission"
+                    if has_role_permission
+                    else (
+                        "Resource ACL"
+                        if has_resource_permission
+                        else "Permission denied"
+                    )
                 ),
-                metadata={"role": role.value if role else None}
+                metadata={"role": role.value if role else None},
             )
 
         return granted
 
     def require_permission(
-        self,
-        user_id: str,
-        permission: Permission,
-        resource: Optional[Resource] = None
+        self, user_id: str, permission: Permission, resource: Optional[Resource] = None
     ) -> None:
         """
         Require user to have permission, raise exception if not
@@ -330,7 +337,7 @@ class RBACManager:
         resource: Resource,
         permissions: Set[Permission],
         granted_by: str,
-        expires_at: Optional[datetime] = None
+        expires_at: Optional[datetime] = None,
     ) -> None:
         """
         Grant specific permissions on a resource to a user
@@ -349,8 +356,7 @@ class RBACManager:
 
         # Remove existing ACL entry for this user if exists
         self._resource_acls[acl_key] = [
-            entry for entry in self._resource_acls[acl_key]
-            if entry.user_id != user_id
+            entry for entry in self._resource_acls[acl_key] if entry.user_id != user_id
         ]
 
         # Add new ACL entry
@@ -360,7 +366,7 @@ class RBACManager:
             permissions=permissions,
             granted_at=datetime.utcnow(),
             granted_by=granted_by,
-            expires_at=expires_at
+            expires_at=expires_at,
         )
         self._resource_acls[acl_key].append(entry)
 
@@ -375,15 +381,12 @@ class RBACManager:
                 reason=f"Granted access to user {user_id}",
                 metadata={
                     "target_user": user_id,
-                    "permissions": [p.value for p in permissions]
-                }
+                    "permissions": [p.value for p in permissions],
+                },
             )
 
     def revoke_resource_access(
-        self,
-        user_id: str,
-        resource: Resource,
-        revoked_by: str
+        self, user_id: str, resource: Resource, revoked_by: str
     ) -> None:
         """
         Revoke all permissions on a resource from a user
@@ -397,7 +400,8 @@ class RBACManager:
 
         if acl_key in self._resource_acls:
             self._resource_acls[acl_key] = [
-                entry for entry in self._resource_acls[acl_key]
+                entry
+                for entry in self._resource_acls[acl_key]
                 if entry.user_id != user_id
             ]
 
@@ -410,14 +414,11 @@ class RBACManager:
                 permission=Permission.SYSTEM_CONFIG,  # Meta permission
                 granted=True,
                 reason=f"Revoked access from user {user_id}",
-                metadata={"target_user": user_id}
+                metadata={"target_user": user_id},
             )
 
     def _check_resource_acl(
-        self,
-        user_id: str,
-        resource: Resource,
-        permission: Permission
+        self, user_id: str, resource: Resource, permission: Permission
     ) -> bool:
         """Check resource-specific ACL"""
         acl_key = f"{resource.resource_type.value}:{resource.resource_id}"
@@ -454,7 +455,7 @@ class RBACManager:
         permission: Permission,
         granted: bool,
         reason: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Log audit entry"""
         if not self.enable_audit:
@@ -469,7 +470,7 @@ class RBACManager:
             permission=permission,
             granted=granted,
             reason=reason,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self._audit_log.append(entry)
 
@@ -477,7 +478,7 @@ class RBACManager:
         self,
         user_id: Optional[str] = None,
         resource_type: Optional[ResourceType] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[AuditLogEntry]:
         """
         Get audit log entries with optional filters
@@ -504,9 +505,7 @@ class RBACManager:
         return entries[:limit]
 
     def export_audit_log(
-        self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        self, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None
     ) -> str:
         """
         Export audit log as JSON
@@ -528,17 +527,19 @@ class RBACManager:
 
         serialized = []
         for entry in entries:
-            serialized.append({
-                "timestamp": entry.timestamp.isoformat(),
-                "user_id": entry.user_id,
-                "action": entry.action,
-                "resource_type": entry.resource_type.value,
-                "resource_id": entry.resource_id,
-                "permission": entry.permission.value,
-                "granted": entry.granted,
-                "reason": entry.reason,
-                "metadata": entry.metadata
-            })
+            serialized.append(
+                {
+                    "timestamp": entry.timestamp.isoformat(),
+                    "user_id": entry.user_id,
+                    "action": entry.action,
+                    "resource_type": entry.resource_type.value,
+                    "resource_id": entry.resource_id,
+                    "permission": entry.permission.value,
+                    "granted": entry.granted,
+                    "reason": entry.reason,
+                    "metadata": entry.metadata,
+                }
+            )
 
         return json.dumps(serialized, indent=2)
 
@@ -549,6 +550,7 @@ class RBACManager:
 
 class PermissionDeniedError(Exception):
     """Raised when user lacks required permission"""
+
     pass
 
 
@@ -562,16 +564,22 @@ if __name__ == "__main__":
     rbac.assign_role("user_3", UserRole.USER, "user_1")
 
     # Check permissions
-    print(f"User 1 can create assets: {rbac.has_permission('user_1', Permission.ASSET_CREATE)}")
-    print(f"User 2 can create assets: {rbac.has_permission('user_2', Permission.ASSET_CREATE)}")
-    print(f"User 3 can create assets: {rbac.has_permission('user_3', Permission.ASSET_CREATE)}")
-    print(f"User 3 can moderate: {rbac.has_permission('user_3', Permission.MODERATE_CONTENT)}")
+    print(
+        f"User 1 can create assets: {rbac.has_permission('user_1', Permission.ASSET_CREATE)}"
+    )
+    print(
+        f"User 2 can create assets: {rbac.has_permission('user_2', Permission.ASSET_CREATE)}"
+    )
+    print(
+        f"User 3 can create assets: {rbac.has_permission('user_3', Permission.ASSET_CREATE)}"
+    )
+    print(
+        f"User 3 can moderate: {rbac.has_permission('user_3', Permission.MODERATE_CONTENT)}"
+    )
 
     # Resource-level access control
     asset = Resource(
-        resource_type=ResourceType.ASSET,
-        resource_id="asset_123",
-        owner_id="user_2"
+        resource_type=ResourceType.ASSET, resource_id="asset_123", owner_id="user_2"
     )
 
     # Grant specific permission to user_3 on this asset
@@ -579,19 +587,25 @@ if __name__ == "__main__":
         user_id="user_3",
         resource=asset,
         permissions={Permission.ASSET_UPDATE},
-        granted_by="user_1"
+        granted_by="user_1",
     )
 
     # Check resource-specific permission
-    print(f"User 3 can update asset_123: {rbac.has_permission('user_3', Permission.ASSET_UPDATE, asset)}")
+    print(
+        f"User 3 can update asset_123: {rbac.has_permission('user_3', Permission.ASSET_UPDATE, asset)}"
+    )
 
     # Owner permissions
-    print(f"User 2 (owner) can update asset_123: {rbac.has_permission('user_2', Permission.ASSET_UPDATE, asset)}")
+    print(
+        f"User 2 (owner) can update asset_123: {rbac.has_permission('user_2', Permission.ASSET_UPDATE, asset)}"
+    )
 
     # View audit log
     print("\nAudit Log:")
     for entry in rbac.get_audit_log(limit=10):
-        print(f"{entry.timestamp}: {entry.action} - {entry.reason} (granted={entry.granted})")
+        print(
+            f"{entry.timestamp}: {entry.action} - {entry.reason} (granted={entry.granted})"
+        )
 
     # Export audit log
     audit_export = rbac.export_audit_log()
