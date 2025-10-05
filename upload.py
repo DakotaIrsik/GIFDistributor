@@ -293,11 +293,17 @@ class UploadManager:
 
         Args:
             storage_dir: Directory to store uploaded files
-            dedupe_store: Deduplication store instance
+            dedupe_store: Deduplication store instance (defaults to storage_dir/dedupe.json)
         """
         self.storage_dir = storage_dir
-        self.dedupe_store = dedupe_store or DeduplicationStore()
         os.makedirs(storage_dir, exist_ok=True)
+
+        # Default dedupe store path to storage_dir/dedupe.json for test isolation
+        if dedupe_store is None:
+            dedupe_db_path = os.path.join(storage_dir, "dedupe.json")
+            self.dedupe_store = DeduplicationStore(dedupe_db_path)
+        else:
+            self.dedupe_store = dedupe_store
 
     def check_duplicate(self, file_path: str) -> Tuple[bool, Optional[FileMetadata]]:
         """
