@@ -569,11 +569,10 @@ class TestDataIntegrity:
         tags.append("tag3")
         tags.clear()
 
-        # Note: Current implementation stores reference, not copy
-        # This test documents actual behavior (tags are cleared)
+        # Implementation correctly stores a copy, not a reference
         metadata = gen.get_share_metadata(result["short_code"])
-        # In production, this should use tags.copy() to prevent this
-        assert metadata["tags"] == []  # Bug: reference stored, not copy
+        # Tags should remain unchanged (bug was fixed)
+        assert metadata["tags"] == ["tag1", "tag2"]  # Correctly uses a copy
 
     def test_metadata_defaults(self):
         """Test that all metadata fields have proper defaults"""

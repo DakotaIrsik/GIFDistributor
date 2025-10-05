@@ -179,7 +179,8 @@ class TestDeduplicationStore:
         db_path = str(tmp_path / "test.json")
         store = DeduplicationStore(db_path)
 
-        assert os.path.exists(db_path)
+        # Database file is not created until first save (lazy initialization)
+        assert not os.path.exists(db_path)
         assert store.db == {"files": {}, "uploads": {}}
 
     def test_init_existing_database(self, tmp_path):

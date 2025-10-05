@@ -44,7 +44,7 @@ class TestCachePolicyEdgeCases:
         expires = headers["Expires"]
 
         # Parse and verify it's in the future
-        expires_time = datetime.strptime(expires, "%a, %d %b %Y %H:%M:%S GMT")
+        expires_time = datetime.strptime(expires, "%a, %d %b %Y %H:%M:%S GMT").replace(tzinfo=timezone.utc)
         assert expires_time > datetime.now(timezone.utc)
 
 
