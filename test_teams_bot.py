@@ -5,7 +5,7 @@ Issue: #42
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from teams_bot import (
     TeamsBot,
     TeamsOAuthManager,
@@ -126,7 +126,7 @@ class TestTeamsBot:
         activity_data = {
             "type": "message",
             "id": "msg123",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "from": {"id": "user123", "name": "Test User"},
             "conversation": {"id": "conv123", "conversationType": "personal"},
             "text": "help",
@@ -145,7 +145,7 @@ class TestTeamsBot:
         activity_data = {
             "type": "conversationUpdate",
             "id": "update123",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "from": {"id": "bot123", "name": "Bot"},
             "conversation": {"id": "conv123", "conversationType": "personal"},
         }
@@ -199,7 +199,7 @@ class TestTeamsBot:
         activity_data = {
             "type": "message",
             "id": "msg123",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "from": {"id": "user123", "name": "Test User"},
             "conversation": {"id": "conv123", "conversationType": "personal"},
             "text": "test message",
@@ -218,7 +218,7 @@ class TestTeamsBot:
         activity_data = {
             "type": "message",
             "id": "msg123",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "from": {"id": "user123", "name": "Test User"},
             "conversation": {"id": "conv123", "conversationType": "personal"},
             "text": "hello",
@@ -247,7 +247,7 @@ class TestTeamsBot:
         activity_data = {
             "type": "message",
             "id": "msg123",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "from": {"id": "user1", "name": "User 1"},
             "conversation": {"id": "conv1", "conversationType": "personal"},
             "text": "hello",
@@ -309,7 +309,7 @@ class TestTeamsBot:
         activity_data = {
             "type": "conversationUpdate",
             "id": "update123",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "from": {"id": "bot123", "name": "Bot"},
             "conversation": {"id": "conv123", "conversationType": "channel"},
         }
@@ -328,7 +328,7 @@ class TestTeamsBot:
             activity_data = {
                 "type": "message",
                 "id": f"msg{i}",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "from": {"id": f"user{i}", "name": f"User {i}"},
                 "conversation": {"id": f"conv{i}", "conversationType": "personal"},
                 "text": f"message {i}",

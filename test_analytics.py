@@ -5,7 +5,7 @@ Issue: #33
 
 import pytest
 from analytics import AnalyticsTracker, EventType, Platform
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class TestAnalyticsTracker:
@@ -338,7 +338,7 @@ class TestTimeframeQueries:
         tracker.track_event("asset1", EventType.PLAY)
 
         # Get events from now onwards (should include all)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         past = now - timedelta(hours=1)
 
         events = tracker.get_events_by_timeframe("asset1", start_time=past)
@@ -351,7 +351,7 @@ class TestTimeframeQueries:
         tracker.track_event("asset1", EventType.VIEW)
 
         # Get events until now (should include all)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         future = now + timedelta(hours=1)
 
         events = tracker.get_events_by_timeframe("asset1", end_time=future)
@@ -576,7 +576,7 @@ class TestTimeframeBoundaries:
         tracker.track_event("asset1", EventType.PLAY)
         tracker.track_event("asset1", EventType.CLICK)
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         past = now - timedelta(hours=1)
         future = now + timedelta(hours=1)
 
@@ -592,8 +592,8 @@ class TestTimeframeBoundaries:
         tracker.track_event("asset1", EventType.VIEW)
 
         # Query for events in the future
-        future_start = datetime.utcnow() + timedelta(days=1)
-        future_end = datetime.utcnow() + timedelta(days=2)
+        future_start = datetime.now(timezone.utc) + timedelta(days=1)
+        future_end = datetime.now(timezone.utc) + timedelta(days=2)
 
         events = tracker.get_events_by_timeframe(
             "asset1", start_time=future_start, end_time=future_end

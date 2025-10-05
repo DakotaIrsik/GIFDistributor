@@ -5,7 +5,7 @@ Issue: #33
 """
 
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 from enum import Enum
 
@@ -63,7 +63,7 @@ class AnalyticsTracker:
             "event_type": event_type.value,
             "platform": platform.value,
             "short_code": short_code,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "metadata": metadata or {},
         }
         self._events.append(event)

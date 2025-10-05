@@ -22,7 +22,7 @@ import secrets
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class ActivityType(Enum):
@@ -126,7 +126,7 @@ class TeamsOAuthManager:
         if (
             self._bot_token
             and self._token_expires_at
-            and datetime.utcnow() < self._token_expires_at
+            and datetime.now(timezone.utc) < self._token_expires_at
         ):
             return self._bot_token
 
@@ -136,7 +136,7 @@ class TeamsOAuthManager:
 
         # Mock token for development
         self._bot_token = f"bot_token_{secrets.token_urlsafe(32)}"
-        self._token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        self._token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
 
         return self._bot_token
 
@@ -199,7 +199,7 @@ class TeamsOAuthManager:
         # Cache user token
         self._user_tokens[user_id] = {
             **token_data,
-            "expires_at": datetime.utcnow()
+            "expires_at": datetime.now(timezone.utc)
             + timedelta(seconds=token_data["expires_in"]),
         }
 
@@ -220,7 +220,7 @@ class TeamsOAuthManager:
             return None
 
         # Check expiration
-        if datetime.utcnow() >= token_data["expires_at"]:
+        if datetime.now(timezone.utc) >= token_data["expires_at"]:
             # Token expired - should refresh here
             del self._user_tokens[user_id]
             return None
@@ -345,7 +345,7 @@ class TeamsBot:
             type=ActivityType(data.get("type", "message")),
             id=data.get("id", ""),
             timestamp=datetime.fromisoformat(
-                data.get("timestamp", datetime.utcnow().isoformat()).replace(
+                data.get("timestamp", datetime.now(timezone.utc).isoformat()).replace(
                     "Z", "+00:00"
                 )
             ),
@@ -416,7 +416,7 @@ class TeamsBot:
             self._conversations[conv_id] = {
                 "id": conv_id,
                 "type": activity.conversation.conversation_type.value,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
                 "messages": [],
             }
 
@@ -468,7 +468,7 @@ class TeamsBot:
                 "type": "outgoing_message",
                 "conversation_id": conversation_id,
                 "text": text,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 
@@ -659,7 +659,7 @@ if __name__ == "__main__":
     activity_data = {
         "type": "message",
         "id": "12345",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "from": {"id": "user123", "name": "Test User"},
         "conversation": {"id": "conv123", "conversationType": "personal"},
         "text": "hello",

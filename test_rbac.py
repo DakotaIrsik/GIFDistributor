@@ -3,7 +3,7 @@ Tests for RBAC Module - Issue #4
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from rbac import (
     RBACManager,
     UserRole,
@@ -258,7 +258,7 @@ class TestResourceACL:
         resource = Resource(resource_type=ResourceType.ASSET, resource_id="asset_123")
 
         # Grant access that expires in the past
-        past_time = datetime.utcnow() - timedelta(hours=1)
+        past_time = datetime.now(timezone.utc) - timedelta(hours=1)
         rbac.grant_resource_access(
             user_id="user_1",
             resource=resource,
@@ -278,7 +278,7 @@ class TestResourceACL:
         resource = Resource(resource_type=ResourceType.ASSET, resource_id="asset_123")
 
         # Grant access that expires in the future
-        future_time = datetime.utcnow() + timedelta(hours=1)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=1)
         rbac.grant_resource_access(
             user_id="user_1",
             resource=resource,
@@ -428,9 +428,9 @@ class TestAuditLog:
         rbac = RBACManager(enable_audit=True)
         rbac.assign_role("user_1", UserRole.ADMIN, "system")
 
-        start = datetime.utcnow()
+        start = datetime.now(timezone.utc)
         rbac.has_permission("user_1", Permission.ASSET_CREATE)
-        end = datetime.utcnow()
+        end = datetime.now(timezone.utc)
 
         export = rbac.export_audit_log(start_time=start, end_time=end)
         assert isinstance(export, str)
@@ -475,7 +475,7 @@ class TestComplexScenarios:
         assert not rbac.has_permission(collaborator_id, Permission.ASSET_UPDATE, asset)
 
         # Grant temporary editing access (24 hours)
-        expiration = datetime.utcnow() + timedelta(hours=24)
+        expiration = datetime.now(timezone.utc) + timedelta(hours=24)
         rbac.grant_resource_access(
             user_id=collaborator_id,
             resource=asset,

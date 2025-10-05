@@ -9,7 +9,7 @@ import logging
 import time
 import json
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from collections import defaultdict
 from dataclasses import dataclass, field, asdict
@@ -95,7 +95,7 @@ class Span:
         """Add a log entry to this span"""
         self.logs.append(
             {
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "level": level,
                 "message": message,
                 **kwargs,
@@ -148,7 +148,7 @@ class StructuredLogger:
         span_id = trace_ctx.span_id if trace_ctx else None
 
         entry = LogEntry(
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             level=level.value,
             message=message,
             service=self.service_name,
@@ -234,7 +234,7 @@ class MetricsCollector:
             name=name,
             value=value,
             metric_type=MetricType.COUNTER.value,
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             tags=tags or {},
         )
         self._metrics.append(metric)
@@ -255,7 +255,7 @@ class MetricsCollector:
             name=name,
             value=value,
             metric_type=MetricType.GAUGE.value,
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             tags=tags or {},
         )
         self._metrics.append(metric)
@@ -278,7 +278,7 @@ class MetricsCollector:
             name=name,
             value=value,
             metric_type=MetricType.HISTOGRAM.value,
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             tags=tags or {},
         )
         self._metrics.append(metric)
@@ -549,7 +549,7 @@ class ObservabilityStack:
         """
         return {
             "service": self.service_name,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "logs": {
                 "total": len(self.logger.get_logs()),
                 "by_level": self._count_logs_by_level(),

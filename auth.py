@@ -14,7 +14,7 @@ import secrets
 import hashlib
 import hmac
 from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 from enum import Enum
 
@@ -156,7 +156,7 @@ class AuthManager:
             email=email,
             provider=AuthProvider.EMAIL,
             role=role,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             email_verified=False,
         )
 
@@ -200,7 +200,7 @@ class AuthManager:
             raise AuthenticationError("User not found")
 
         # Update last login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
 
         # Create session
         session = self._create_session(user.id, ip_address, user_agent)
@@ -255,14 +255,14 @@ class AuthManager:
                 email=email,
                 provider=provider,
                 role=UserRole.USER,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
                 email_verified=True,  # OAuth emails are pre-verified
                 metadata=user_info,
             )
             self._users[user_id] = user
 
         # Update last login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
 
         # Create session
         session = self._create_session(user.id, ip_address, user_agent)
@@ -280,8 +280,8 @@ class AuthManager:
         session = Session(
             session_id=session_id,
             user_id=user_id,
-            created_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + self.session_lifetime,
+            created_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + self.session_lifetime,
             ip_address=ip_address,
             user_agent=user_agent,
         )
@@ -303,7 +303,7 @@ class AuthManager:
             return None
 
         # Check if session expired
-        if datetime.utcnow() > session.expires_at:
+        if datetime.now(timezone.utc) > session.expires_at:
             del self._sessions[session_id]
             return None
 

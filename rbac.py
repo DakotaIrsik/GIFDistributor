@@ -15,7 +15,7 @@ Priority: P0
 
 from typing import Set, Dict, List, Optional, Any
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import json
 
@@ -364,7 +364,7 @@ class RBACManager:
             user_id=user_id,
             resource=resource,
             permissions=permissions,
-            granted_at=datetime.utcnow(),
+            granted_at=datetime.now(timezone.utc),
             granted_by=granted_by,
             expires_at=expires_at,
         )
@@ -426,7 +426,7 @@ class RBACManager:
         if acl_key not in self._resource_acls:
             return False
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for entry in self._resource_acls[acl_key]:
             if entry.user_id != user_id:
@@ -462,7 +462,7 @@ class RBACManager:
             return
 
         entry = AuditLogEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             user_id=user_id,
             action=action,
             resource_type=resource_type,

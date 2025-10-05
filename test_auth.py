@@ -7,7 +7,7 @@ Issue: #3
 """
 
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from auth import (
     AuthManager,
     RBACManager,
@@ -137,7 +137,7 @@ class TestAuthManager(unittest.TestCase):
         session = auth._create_session(user.id)
 
         # Manually expire the session
-        auth._sessions[session.session_id].expires_at = datetime.utcnow() - timedelta(
+        auth._sessions[session.session_id].expires_at = datetime.now(timezone.utc) - timedelta(
             hours=1
         )
 
@@ -262,7 +262,7 @@ class TestRBACManager(unittest.TestCase):
             email="admin@example.com",
             provider=AuthProvider.EMAIL,
             role=UserRole.ADMIN,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         self.assertTrue(self.rbac.can_perform(admin, "upload"))
@@ -278,7 +278,7 @@ class TestRBACManager(unittest.TestCase):
             email="mod@example.com",
             provider=AuthProvider.EMAIL,
             role=UserRole.MODERATOR,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         self.assertTrue(self.rbac.can_perform(moderator, "upload"))
@@ -294,7 +294,7 @@ class TestRBACManager(unittest.TestCase):
             email="user@example.com",
             provider=AuthProvider.EMAIL,
             role=UserRole.USER,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         self.assertTrue(self.rbac.can_perform(user, "upload"))
@@ -310,7 +310,7 @@ class TestRBACManager(unittest.TestCase):
             email="admin@example.com",
             provider=AuthProvider.EMAIL,
             role=UserRole.ADMIN,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         # Should not raise
@@ -323,7 +323,7 @@ class TestRBACManager(unittest.TestCase):
             email="user@example.com",
             provider=AuthProvider.EMAIL,
             role=UserRole.USER,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         with self.assertRaises(AuthorizationError):
@@ -336,7 +336,7 @@ class TestRBACManager(unittest.TestCase):
             email="user@example.com",
             provider=AuthProvider.EMAIL,
             role=UserRole.USER,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         # User doesn't have 'moderate' permission initially
@@ -355,7 +355,7 @@ class TestRBACManager(unittest.TestCase):
             email="admin@example.com",
             provider=AuthProvider.EMAIL,
             role=UserRole.ADMIN,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         # Admin has 'delete' permission initially

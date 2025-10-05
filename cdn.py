@@ -5,7 +5,7 @@ Issue: #34
 """
 
 from typing import Dict, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import base64
@@ -60,7 +60,7 @@ class CachePolicy:
         headers = {"Cache-Control": ", ".join(cache_control_parts)}
 
         # Add Expires header for HTTP/1.0 compatibility
-        expires_time = datetime.utcnow() + timedelta(seconds=cache_duration)
+        expires_time = datetime.now(timezone.utc) + timedelta(seconds=cache_duration)
         headers["Expires"] = expires_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
         return headers
@@ -206,7 +206,7 @@ class SignedURL:
         """
         # Calculate expiration timestamp
         expires = int(
-            (datetime.utcnow() + timedelta(seconds=expiration_seconds)).timestamp()
+            (datetime.now(timezone.utc) + timedelta(seconds=expiration_seconds)).timestamp()
         )
 
         # Parse URL to get path and existing params
@@ -275,7 +275,7 @@ class SignedURL:
 
             # Check expiration
             expires = int(flat_params["expires"])
-            now = int(datetime.utcnow().timestamp())
+            now = int(datetime.now(timezone.utc).timestamp())
 
             if now >= expires:
                 return False, "URL has expired"

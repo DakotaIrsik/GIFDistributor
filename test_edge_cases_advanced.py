@@ -7,7 +7,7 @@ import pytest
 import tempfile
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from analytics import AnalyticsTracker, EventType, Platform
 from sharelinks import ShareLinkGenerator, create_asset_hash
 
@@ -375,7 +375,7 @@ class TestTimeframeEdgeCases:
         tracker = AnalyticsTracker()
         tracker.track_event("asset1", EventType.VIEW)
 
-        future = datetime.utcnow() + timedelta(days=365 * 10)  # 10 years
+        future = datetime.now(timezone.utc) + timedelta(days=365 * 10)  # 10 years
         events = tracker.get_events_by_timeframe("asset1", end_time=future)
         assert len(events) == 1
 
@@ -384,7 +384,7 @@ class TestTimeframeEdgeCases:
         tracker = AnalyticsTracker()
         tracker.track_event("asset1", EventType.VIEW)
 
-        past = datetime.utcnow() - timedelta(days=365 * 10)  # 10 years ago
+        past = datetime.now(timezone.utc) - timedelta(days=365 * 10)  # 10 years ago
         events = tracker.get_events_by_timeframe("asset1", start_time=past)
         assert len(events) == 1
 
@@ -393,7 +393,7 @@ class TestTimeframeEdgeCases:
         tracker = AnalyticsTracker()
         tracker.track_event("asset1", EventType.VIEW)
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         past = now - timedelta(hours=1)
         future = now + timedelta(hours=1)
 

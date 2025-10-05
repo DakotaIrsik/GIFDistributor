@@ -8,7 +8,7 @@ import hashlib
 import string
 import secrets
 from typing import Optional, Dict
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ShareLinkGenerator:
@@ -58,7 +58,7 @@ class ShareLinkGenerator:
             "canonical_url": canonical_url,
             "title": title,
             "tags": list(tags) if tags else [],
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "clicks": 0,
         }
 

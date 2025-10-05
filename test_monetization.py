@@ -4,7 +4,7 @@ Issue: #45
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from monetization import (
     MonetizationTracker,
     RevenueSource,
@@ -142,7 +142,7 @@ class TestRevenueCalculations:
 
     def test_revenue_date_filtering(self, tracker):
         """Test filtering revenue by date range"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         old_date = now - timedelta(days=60)
 
         # Create events with different timestamps

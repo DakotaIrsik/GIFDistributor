@@ -4,7 +4,7 @@ Focuses on uncovered edge cases and error conditions
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 
 from cdn import CachePolicy, RangeRequest, SignedURL, CDNHelper
@@ -45,7 +45,7 @@ class TestCachePolicyEdgeCases:
 
         # Parse and verify it's in the future
         expires_time = datetime.strptime(expires, "%a, %d %b %Y %H:%M:%S GMT")
-        assert expires_time > datetime.utcnow()
+        assert expires_time > datetime.now(timezone.utc)
 
 
 class TestRangeRequestEdgeCases:

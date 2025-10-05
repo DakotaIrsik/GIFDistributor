@@ -10,7 +10,7 @@ Depends on: publisher-ui (#38), analytics (#33)
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import json
 
@@ -80,11 +80,11 @@ class MonetizationTracker:
             Created revenue event
         """
         event = RevenueEvent(
-            event_id=f"ad_rev_{ad_id}_{int(datetime.utcnow().timestamp())}",
+            event_id=f"ad_rev_{ad_id}_{int(datetime.now(timezone.utc).timestamp())}",
             source=RevenueSource.WEBSITE_ADS,
             amount_usd=revenue_usd,
             user_id=user_id,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             metadata={
                 "ad_id": ad_id,
                 "impressions": impressions,
@@ -122,11 +122,11 @@ class MonetizationTracker:
         )
 
         event = RevenueEvent(
-            event_id=f"sub_{tier}_{user_id}_{int(datetime.utcnow().timestamp())}",
+            event_id=f"sub_{tier}_{user_id}_{int(datetime.now(timezone.utc).timestamp())}",
             source=source,
             amount_usd=amount_usd,
             user_id=user_id,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             metadata={"tier": tier, "billing_period": billing_period},
         )
         self.revenue_events.append(event)
@@ -233,7 +233,7 @@ class MonetizationTracker:
             MRR in USD
         """
         # Get last 30 days of subscription events
-        end_date = datetime.utcnow()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=30)
 
         subscription_sources = [
@@ -288,7 +288,7 @@ class MonetizationTracker:
             Dictionary with key monetization metrics
         """
         # Last 30 days
-        end_date = datetime.utcnow()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=30)
 
         total_revenue = self.get_total_revenue(start_date, end_date)
