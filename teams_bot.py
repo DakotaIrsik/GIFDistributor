@@ -345,9 +345,9 @@ class TeamsBot:
             type=ActivityType(data.get("type", "message")),
             id=data.get("id", ""),
             timestamp=datetime.fromisoformat(
-                data.get("timestamp", datetime.now(timezone.utc).isoformat() + "Z").replace(
-                    "Z", "+00:00"
-                )
+                data.get(
+                    "timestamp", datetime.now(timezone.utc).isoformat() + "Z"
+                ).replace("Z", "+00:00")
             ),
             from_identity=TeamsIdentity(
                 id=data.get("from", {}).get("id", ""),

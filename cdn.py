@@ -206,7 +206,9 @@ class SignedURL:
         """
         # Calculate expiration timestamp
         expires = int(
-            (datetime.now(timezone.utc) + timedelta(seconds=expiration_seconds)).timestamp()
+            (
+                datetime.now(timezone.utc) + timedelta(seconds=expiration_seconds)
+            ).timestamp()
         )
 
         # Parse URL to get path and existing params

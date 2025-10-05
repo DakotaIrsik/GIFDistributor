@@ -642,7 +642,9 @@ class TestUploadManager:
         for i in range(3):
             test_file = tmp_path / f"file{i}.gif"
             # Use different content for each file (different byte value per file)
-            test_file.write_bytes(bytes([i]) * (1024 * 1024))  # 1MB each with unique content
+            test_file.write_bytes(
+                bytes([i]) * (1024 * 1024)
+            )  # 1MB each with unique content
             manager.upload_file(str(test_file), user_id=f"user{i % 2}")
 
         stats = manager.get_stats()

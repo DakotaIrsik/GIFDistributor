@@ -137,9 +137,9 @@ class TestAuthManager(unittest.TestCase):
         session = auth._create_session(user.id)
 
         # Manually expire the session
-        auth._sessions[session.session_id].expires_at = datetime.now(timezone.utc) - timedelta(
-            hours=1
-        )
+        auth._sessions[session.session_id].expires_at = datetime.now(
+            timezone.utc
+        ) - timedelta(hours=1)
 
         # Validate should return None for expired session
         validated_user = auth.validate_session(session.session_id)
