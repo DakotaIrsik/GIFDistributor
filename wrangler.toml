@@ -1,0 +1,204 @@
+# Cloudflare Workers Configuration for GIFDistributor
+# This file configures the deployment of Workers, Pages, and R2 buckets
+
+name = "gifdistributor-api"
+main = "api/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# Account configuration (use secrets for actual values)
+account_id = ""  # Set via environment variable or CLI
+
+# ==========================================
+# R2 Storage Buckets
+# ==========================================
+
+# Primary media storage bucket
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "gifdistributor-media"
+preview_bucket_name = "gifdistributor-media-preview"
+
+# CDN cache bucket for optimized assets
+[[r2_buckets]]
+binding = "CACHE_BUCKET"
+bucket_name = "gifdistributor-cache"
+preview_bucket_name = "gifdistributor-cache-preview"
+
+# Access logs bucket (optional, for analytics)
+[[r2_buckets]]
+binding = "LOGS_BUCKET"
+bucket_name = "gifdistributor-logs"
+preview_bucket_name = "gifdistributor-logs-preview"
+
+# Transcoded media bucket for platform-specific renditions
+[[r2_buckets]]
+binding = "TRANSCODE_BUCKET"
+bucket_name = "gifdistributor-transcode"
+preview_bucket_name = "gifdistributor-transcode-preview"
+
+# ==========================================
+# KV Namespaces
+# ==========================================
+
+# Share links and asset metadata
+[[kv_namespaces]]
+binding = "SHARE_LINKS"
+id = ""  # Set after creating KV namespace
+preview_id = ""
+
+# Analytics and metrics cache
+[[kv_namespaces]]
+binding = "ANALYTICS_CACHE"
+id = ""  # Set after creating KV namespace
+preview_id = ""
+
+# Rate limiting state
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = ""  # Set after creating KV namespace
+preview_id = ""
+
+# Session and authentication tokens
+[[kv_namespaces]]
+binding = "AUTH_TOKENS"
+id = ""  # Set after creating KV namespace
+preview_id = ""
+
+# ==========================================
+# Durable Objects (for real-time features)
+# ==========================================
+
+[[durable_objects.bindings]]
+name = "ANALYTICS_DO"
+class_name = "AnalyticsDurableObject"
+script_name = "gifdistributor-analytics-do"
+
+[[durable_objects.bindings]]
+name = "QUEUE_DO"
+class_name = "JobQueueDurableObject"
+script_name = "gifdistributor-queue-do"
+
+# ==========================================
+# Environment Variables
+# ==========================================
+
+[vars]
+ENVIRONMENT = "development"
+LOG_LEVEL = "info"
+ENABLE_DEBUG = "false"
+CDN_BASE_URL = "https://cdn.gifdistributor.dev"
+API_BASE_URL = "https://api.gifdistributor.dev"
+WEB_BASE_URL = "https://gifdistributor.dev"
+
+# ==========================================
+# Environment: Staging
+# ==========================================
+
+[env.staging]
+name = "gifdistributor-api-staging"
+route = { pattern = "api-staging.gifdistributor.com/*", zone_name = "gifdistributor.com" }
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+LOG_LEVEL = "debug"
+ENABLE_DEBUG = "true"
+CDN_BASE_URL = "https://cdn-staging.gifdistributor.com"
+API_BASE_URL = "https://api-staging.gifdistributor.com"
+WEB_BASE_URL = "https://staging.gifdistributor.com"
+
+[[env.staging.r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "gifdistributor-media-staging"
+
+[[env.staging.r2_buckets]]
+binding = "CACHE_BUCKET"
+bucket_name = "gifdistributor-cache-staging"
+
+[[env.staging.r2_buckets]]
+binding = "LOGS_BUCKET"
+bucket_name = "gifdistributor-logs-staging"
+
+[[env.staging.r2_buckets]]
+binding = "TRANSCODE_BUCKET"
+bucket_name = "gifdistributor-transcode-staging"
+
+# ==========================================
+# Environment: Production
+# ==========================================
+
+[env.production]
+name = "gifdistributor-api-prod"
+route = { pattern = "api.gifdistributor.com/*", zone_name = "gifdistributor.com" }
+
+[env.production.vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "warn"
+ENABLE_DEBUG = "false"
+CDN_BASE_URL = "https://cdn.gifdistributor.com"
+API_BASE_URL = "https://api.gifdistributor.com"
+WEB_BASE_URL = "https://gifdistributor.com"
+
+[[env.production.r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "gifdistributor-media-prod"
+
+[[env.production.r2_buckets]]
+binding = "CACHE_BUCKET"
+bucket_name = "gifdistributor-cache-prod"
+
+[[env.production.r2_buckets]]
+binding = "LOGS_BUCKET"
+bucket_name = "gifdistributor-logs-prod"
+
+[[env.production.r2_buckets]]
+binding = "TRANSCODE_BUCKET"
+bucket_name = "gifdistributor-transcode-prod"
+
+# ==========================================
+# Build Configuration
+# ==========================================
+
+[build]
+command = "npm run build"
+
+[build.upload]
+format = "service-worker"
+
+# ==========================================
+# Observability & Monitoring
+# ==========================================
+
+[observability]
+enabled = true
+
+# Logpush configuration (requires paid plan)
+# [[logpush]]
+# enabled = true
+# destination = "r2://gifdistributor-logs"
+
+# ==========================================
+# Triggers (Cron Jobs)
+# ==========================================
+
+# Daily analytics aggregation
+[triggers]
+crons = [
+  "0 2 * * *",  # 2 AM UTC - aggregate analytics
+  "0 3 * * *",  # 3 AM UTC - cleanup old logs
+  "0 4 * * 0",  # 4 AM UTC Sunday - weekly reports
+]
+
+# ==========================================
+# Limits & Quotas
+# ==========================================
+
+[limits]
+cpu_ms = 50  # Maximum CPU time per request (ms)
+
+# ==========================================
+# Compatibility Flags
+# ==========================================
+
+[compatibility_flags]
+nodejs_compat = true  # Enable Node.js compatibility

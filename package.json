@@ -1,0 +1,33 @@
+{
+  "name": "gif-distributor",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "web",
+    "api"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:api": "wrangler dev",
+    "build": "npm run build --workspaces",
+    "build:web": "npm run build --workspace=web",
+    "build:api": "echo 'API built via Wrangler'",
+    "start": "concurrently \"npm run start:web\" \"npm run start:api\"",
+    "start:web": "npm run start --workspace=web",
+    "start:api": "wrangler dev",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "deploy": "npm run deploy:staging",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "cf:buckets:create": "npm run cf:buckets:create:staging && npm run cf:buckets:create:production",
+    "cf:buckets:create:staging": "wrangler r2 bucket create gifdistributor-media-staging && wrangler r2 bucket create gifdistributor-cache-staging && wrangler r2 bucket create gifdistributor-transcode-staging && wrangler r2 bucket create gifdistributor-logs-staging",
+    "cf:buckets:create:production": "wrangler r2 bucket create gifdistributor-media-prod && wrangler r2 bucket create gifdistributor-cache-prod && wrangler r2 bucket create gifdistributor-transcode-prod && wrangler r2 bucket create gifdistributor-logs-prod",
+    "cf:kv:create": "wrangler kv:namespace create SHARE_LINKS && wrangler kv:namespace create ANALYTICS_CACHE && wrangler kv:namespace create RATE_LIMIT && wrangler kv:namespace create AUTH_TOKENS",
+    "cf:tail": "wrangler tail --env production"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

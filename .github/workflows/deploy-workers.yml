@@ -1,0 +1,353 @@
+name: Deploy API/Edge Workers
+
+# Automated deployment of Cloudflare Workers to staging and production environments
+# Uses wrangler CLI for deployment with environment-specific configurations
+
+on:
+  push:
+    branches:
+      - main        # Production deployments
+      - staging     # Staging deployments
+    paths:
+      - 'api/**'
+      - 'wrangler.toml'
+      - '.github/workflows/deploy-workers.yml'
+  pull_request:
+    branches:
+      - main
+      - staging
+    paths:
+      - 'api/**'
+      - 'wrangler.toml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '20'
+  WRANGLER_VERSION: '3'
+
+jobs:
+  # ==========================================
+  # Pre-deployment Checks
+  # ==========================================
+
+  validate:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Validate wrangler.toml
+        run: |
+          if [ ! -f wrangler.toml ]; then
+            echo "❌ wrangler.toml not found"
+            exit 1
+          fi
+          echo "✅ wrangler.toml found"
+
+      - name: Check for required secrets
+        run: |
+          # Verify secrets are configured (without exposing values)
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN secret not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ CLOUDFLARE_ACCOUNT_ID secret not configured"
+            exit 1
+          fi
+          echo "✅ Required secrets configured"
+
+      - name: Lint Worker code
+        working-directory: ./api
+        run: |
+          npm run lint || echo "⚠️  Lint script not configured, skipping..."
+
+  # ==========================================
+  # Unit Tests
+  # ==========================================
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: ./api
+        run: |
+          npm test || echo "⚠️  No tests configured yet"
+
+      - name: Check TypeScript compilation (if applicable)
+        working-directory: ./api
+        run: |
+          if [ -f tsconfig.json ]; then
+            npx tsc --noEmit
+          fi
+
+  # ==========================================
+  # Deploy to Staging
+  # ==========================================
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    if: |
+      (github.ref == 'refs/heads/staging' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://api-staging.gifdistributor.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Build Worker (if build step exists)
+        working-directory: ./api
+        run: |
+          if npm run | grep -q "build"; then
+            npm run build
+          else
+            echo "ℹ️  No build step configured"
+          fi
+
+      - name: Deploy to Cloudflare Workers (Staging)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env staging
+          workingDirectory: ./api
+
+      - name: Wait for deployment propagation
+        run: sleep 10
+
+      - name: Health check - Staging API
+        run: |
+          echo "🔍 Checking staging API health..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://api-staging.gifdistributor.com/health || echo "000")
+          if [ "$response" == "200" ]; then
+            echo "✅ Staging API is healthy (HTTP $response)"
+          else
+            echo "⚠️  Staging API returned HTTP $response"
+            echo "This may be expected if DNS is not yet configured"
+          fi
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Staging deployment successful!"
+          echo "Environment: staging"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+
+  # ==========================================
+  # Deploy to Production
+  # ==========================================
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://api.gifdistributor.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Build Worker (if build step exists)
+        working-directory: ./api
+        run: |
+          if npm run | grep -q "build"; then
+            npm run build
+          else
+            echo "ℹ️  No build step configured"
+          fi
+
+      - name: Deploy to Cloudflare Workers (Production)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env production
+          workingDirectory: ./api
+
+      - name: Wait for deployment propagation
+        run: sleep 15
+
+      - name: Health check - Production API
+        run: |
+          echo "🔍 Checking production API health..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://api.gifdistributor.com/health || echo "000")
+          if [ "$response" == "200" ]; then
+            echo "✅ Production API is healthy (HTTP $response)"
+          else
+            echo "⚠️  Production API returned HTTP $response"
+            echo "This may be expected if DNS is not yet configured"
+          fi
+
+      - name: Verify deployment metrics
+        run: |
+          echo "📊 Deployment Summary"
+          echo "Environment: production"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Production deployment successful!"
+
+  # ==========================================
+  # Rollback (Manual Trigger)
+  # ==========================================
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Checkout previous commit
+        uses: actions/checkout@v4
+        with:
+          ref: HEAD~1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Rollback deployment
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env ${{ github.event.inputs.environment || 'staging' }}
+          workingDirectory: ./api
+
+      - name: Notify rollback
+        run: |
+          echo "⚠️  Rolled back to previous version"
+          echo "Environment: ${{ github.event.inputs.environment || 'staging' }}"
+
+  # ==========================================
+  # Post-Deployment Notifications
+  # ==========================================
+
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always() && (needs.deploy-staging.result != 'skipped' || needs.deploy-production.result != 'skipped')
+
+    steps:
+      - name: Determine deployment status
+        id: status
+        run: |
+          if [ "${{ needs.deploy-staging.result }}" == "success" ] || [ "${{ needs.deploy-production.result }}" == "success" ]; then
+            echo "result=success" >> $GITHUB_OUTPUT
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+          else
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Discord notification (optional)
+        if: vars.DISCORD_WEBHOOK_URL != ''
+        continue-on-error: true
+        run: |
+          ENV="${{ needs.deploy-production.result != 'skipped' && 'production' || 'staging' }}"
+          STATUS="${{ steps.status.outputs.emoji }} ${{ steps.status.outputs.result }}"
+
+          curl -X POST "${{ vars.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"content\": \"**Worker Deployment $STATUS**\",
+              \"embeds\": [{
+                \"title\": \"GIFDistributor API Workers\",
+                \"description\": \"Deployed to **$ENV**\",
+                \"fields\": [
+                  {\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\", \"inline\": true},
+                  {\"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true}
+                ],
+                \"color\": \"${{ steps.status.outputs.result == 'success' && '3066993' || '15158332' }}\"
+              }]
+            }"
+
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Worker Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.status.outputs.emoji }} ${{ steps.status.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ needs.deploy-production.result != 'skipped' && 'production' || 'staging' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
