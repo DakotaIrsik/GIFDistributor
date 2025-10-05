@@ -5,9 +5,25 @@
  * Handles asset uploads, short links, analytics, and CDN operations.
  */
 
-// CORS headers for cross-origin requests
+// CORS configuration - environment-aware
+function getCorsHeaders(env) {
+  // In production, restrict to actual domains. In development, allow all.
+  const allowedOrigins = env.ENVIRONMENT === 'production'
+    ? [env.WEB_BASE_URL, env.CDN_BASE_URL]
+    : ['*'];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigins[0] || '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Range',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
+  };
+}
+
+// Legacy CORS headers for backwards compatibility
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*', // TODO: Restrict to specific domains in production
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, Range',
   'Access-Control-Max-Age': '86400',

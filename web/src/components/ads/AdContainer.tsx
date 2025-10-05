@@ -123,7 +123,7 @@ export default function AdContainer({
             <ins
               className="adsbygoogle"
               style={{ display: 'block' }}
-              data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+              data-ad-client={process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || ''}
               data-ad-slot={ad.slot_id}
               data-ad-format="auto"
               data-full-width-responsive="true"

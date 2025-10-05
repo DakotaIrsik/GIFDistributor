@@ -6,8 +6,8 @@ main = "api/index.js"
 compatibility_date = "2025-01-01"
 workers_dev = true
 
-# Account configuration (use secrets for actual values)
-account_id = ""  # Set via environment variable or CLI
+# Account ID set via CLOUDFLARE_ACCOUNT_ID environment variable or --account-id flag
+# Run: wrangler deploy --account-id <your-account-id>
 
 # ==========================================
 # R2 Storage Buckets
@@ -39,45 +39,45 @@ preview_bucket_name = "gifdistributor-transcode-preview"
 
 # ==========================================
 # KV Namespaces
+# Create with: npm run cf:kv:create
+# Then set the IDs here or via environment variables
 # ==========================================
 
-# Share links and asset metadata
-[[kv_namespaces]]
-binding = "SHARE_LINKS"
-id = ""  # Set after creating KV namespace
-preview_id = ""
+# Uncomment and add IDs after creating KV namespaces:
+# [[kv_namespaces]]
+# binding = "SHARE_LINKS"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
 
-# Analytics and metrics cache
-[[kv_namespaces]]
-binding = "ANALYTICS_CACHE"
-id = ""  # Set after creating KV namespace
-preview_id = ""
+# [[kv_namespaces]]
+# binding = "ANALYTICS_CACHE"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
 
-# Rate limiting state
-[[kv_namespaces]]
-binding = "RATE_LIMIT"
-id = ""  # Set after creating KV namespace
-preview_id = ""
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
 
-# Session and authentication tokens
-[[kv_namespaces]]
-binding = "AUTH_TOKENS"
-id = ""  # Set after creating KV namespace
-preview_id = ""
+# [[kv_namespaces]]
+# binding = "AUTH_TOKENS"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
 
 # ==========================================
 # Durable Objects (for real-time features)
+# Uncomment when implementing Durable Objects
 # ==========================================
 
-[[durable_objects.bindings]]
-name = "ANALYTICS_DO"
-class_name = "AnalyticsDurableObject"
-script_name = "gifdistributor-analytics-do"
+# [[durable_objects.bindings]]
+# name = "ANALYTICS_DO"
+# class_name = "AnalyticsDurableObject"
+# script_name = "gifdistributor-analytics-do"
 
-[[durable_objects.bindings]]
-name = "QUEUE_DO"
-class_name = "JobQueueDurableObject"
-script_name = "gifdistributor-queue-do"
+# [[durable_objects.bindings]]
+# name = "QUEUE_DO"
+# class_name = "JobQueueDurableObject"
+# script_name = "gifdistributor-queue-do"
 
 # ==========================================
 # Environment Variables
@@ -123,6 +123,11 @@ bucket_name = "gifdistributor-logs-staging"
 binding = "TRANSCODE_BUCKET"
 bucket_name = "gifdistributor-transcode-staging"
 
+# Add KV namespaces for staging after creation:
+# [[env.staging.kv_namespaces]]
+# binding = "SHARE_LINKS"
+# id = "your-staging-kv-namespace-id"
+
 # ==========================================
 # Environment: Production
 # ==========================================
@@ -155,15 +160,22 @@ bucket_name = "gifdistributor-logs-prod"
 binding = "TRANSCODE_BUCKET"
 bucket_name = "gifdistributor-transcode-prod"
 
+# Add KV namespaces for production after creation:
+# [[env.production.kv_namespaces]]
+# binding = "SHARE_LINKS"
+# id = "your-production-kv-namespace-id"
+
+# Add Durable Objects for production after implementation:
+# [[env.production.durable_objects.bindings]]
+# name = "ANALYTICS_DO"
+# class_name = "AnalyticsDurableObject"
+
 # ==========================================
 # Build Configuration
 # ==========================================
 
 [build]
 command = "npm run build"
-
-[build.upload]
-format = "service-worker"
 
 # ==========================================
 # Observability & Monitoring
@@ -200,5 +212,4 @@ cpu_ms = 50  # Maximum CPU time per request (ms)
 # Compatibility Flags
 # ==========================================
 
-[compatibility_flags]
-nodejs_compat = true  # Enable Node.js compatibility
+compatibility_flags = ["nodejs_compat"]
