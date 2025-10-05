@@ -47,7 +47,7 @@ jobs:
           workingDirectory: './api'
 
       - name: Deploy to Production
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.CLOUDFLARE_API_TOKEN != ''
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -79,9 +79,10 @@ jobs:
         run: npm run build
         working-directory: ./web
         env:
-          NEXT_PUBLIC_API_URL: ${{ github.ref == 'refs/heads/main' && 'https://api.yourdomain.com' || 'https://api-staging.yourdomain.com' }}
+          NEXT_PUBLIC_API_URL: ${{ github.ref == 'refs/heads/main' && 'https://api.gifdistributor.com' || 'https://api-staging.gifdistributor.com' }}
 
       - name: Deploy to Cloudflare Pages
+        if: secrets.CLOUDFLARE_API_TOKEN != ''
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -116,11 +117,11 @@ jobs:
       - name: Health Check - API
         run: |
           sleep 10  # Wait for deployment propagation
-          curl -f https://api.yourdomain.com/health || exit 1
+          curl -f https://api.gifdistributor.com/health || exit 1
 
       - name: Health Check - Web
         run: |
-          curl -f https://yourdomain.com || exit 1
+          curl -f https://gifdistributor.com || exit 1
 
       - name: Notify Success
         if: success()
